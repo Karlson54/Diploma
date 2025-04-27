@@ -2,15 +2,9 @@
 import { WeeklyCalendar } from "@/components/weekly-calendar"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { SimpleSidebar } from "@/components/simple-sidebar"
-import { useAuthProtection } from "@/lib/auth"
+import { withAuth } from "@/lib/AuthContext"
 
-export default function DashboardPage() {
-  const isAuthenticated = useAuthProtection()
-
-  if (!isAuthenticated) {
-    return null // Не рендерим содержимое, пока проверяем авторизацию
-  }
-
+function DashboardPage() {
   return (
     <div className="flex h-screen bg-gray-50">
       <SimpleSidebar />
@@ -23,3 +17,6 @@ export default function DashboardPage() {
     </div>
   )
 }
+
+// Wrap with the auth protection HOC
+export default withAuth(DashboardPage);

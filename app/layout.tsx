@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import "./globals.css"
 import { ClerkProvider } from "@clerk/nextjs"
+import { AuthProvider } from "@/lib/AuthContext"
 
 export const metadata: Metadata = {
   title: "v0 App",
@@ -23,7 +24,11 @@ export default function RootLayout({
       }}
     >
       <html lang="en">
-        <body>{children}</body>
+        <body>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </body>
       </html>
     </ClerkProvider>
   )

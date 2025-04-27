@@ -1,14 +1,13 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useSignIn, useUser, useAuth } from '@clerk/nextjs'
+import { useSignIn } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
-import { redirectAfterLogin } from '@/lib/auth'
+import { useAuthContext } from '@/lib/AuthContext'
 
 export default function LoginPage() {
   const router = useRouter()
-  const { isLoaded: isUserLoaded, user } = useUser()
-  const { isSignedIn } = useAuth()
+  const { isAuthenticated, isLoading, redirectToDashboard } = useAuthContext()
   const { isLoaded, signIn, setActive } = useSignIn()
   
   const [email, setEmail] = useState('')
@@ -18,13 +17,12 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [needsVerification, setNeedsVerification] = useState(false)
 
-  // Перенаправление, если пользователь уже вошел в систему
+  // Перенаправление если пользователь уже авторизован
   useEffect(() => {
-    if (isUserLoaded && isSignedIn && user) {
-      const redirectUrl = redirectAfterLogin(user)
-      router.push(redirectUrl)
+    if (!isLoading && isAuthenticated) {
+      redirectToDashboard();
     }
-  }, [isUserLoaded, isSignedIn, user, router])
+  }, [isLoading, isAuthenticated, redirectToDashboard]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -44,9 +42,7 @@ export default function LoginPage() {
       if (signInAttempt.status === 'complete') {
         // Если вход успешный, устанавливаем сессию и перенаправляем
         await setActive({ session: signInAttempt.createdSessionId })
-        const userObject = await fetch('/api/me').then(res => res.json())
-        const redirectUrl = redirectAfterLogin(userObject)
-        router.push(redirectUrl)
+        redirectToDashboard();
       } else if (signInAttempt.status === 'needs_second_factor') {
         // Требуется двухфакторная аутентификация
         setNeedsVerification(true)
@@ -81,9 +77,7 @@ export default function LoginPage() {
       if (resp.status === 'complete') {
         // Если вход успешный, устанавливаем сессию и перенаправляем
         await setActive({ session: resp.createdSessionId })
-        const userObject = await fetch('/api/me').then(res => res.json())
-        const redirectUrl = redirectAfterLogin(userObject)
-        router.push(redirectUrl)
+        redirectToDashboard();
       } else {
         setError('Неверный код верификации')
       }
@@ -92,6 +86,17 @@ export default function LoginPage() {
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  // Показываем загрузку пока проверяем авторизацию
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen bg-gray-50 items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold">Загрузка...</h2>
+        </div>
+      </div>
+    );
   }
 
   return (
