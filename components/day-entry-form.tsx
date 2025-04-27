@@ -25,8 +25,8 @@ interface DayEntryFormProps {
   }
   compact?: boolean
   initialValues?: any
-  filterStartsWith?: boolean // Add this prop
-  showInputInField?: boolean // Add this prop
+  filterStartsWith?: boolean
+  showInputInField?: boolean
   onClose: () => void
   onSave: (data: any) => void
 }
@@ -223,7 +223,33 @@ export function DayEntryForm({
     { id: "9", name: "Other" },
   ]
 
-  const [formData, setFormData] = useState({
+  // Определяем, находимся ли мы в режиме редактирования
+  const isEditMode = initialValues !== null && initialValues !== undefined;
+
+  // Начальные значения для formData
+  const defaultFormValues = {
+    market: "",
+    contractingAgency: "",
+    client: "",
+    projectBrand: "",
+    media: "",
+    jobType: "",
+    comments: "",
+    hours: "60", // 60 минут = 1 час по умолчанию
+  };
+
+  // Функция для преобразования ID в имя элемента
+  const getNameFromId = (id: string, items: Array<{ id: string, name: string }>) => {
+    const item = items.find(item => item.id === id);
+    return item ? item.name : "";
+  };
+
+  // Используем ключ (key), чтобы пересоздавать компонент при переключении между режимами.
+  // Это гарантирует сброс всех внутренних состояний.
+  const formKey = isEditMode ? `edit-${initialValues?.id}` : 'new-entry';
+
+  // Состояния формы - инициализируем сразу с нужными значениями
+  const [formData, setFormData] = useState(isEditMode ? {
     market: initialValues?.market || "",
     contractingAgency: initialValues?.contractingAgency || "",
     client: initialValues?.client || "",
@@ -231,128 +257,76 @@ export function DayEntryForm({
     media: initialValues?.media || "",
     jobType: initialValues?.jobType || "",
     comments: initialValues?.comments || "",
-    hours: initialValues?.hours ? initialValues.hours.toString() : "60", // 60 минут = 1 час
-  })
+    hours: initialValues?.hours ? initialValues.hours.toString() : "60",
+  } : defaultFormValues);
+  
+  // Состояния для инпутов (текст в полях селектов)
+  const [marketInput, setMarketInput] = useState(
+    isEditMode ? getNameFromId(initialValues?.market, markets) || initialValues?.market || "" : ""
+  );
+  
+  const [agencyInput, setAgencyInput] = useState(
+    isEditMode ? getNameFromId(initialValues?.contractingAgency, agencies) || initialValues?.contractingAgency || "" : ""
+  );
+  
+  const [clientInput, setClientInput] = useState(
+    isEditMode ? getNameFromId(initialValues?.client, clients) || initialValues?.client || "" : ""
+  );
+  
+  const [mediaInput, setMediaInput] = useState(
+    isEditMode ? getNameFromId(initialValues?.media, mediaTypes) || initialValues?.media || "" : ""
+  );
+  
+  const [jobTypeInput, setJobTypeInput] = useState(
+    isEditMode ? getNameFromId(initialValues?.jobType, jobTypes) || initialValues?.jobType || "" : ""
+  );
 
-  // Add these state variables after the formData state
-  const [marketInput, setMarketInput] = useState(() => {
-    // If initialValues has market ID, find the corresponding name
-    if (initialValues?.market) {
-      const marketItem = markets.find((m) => m.id === initialValues.market)
-      return marketItem ? marketItem.name : ""
-    }
-    return ""
-  })
+  // Состояния для выпадающих списков
+  const [clientPopoverOpen, setClientPopoverOpen] = useState(false);
+  const [marketPopoverOpen, setMarketPopoverOpen] = useState(false);
+  const [agencyPopoverOpen, setAgencyPopoverOpen] = useState(false);
+  const [mediaPopoverOpen, setMediaPopoverOpen] = useState(false);
+  const [jobTypePopoverOpen, setJobTypePopoverOpen] = useState(false);
 
-  const [agencyInput, setAgencyInput] = useState(() => {
-    // If initialValues has contractingAgency ID, find the corresponding name
-    if (initialValues?.contractingAgency) {
-      const agencyItem = agencies.find((a) => a.id === initialValues.contractingAgency)
-      return agencyItem ? agencyItem.name : ""
-    }
-    return ""
-  })
-
-  const [clientInput, setClientInput] = useState(() => {
-    // If initialValues?.client has client ID, find the corresponding name
-    if (initialValues?.client) {
-      const clientItem = clients.find((c) => c.id === initialValues.client)
-      return clientItem ? clientItem.name : ""
-    }
-    return ""
-  })
-
-  const [mediaInput, setMediaInput] = useState(() => {
-    // If initialValues has media ID, find the corresponding name
-    if (initialValues?.media) {
-      const mediaItem = mediaTypes.find((m) => m.id === initialValues.media)
-      return mediaItem ? mediaItem.name : ""
-    }
-    return ""
-  })
-
-  const [jobTypeInput, setJobTypeInput] = useState(() => {
-    // If initialValues has jobType ID, find the corresponding name
-    if (initialValues?.jobType) {
-      const jobTypeItem = jobTypes.find((j) => j.id === initialValues.jobType)
-      return jobTypeItem ? jobTypeItem.name : ""
-    }
-    return ""
-  })
-
-  // Добавьте этот эффект для обновления полей ввода при изменении initialValues
-  React.useEffect(() => {
-    if (initialValues) {
-      // Обновляем значения полей ввода при изменении initialValues
-      if (initialValues.market) {
-        const marketItem = markets.find((m) => m.id === initialValues.market)
-        if (marketItem) setMarketInput(marketItem.name)
-      }
-
-      if (initialValues.contractingAgency) {
-        const agencyItem = agencies.find((a) => a.id === initialValues.contractingAgency)
-        if (agencyItem) setAgencyInput(agencyItem.name)
-      }
-
-      if (initialValues.client) {
-        const clientItem = clients.find((c) => c.id === initialValues.client)
-        if (clientItem) setClientInput(clientItem.name)
-      }
-
-      if (initialValues.media) {
-        const mediaItem = mediaTypes.find((m) => m.id === initialValues.media)
-        if (mediaItem) setMediaInput(mediaItem.name)
-      }
-
-      if (initialValues.jobType) {
-        const jobTypeItem = jobTypes.find((j) => j.id === initialValues.jobType)
-        if (jobTypeItem) setJobTypeInput(jobTypeItem.name)
-      }
-    }
-  }, [initialValues, markets, agencies, clients, mediaTypes, jobTypes])
-
-  const [clientPopoverOpen, setClientPopoverOpen] = useState(false)
-  const [marketPopoverOpen, setMarketPopoverOpen] = useState(false)
-  const [agencyPopoverOpen, setAgencyPopoverOpen] = useState(false)
-  const [mediaPopoverOpen, setMediaPopoverOpen] = useState(false)
-  const [jobTypePopoverOpen, setJobTypePopoverOpen] = useState(false)
-
-  // Добавляем обработчик клика вне компонента для закрытия выпадающего списка
+  // Обработчик клика вне компонента для закрытия выпадающих списков
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (clientPopoverOpen && event.target.closest("[data-client-dropdown]") === null) {
-        setClientPopoverOpen(false)
-      }
-      if (marketPopoverOpen && event.target.closest("[data-market-dropdown]") === null) {
-        setMarketPopoverOpen(false)
-      }
-      if (agencyPopoverOpen && event.target.closest("[data-agency-dropdown]") === null) {
-        setAgencyPopoverOpen(false)
-      }
-      if (mediaPopoverOpen && event.target.closest("[data-media-dropdown]") === null) {
-        setMediaPopoverOpen(false)
-      }
-      if (jobTypePopoverOpen && event.target.closest("[data-jobtype-dropdown]") === null) {
-        setJobTypePopoverOpen(false)
-      }
-    }
+      if (!event.target || !(event.target instanceof Element)) return;
 
-    document.addEventListener("mousedown", handleClickOutside)
+      if (clientPopoverOpen && !event.target.closest("[data-client-dropdown]")) {
+        setClientPopoverOpen(false);
+      }
+      if (marketPopoverOpen && !event.target.closest("[data-market-dropdown]")) {
+        setMarketPopoverOpen(false);
+      }
+      if (agencyPopoverOpen && !event.target.closest("[data-agency-dropdown]")) {
+        setAgencyPopoverOpen(false);
+      }
+      if (mediaPopoverOpen && !event.target.closest("[data-media-dropdown]")) {
+        setMediaPopoverOpen(false);
+      }
+      if (jobTypePopoverOpen && !event.target.closest("[data-jobtype-dropdown]")) {
+        setJobTypePopoverOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
-  }, [clientPopoverOpen, marketPopoverOpen, agencyPopoverOpen, mediaPopoverOpen, jobTypePopoverOpen])
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [clientPopoverOpen, marketPopoverOpen, agencyPopoverOpen, mediaPopoverOpen, jobTypePopoverOpen]);
 
+  // Обработчик отправки формы
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     onSave({
       date: date,
       ...formData,
-    })
-  }
+    });
+  };
 
-  // Функція для рендерингу поля в компактному режимі
-  const renderField = (id: string, label: string, component: React.ReactNode, helperText?: string) => {
+  // Рендеринг компактных полей формы
+  const renderField = (id: string, label: string, component: React.ReactNode) => {
     return (
       <div className="space-y-1">
         <Label htmlFor={id} className="text-xs">
@@ -360,14 +334,14 @@ export function DayEntryForm({
         </Label>
         {component}
       </div>
-    )
-  }
+    );
+  };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form key={formKey} onSubmit={handleSubmit} className="space-y-4">
       {compact ? (
         <>
-          {/* Перший ряд: Market, Agency, Client */}
+          {/* Компактная форма в три ряда */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {fields.market &&
               renderField(
@@ -379,8 +353,8 @@ export function DayEntryForm({
                     placeholder="Оберіть ринок"
                     value={marketInput}
                     onChange={(e) => {
-                      setMarketInput(e.target.value)
-                      setMarketPopoverOpen(true)
+                      setMarketInput(e.target.value);
+                      setMarketPopoverOpen(true);
                     }}
                     onFocus={() => setMarketPopoverOpen(true)}
                   />
@@ -397,23 +371,23 @@ export function DayEntryForm({
                             .filter((market) =>
                               filterStartsWith
                                 ? market.name.toLowerCase().startsWith(marketInput.toLowerCase())
-                                : market.name.toLowerCase().includes(marketInput.toLowerCase()),
+                                : market.name.toLowerCase().includes(marketInput.toLowerCase())
                             )
                             .map((market) => (
                               <CommandItem
                                 key={market.id}
                                 value={market.name}
                                 onSelect={() => {
-                                  setFormData({ ...formData, market: market.id })
-                                  setMarketInput(market.name)
-                                  setMarketPopoverOpen(false)
+                                  setFormData({ ...formData, market: market.id });
+                                  setMarketInput(market.name);
+                                  setMarketPopoverOpen(false);
                                 }}
                               >
                                 {market.name}
                                 <Check
                                   className={cn(
                                     "ml-auto h-4 w-4",
-                                    formData.market === market.id ? "opacity-100" : "opacity-0",
+                                    formData.market === market.id ? "opacity-100" : "opacity-0"
                                   )}
                                 />
                               </CommandItem>
@@ -422,7 +396,7 @@ export function DayEntryForm({
                       </CommandGroup>
                     </Command>
                   </div>
-                </div>,
+                </div>
               )}
 
             {fields.contractingAgency &&
@@ -698,23 +672,6 @@ export function DayEntryForm({
                 />,
               )}
           </div>
-
-          {/* Коментарі на весь рядок */}
-          {/* {fields.comments && (
-            <div className="space-y-1">
-              <Label htmlFor="comments" className="text-xs">
-                Comments
-              </Label>
-              <Textarea
-                id="comments"
-                placeholder="Додаткові коментарі..."
-                rows={2}
-                className="text-sm"
-                value={formData.comments}
-                onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
-              />
-            </div>
-          )} */}
         </>
       ) : (
         // Оригінальний вертикальний режим відображення

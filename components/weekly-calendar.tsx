@@ -329,13 +329,33 @@ export function WeeklyCalendar() {
   }
 
   // Функція для завантаження звіту
-  const downloadReport = (reportId) => {
+  const downloadReport = (reportId: number) => {
     console.log(`Завантаження звіту ID: ${reportId}`)
     alert(`Звіт ID: ${reportId} завантажується у форматі Excel...`)
   }
 
-  // Функція для редагування запису
-  const handleEditReport = (report) => {
+  // Функция добавления новой записи с очисткой формы
+  const handleAddNewEntry = () => {
+    // Сначала закрываем форму редактирования если она открыта
+    if (showEntryForm) {
+      // Закрываем форму и очищаем данные редактирования одновременно
+      setShowEntryForm(false);
+      setEditingReport(null);
+      
+      // Затем, в следующем цикле рендеринга, открываем форму снова
+      // Используем requestAnimationFrame вместо setTimeout
+      requestAnimationFrame(() => {
+        setShowEntryForm(true);
+      });
+    } else {
+      // Если форма не открыта, просто очищаем старые данные и открываем форму
+      setEditingReport(null);
+      setShowEntryForm(true);
+    }
+  };
+
+  // Функция редактирования записи
+  const handleEditReport = (report: any) => {
     // Find the corresponding IDs for dropdown fields
     const marketId = markets.find((m) => m.name === report.market)?.id || ""
     const agencyId = agencies.find((a) => a.name === report.contractingAgency)?.id || ""
@@ -349,22 +369,26 @@ export function WeeklyCalendar() {
     // Создаем объект с данными для редактирования, включая все необходимые поля
     const editData = {
       ...report,
-      market: marketId,
-      contractingAgency: agencyId,
-      client: clientId,
-      media: mediaId,
-      jobType: jobTypeId,
+      market: marketId || report.market, // Используем ID если найден, иначе оставляем имя
+      contractingAgency: agencyId || report.contractingAgency,
+      client: clientId || report.client,
+      media: mediaId || report.media,
+      jobType: jobTypeId || report.jobType,
       hours: minutesValue, // Convert hours to minutes
     }
 
     console.log("Данные для редактирования:", editData)
-    setEditingReport(editData)
-    setShowEntryForm(true)
+    
+    // Устанавливаем данные для редактирования
+    setEditingReport(editData);
+    
+    // Открываем форму в режиме редактирования
+    setShowEntryForm(true);
     console.log(`Редагування запису ID: ${report.id}`)
   }
 
   // Функція для видалення запису
-  const handleDeleteReport = (reportId) => {
+  const handleDeleteReport = (reportId: number) => {
     if (confirm(`Ви впевнені, що хочете видалити запис ID: ${reportId}?`)) {
       setAllReports(allReports.filter((report) => report.id !== reportId))
       console.log(`Видалення запису ID: ${reportId}`)
@@ -530,7 +554,7 @@ export function WeeklyCalendar() {
           <h2 className="text-xl font-bold">
             Записи за {selectedDate.toLocaleDateString("uk-UA", { day: "numeric", month: "long", year: "numeric" })}
           </h2>
-          <Button onClick={() => setShowEntryForm(true)} className="gap-2">
+          <Button onClick={handleAddNewEntry} className="gap-2">
             <Plus className="h-4 w-4" />
             Додати запис
           </Button>
@@ -547,6 +571,7 @@ export function WeeklyCalendar() {
           </CardHeader>
           <CardContent>
             <DayEntryForm
+              key={editingReport ? `edit-${editingReport.id}` : 'new-entry'}
               date={selectedDate}
               fields={{
                 market: true,
@@ -560,11 +585,12 @@ export function WeeklyCalendar() {
               }}
               compact={true}
               initialValues={editingReport}
-              filterStartsWith={true} // Add this prop to enable "starts with" filtering
-              showInputInField={true} // Add this prop to show input text in the field
+              filterStartsWith={true}
+              showInputInField={true}
               onClose={() => {
-                setShowEntryForm(false)
-                setEditingReport(null)
+                // Закрываем форму и очищаем данные одновременно
+                setShowEntryForm(false);
+                setEditingReport(null);
               }}
               onSave={(data) => {
                 console.log("Збережено:", data)
@@ -576,30 +602,38 @@ export function WeeklyCalendar() {
                 const mediaName = mediaTypes.find((m) => m.id === data.media)?.name || data.media
                 const jobTypeName = jobTypes.find((j) => j.id === data.jobType)?.name || data.jobType
 
+                // Подготовка данных отчета
                 const updatedData = {
                   ...data,
+                  id: editingReport?.id || Date.now(), // Сохраняем ID или создаем новый
+                  date: selectedDate.toLocaleDateString("uk-UA", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                  }).replace(/\//g, "."),
                   market: marketName,
                   contractingAgency: agencyName,
                   client: clientName,
                   media: mediaName,
                   jobType: jobTypeName,
-                  hours: Number.parseFloat(data.hours) || 0,
+                  hours: Number(data.hours) / 60 || 0, // Правильное преобразование минут в часы
                 }
 
                 // Update the report if we're editing an existing one
                 if (editingReport) {
                   setAllReports(
                     allReports.map((report) =>
-                      report.id === editingReport.id ? { ...report, ...updatedData } : report,
+                      report.id === editingReport.id ? { ...updatedData } : report
                     ),
                   )
                 } else {
-                  // Add new report logic here (if needed)
-                  // This would be for creating a new report
+                  // Add new report
+                  setAllReports([...allReports, updatedData])
                 }
 
-                setShowEntryForm(false)
-                setEditingReport(null)
+                // Закрываем форму и очищаем данные одновременно
+                setShowEntryForm(false);
+                setEditingReport(null);
               }}
             />
           </CardContent>
@@ -717,7 +751,7 @@ export function WeeklyCalendar() {
                   За {selectedDate.toLocaleDateString("uk-UA", { day: "numeric", month: "long", year: "numeric" })} ще
                   не було додано жодного запису
                 </p>
-                <Button onClick={() => setShowEntryForm(true)} className="gap-2">
+                <Button onClick={handleAddNewEntry} className="gap-2">
                   <Plus className="h-4 w-4" />
                   Додати перший запис
                 </Button>
