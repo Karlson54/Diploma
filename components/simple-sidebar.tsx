@@ -1,26 +1,35 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Calendar, Menu, X, FileText, LogOut } from "lucide-react"
+import { Calendar, Menu, X, FileText, LogOut, BarChart3, Users, Building, FileSpreadsheet } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useMobile } from "@/hooks/use-mobile"
-import { setAuthenticated, getUserRole, getUserEmail } from "@/lib/auth"
+import { useClerk, useUser } from "@clerk/nextjs"
 
 export function SimpleSidebar() {
   const isMobile = useMobile()
   const [isOpen, setIsOpen] = useState(!isMobile)
   const router = useRouter()
+  const { signOut } = useClerk()
+  const { user, isLoaded } = useUser()
+  const isAdmin = isLoaded && user?.publicMetadata?.role === "admin"
+
+  useEffect(() => {
+    if (isLoaded && user) {
+      // Log user role information to console
+      console.log("User role:", user.publicMetadata?.role || "regular user")
+    }
+  }, [isLoaded, user])
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen)
   }
 
-  const handleLogout = () => {
-    setAuthenticated(false)
-    router.push("/login")
+  const handleLogout = async () => {
+    await signOut({ redirectUrl: '/login' })
   }
 
   return (
@@ -46,43 +55,112 @@ export function SimpleSidebar() {
             />
           </div>
           <p className="text-sm font-medium mt-2">
-            {getUserRole() === "admin" ? "Іван Петренко" : "Олексій Коваленко"}
+            {isLoaded && user ? `${user.firstName} ${user.lastName}` : "Завантаження..."}
             <span className="block text-xs text-gray-500">
-              {getUserRole() === "admin" ? "Директор" : getUserEmail()}
+              {isLoaded && user ? (user.publicMetadata?.role === "admin" ? "Адміністратор" : user.emailAddresses[0]?.emailAddress) : ""}
             </span>
           </p>
         </div>
         <nav className="flex-1 p-4">
-          <ul className="space-y-1">
-            <li>
-              <Link
-                href="/dashboard"
-                className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-900 bg-gray-100 font-medium"
-              >
-                <Calendar className="h-5 w-5" />
-                <span>Облік часу</span>
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/reports"
-                className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-              >
-                <FileText className="h-5 w-5" />
-                <span>Мої звіти</span>
-              </Link>
-            </li>
-            <li className="mt-6 pt-6 border-t">
-              <Button
-                variant="ghost"
-                className="w-full flex items-center justify-start gap-3 rounded-md px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-                onClick={handleLogout}
-              >
-                <LogOut className="h-5 w-5" />
-                <span>Вийти</span>
-              </Button>
-            </li>
-          </ul>
+          {isAdmin ? (
+            <>
+              <p className="text-xs uppercase font-semibold text-gray-500 mb-2">Функції користувача</p>
+              <ul className="space-y-1 mb-6">
+                <li>
+                  <Link
+                    href="/dashboard"
+                    className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                  >
+                    <Calendar className="h-5 w-5" />
+                    <span>Облік часу</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/reports"
+                    className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                  >
+                    <FileText className="h-5 w-5" />
+                    <span>Мої звіти</span>
+                  </Link>
+                </li>
+              </ul>
+
+              <div className="h-px bg-gray-200 my-4"></div>
+
+              <p className="text-xs uppercase font-semibold text-gray-500 mb-2">Функції адміністратора</p>
+              <ul className="space-y-1">
+                <li>
+                  <Link
+                    href="/admin"
+                    className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-900 bg-gray-100 font-medium"
+                  >
+                    <BarChart3 className="h-5 w-5" />
+                    <span>Дашборд</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/admin/reports"
+                    className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                  >
+                    <FileSpreadsheet className="h-5 w-5" />
+                    <span>Звіти</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/admin/companies"
+                    className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                  >
+                    <Building className="h-5 w-5" />
+                    <span>Компанії</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/admin/employees"
+                    className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                  >
+                    <Users className="h-5 w-5" />
+                    <span>Співробітники</span>
+                  </Link>
+                </li>
+              </ul>
+            </>
+          ) : (
+            <ul className="space-y-1">
+              <li>
+                <Link
+                  href="/dashboard"
+                  className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-900 bg-gray-100 font-medium"
+                >
+                  <Calendar className="h-5 w-5" />
+                  <span>Облік часу</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/reports"
+                  className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                >
+                  <FileText className="h-5 w-5" />
+                  <span>Мої звіти</span>
+                </Link>
+              </li>
+            </ul>
+          )}
+          
+          <div className="mt-6 pt-6 border-t">
+            <Button
+              variant="ghost"
+              className="w-full flex items-center justify-start gap-3 rounded-md px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+              onClick={handleLogout}
+            >
+              <LogOut className="h-5 w-5" />
+              <span>Вийти</span>
+            </Button>
+          </div>
         </nav>
       </div>
     </>

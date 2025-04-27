@@ -1,30 +1,94 @@
-# Diplomamain
+# Mediacom - Система обліку робочого часу
 
-*Automatically synced with your [v0.dev](https://v0.dev) deployments*
+Система обліку робочого часу на базі Next.js з аутентифікацією Clerk.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/andriis-projects-80b63841/v0-diplomamain)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.dev-black?style=for-the-badge)](https://v0.dev/chat/projects/sxDC1wUD1up)
+## Вимоги
 
-## Overview
+- Node.js 18+
+- npm або yarn
 
-This repository will stay in sync with your deployed chats on [v0.dev](https://v0.dev).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.dev](https://v0.dev).
+## Налаштування проекту
 
-## Deployment
+1. Клонуйте репозиторій
+2. Встановіть залежності:
 
-Your project is live at:
+```bash
+npm install
+# або
+yarn install
+```
 
-**[https://vercel.com/andriis-projects-80b63841/v0-diplomamain](https://vercel.com/andriis-projects-80b63841/v0-diplomamain)**
+3. Налаштуйте Clerk
+   - Створіть аккаунт на [clerk.com](https://clerk.com)
+   - Створіть новий додаток
+   - Скопіюйте ключі API (publishable key та secret key)
+   - Створіть файл `.env.local` в корені проекту з такими змінними:
 
-## Build your app
+```
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_publishable_key
+CLERK_SECRET_KEY=your_secret_key
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/login
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/signup
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard
+```
 
-Continue building your app on:
+4. Запустіть проект:
 
-**[https://v0.dev/chat/projects/sxDC1wUD1up](https://v0.dev/chat/projects/sxDC1wUD1up)**
+```bash
+npm run dev
+# або
+yarn dev
+```
 
-## How It Works
+## Особливості
 
-1. Create and modify your project using [v0.dev](https://v0.dev)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+- **Аутентифікація**: Реалізована за допомогою Clerk
+- **Захист маршрутів**: Використовується middleware для захисту маршрутів
+- **Ролі користувачів**: Підтримка ролей (адміністратор, користувач)
+- **Інтерфейс користувача**: Стилізований з використанням Tailwind CSS
+
+## Налаштування Clerk
+
+Для додавання ролей користувачів в Clerk:
+1. Перейдіть до панелі керування Clerk
+2. Виберіть вкладку "Users"
+3. Виберіть користувача та перейдіть до "Public metadata"
+4. Додайте поле `role` зі значенням `admin` для адміністраторів
+
+## Примітки щодо конфігурації
+
+### Middleware
+
+В файлі `middleware.ts` використовується явний список маршрутів для застосування middleware, 
+замість складних шаблонів з регулярними виразами, які можуть викликати помилки:
+
+```typescript
+export const config = {
+  matcher: [
+    '/',
+    '/dashboard/:path*',
+    '/admin/:path*',
+    '/api/:path*',
+    '/reports/:path*',
+    '/profile/:path*',
+    '/login/:path*',
+    '/signup/:path*',
+    '/forgot-password/:path*'
+  ],
+};
+```
+
+При додаванні нових маршрутів, які повинні бути захищені або публічні, не забудьте оновити:
+1. Список `matcher` в `middleware.ts` для застосування middleware
+2. Функцію `isPublicRoute` для правильного визначення публічних маршрутів
+
+### Сторінки авторизації (catch-all routes)
+
+Для правильної роботи компонентів `SignIn` та `SignUp` від Clerk, сторінки авторизації повинні бути налаштовані як catch-all routes:
+
+- `/login/[[...rest]]/page.tsx` - для входу
+- `/signup/[[...rest]]/page.tsx` - для реєстрації
+- `/forgot-password/[[...rest]]/page.tsx` - для відновлення паролю
+
+Ця структура дозволяє Clerk використовувати внутрішні маршрути ці маршрути для обробки різних станів автентифікації.

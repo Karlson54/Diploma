@@ -1,6 +1,7 @@
 import type React from "react"
 import type { Metadata } from "next"
 import "./globals.css"
+import { ClerkProvider } from "@clerk/nextjs"
 
 export const metadata: Metadata = {
   title: "v0 App",
@@ -14,8 +15,16 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body>{children}</body>
-    </html>
+    <ClerkProvider 
+      appearance={{ 
+        elements: { 
+          footerAction: "hidden" 
+        } 
+      }}
+    >
+      <html lang="en">
+        <body>{children}</body>
+      </html>
+    </ClerkProvider>
   )
 }

@@ -1,75 +1,104 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useAuth, useUser } from "@clerk/nextjs"
 
-// Простая функция для проверки авторизации
-export function isAuthenticated(): boolean {
-  if (typeof window === "undefined") return false
-  return localStorage.getItem("isAuthenticated") === "true"
-}
-
-// Функция для установки статуса авторизации
-export function setAuthenticated(value: boolean): void {
-  if (typeof window === "undefined") return
-  if (value) {
-    localStorage.setItem("isAuthenticated", "true")
-  } else {
-    localStorage.removeItem("isAuthenticated")
-  }
-}
-
-// Функция для установки роли пользователя
-export function setUserRole(role: string): void {
-  if (typeof window === "undefined") return
-  localStorage.setItem("userRole", role)
-}
-
-// Функция для получения роли пользователя
-export function getUserRole(): string {
-  if (typeof window === "undefined") return ""
-  return localStorage.getItem("userRole") || ""
-}
-
-// Функция для установки email пользователя
-export function setUserEmail(email: string): void {
-  if (typeof window === "undefined") return
-  localStorage.setItem("userEmail", email)
-}
-
-// Функция для получения email пользователя
-export function getUserEmail(): string {
-  if (typeof window === "undefined") return ""
-  return localStorage.getItem("userEmail") || ""
-}
-
-// Хук для защиты маршрутов
+// Hook to check if user is authenticated
 export function useAuthProtection() {
+  const { isLoaded, userId, isSignedIn } = useAuth()
   const router = useRouter()
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   useEffect(() => {
-    if (!isAuthenticated()) {
+    if (isLoaded && !isSignedIn) {
       router.push("/login")
     }
-  }, [router])
+    
+    if (isLoaded && isSignedIn) {
+      setIsAuthenticated(true)
+    }
+  }, [isLoaded, isSignedIn, router])
 
-  return isAuthenticated()
+  return isAuthenticated
 }
 
-// Хук для защиты маршрутов администратора
+// Hook to check if user is admin
 export function useAdminProtection() {
+  const { isLoaded, userId, isSignedIn } = useAuth()
+  const { user } = useUser()
   const router = useRouter()
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
-    if (!isAuthenticated()) {
+    if (isLoaded && !isSignedIn) {
       router.push("/login")
       return
     }
 
-    if (getUserRole() !== "admin") {
-      router.push("/")
+    if (isLoaded && isSignedIn && user) {
+      // Check if user has admin role in public metadata
+      // You need to set this in Clerk Dashboard or via API
+      const userRole = user.publicMetadata.role as string
+      if (userRole !== "admin") {
+        router.push("/dashboard")
+        return
+      }
+      setIsAdmin(true)
     }
-  }, [router])
+  }, [isLoaded, isSignedIn, user, router])
 
-  return isAuthenticated() && getUserRole() === "admin"
+  return isAdmin
+}
+
+// Function to redirect user based on role
+export function redirectAfterLogin(user: any) {
+  if (!user) return "/login"
+  
+  const userRole = user.publicMetadata?.role as string
+  if (userRole === "admin") {
+    return "/admin/dashboard"
+  } else {
+    return "/dashboard"
+  }
+}
+
+// For development/demo purposes: Store authentication state
+let _isAuthenticated = false;
+let _userRole = "";
+
+// Helper to set authentication state
+export function setAuthenticated(value: boolean): void {
+  _isAuthenticated = value;
+}
+
+// Helper to set user role
+export function setUserRole(role: string): void {
+  _userRole = role;
+}
+
+// Helper function to get current user's email
+export function getUserEmail(): string {
+  if (typeof window === "undefined") return ""
+  
+  // This should be used inside a component with useUser hook
+  // This is just a placeholder function to maintain API compatibility
+  return ""
+}
+
+// Helper function to get user role
+export function getUserRole(): string {
+  if (typeof window === "undefined") return ""
+  
+  // Return stored role for development/demo purposes
+  return _userRole || "user"
+}
+
+// Helper to check if a user has a specific role
+export function hasRole(role: string): boolean {
+  if (typeof window === "undefined") return false
+  
+  // This should be used inside a component with useUser hook
+  // This is just a placeholder function to maintain API compatibility
+  return getUserRole() === role
 }
