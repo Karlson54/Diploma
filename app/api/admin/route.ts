@@ -72,19 +72,64 @@ export async function POST(request: Request) {
     }
     else if (action === 'addCompany') {
       const { company } = body;
-      // TODO: Implement actual DB insertion
-      const newCompanyId = Math.floor(Math.random() * 10000) + 100; // Mock ID generation
-      return NextResponse.json({ id: newCompanyId, success: true });
+      
+      try {
+        // Insert the new company into the database
+        const newCompany = await companyQueries.add({
+          name: company.name,
+          contact: company.contact,
+          email: company.email,
+          phone: company.phone,
+          projects: 0, // Start with 0 projects
+          address: company.address || null,
+          notes: company.notes || null
+        });
+        
+        return NextResponse.json({ id: newCompany.id, success: true });
+      } catch (error) {
+        console.error("Error adding company:", error);
+        return NextResponse.json({ error: "Failed to add company" }, { status: 500 });
+      }
     }
     else if (action === 'updateCompany') {
       const { company } = body;
-      // TODO: Implement actual DB update
-      return NextResponse.json({ success: true });
+      
+      try {
+        // Update the company in the database
+        const updatedCompany = await companyQueries.update(company.id, {
+          name: company.name,
+          contact: company.contact,
+          email: company.email,
+          phone: company.phone,
+          address: company.address || null,
+          notes: company.notes || null
+        });
+        
+        return NextResponse.json({ success: true, company: updatedCompany });
+      } catch (error) {
+        console.error("Error updating company:", error);
+        return NextResponse.json({ error: "Failed to update company" }, { status: 500 });
+      }
     }
     else if (action === 'deleteCompany') {
       const { id } = body;
-      // TODO: Implement actual DB deletion
-      return NextResponse.json({ success: true });
+      
+      try {
+        // Delete the company from the database
+        const deletedCompany = await companyQueries.delete(id);
+        
+        if (!deletedCompany) {
+          return NextResponse.json({ error: "Company not found" }, { status: 404 });
+        }
+        
+        return NextResponse.json({ 
+          success: true, 
+          message: `Company ${deletedCompany.name} successfully deleted` 
+        });
+      } catch (error) {
+        console.error("Error deleting company:", error);
+        return NextResponse.json({ error: "Failed to delete company" }, { status: 500 });
+      }
     }
     else if (action === 'getReports') {
       const allReports = await reportQueries.getAllWithEmployee();

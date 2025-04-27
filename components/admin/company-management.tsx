@@ -34,6 +34,7 @@ interface EditingCompany extends Company {}
 export function CompanyManagement() {
   const [companies, setCompanies] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
+  const [isDeleting, setIsDeleting] = useState<number | null>(null)
 
   const [newCompany, setNewCompany] = useState<Omit<Company, 'id'>>({
     name: "",
@@ -154,6 +155,8 @@ export function CompanyManagement() {
   const handleDeleteCompany = async (id: number) => {
     if (confirm("Ви впевнені, що хочете видалити цю компанію?")) {
       try {
+        setIsDeleting(id);
+        
         const response = await fetch('/api/admin', {
           method: 'POST',
           headers: {
@@ -169,11 +172,18 @@ export function CompanyManagement() {
           throw new Error('Failed to delete company');
         }
         
+        const result = await response.json();
+        
         // Remove the company from local state
         setCompanies(companies.filter((company) => company.id !== id));
+        
+        // Show success message
+        alert(result.message || "Компанію успішно видалено");
       } catch (error) {
         console.error("Error deleting company:", error);
         alert("Failed to delete company. Please try again.");
+      } finally {
+        setIsDeleting(null);
       }
     }
   }
@@ -243,7 +253,7 @@ export function CompanyManagement() {
                 <Label htmlFor="address">Адреса</Label>
                 <Input
                   id="address"
-                  value={newCompany.address}
+                  value={newCompany.address || ''}
                   onChange={(e) => setNewCompany({ ...newCompany, address: e.target.value })}
                 />
               </div>
@@ -251,7 +261,7 @@ export function CompanyManagement() {
                 <Label htmlFor="notes">Примітки</Label>
                 <Textarea
                   id="notes"
-                  value={newCompany.notes}
+                  value={newCompany.notes || ''}
                   onChange={(e) => setNewCompany({ ...newCompany, notes: e.target.value })}
                 />
               </div>
@@ -375,8 +385,17 @@ export function CompanyManagement() {
                             </DialogContent>
                           )}
                         </Dialog>
-                        <Button variant="ghost" size="icon" onClick={() => handleDeleteCompany(company.id)}>
-                          <Trash className="h-4 w-4" />
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleDeleteCompany(company.id)}
+                          disabled={isDeleting === company.id}
+                        >
+                          {isDeleting === company.id ? (
+                            <span className="animate-spin h-4 w-4 border-2 border-gray-500 rounded-full border-t-transparent" />
+                          ) : (
+                            <Trash className="h-4 w-4" />
+                          )}
                           <span className="sr-only">Видалити</span>
                         </Button>
                       </div>
