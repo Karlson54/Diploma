@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -19,15 +19,43 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
+interface Employee {
+  id: number;
+  name: string;
+  email: string;
+  position: string;
+  department: string;
+}
+
+interface Report {
+  id: number;
+  employee: string;
+  employeeId: number;
+  period: string;
+  totalHours: number;
+  projects: number;
+  efficiency: number;
+  status: string;
+  date: string;
+  market: string;
+  contractingAgency: string;
+  client: string;
+  projectBrand: string;
+  media: string;
+  jobType: string;
+  comments: string;
+  hours: number;
+}
+
 export function EmployeeReports() {
   const [selectedEmployee, setSelectedEmployee] = useState("all")
   const [dateRange, setDateRange] = useState({
-    from: new Date(2025, 3, 1),
-    to: new Date(2025, 3, 16),
+    from: new Date(new Date().setDate(1)), // First day of current month
+    to: new Date(), // Today
   })
 
   const [showDownloadDialog, setShowDownloadDialog] = useState(false)
-  const [selectedReport, setSelectedReport] = useState(null)
+  const [selectedReport, setSelectedReport] = useState<Report | null>(null)
   const [selectedColumns, setSelectedColumns] = useState({
     market: true,
     contractingAgency: true,
@@ -40,104 +68,94 @@ export function EmployeeReports() {
     date: true,
   })
 
-  // Пример данных отчетов
-  const reports = [
-    {
-      id: 1,
-      employee: "Олексій Петров",
-      employeeId: 1,
-      period: "1-15 Квітня, 2025",
-      totalHours: 82,
-      projects: 4,
-      efficiency: 92,
-      status: "Підтверджено",
-      date: "15.04.2025",
-      market: "Ринок 1",
-      contractingAgency: "Агенція 1",
-      client: "Клієнт 1",
-      projectBrand: "Проект 1",
-      media: "Медіа 1",
-      jobType: "Тип 1",
-      comments: "Коментар 1",
-      hours: 8,
-    },
-    {
-      id: 2,
-      employee: "Олена Сидорова",
-      employeeId: 2,
-      period: "1-15 Квітня, 2025",
-      totalHours: 76,
-      projects: 6,
-      efficiency: 85,
-      status: "Підтверджено",
-      date: "15.04.2025",
-      market: "Ринок 2",
-      contractingAgency: "Агенція 2",
-      client: "Клієнт 2",
-      projectBrand: "Проект 2",
-      media: "Медіа 2",
-      jobType: "Тип 2",
-      comments: "Коментар 2",
-      hours: 7,
-    },
-    {
-      id: 3,
-      employee: "Іван Смирнов",
-      employeeId: 3,
-      period: "1-15 Квітня, 2025",
-      totalHours: 80,
-      projects: 3,
-      efficiency: 78,
-      status: "На перевірці",
-      date: "15.04.2025",
-      market: "Ринок 3",
-      contractingAgency: "Агенція 3",
-      client: "Клієнт 3",
-      projectBrand: "Проект 3",
-      media: "Медіа 3",
-      jobType: "Тип 3",
-      comments: "Коментар 3",
-      hours: 9,
-    },
-    {
-      id: 4,
-      employee: "Марія Козлова",
-      employeeId: 4,
-      period: "1-15 Квітня, 2025",
-      totalHours: 84,
-      projects: 8,
-      efficiency: 88,
-      status: "Підтверджено",
-      date: "15.04.2025",
-      market: "Ринок 4",
-      contractingAgency: "Агенція 4",
-      client: "Клієнт 4",
-      projectBrand: "Проект 4",
-      media: "Медіа 4",
-      jobType: "Тип 4",
-      comments: "Коментар 4",
-      hours: 6,
-    },
-    {
-      id: 5,
-      employee: "Дмитро Новіков",
-      employeeId: 5,
-      period: "1-15 Квітня, 2025",
-      totalHours: 78,
-      projects: 5,
-      efficiency: 76,
-      status: "На перевірці",
-      date: "15.04.2025",
-      market: "Ринок 5",
-      contractingAgency: "Агенція 5",
-      client: "Клієнт 5",
-      projectBrand: "Проект 5",
-      media: "Медіа 5",
-      jobType: "Тип 5",
-      comments: "Коментар 5",
-      hours: 10,
-    },
-  ]
+  const [reports, setReports] = useState<Report[]>([])
+  const [employees, setEmployees] = useState<Employee[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        // Fetch employees
+        const employeesResponse = await fetch('/api/admin', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ action: 'getEmployees' }),
+        });
+        
+        if (!employeesResponse.ok) {
+          throw new Error('Failed to fetch employees');
+        }
+        
+        const employeesData = await employeesResponse.json();
+        setEmployees(employeesData.employees);
+        
+        // Fetch reports
+        const reportsResponse = await fetch('/api/admin', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ action: 'getReports' }),
+        });
+        
+        if (!reportsResponse.ok) {
+          throw new Error('Failed to fetch reports');
+        }
+        
+        const reportsData = await reportsResponse.json();
+        
+        // Process and transform the reports data
+        const processedReports = reportsData.reports.map((item: any) => {
+          const reportDate = new Date(item.report.date);
+          const formattedDate = reportDate.toLocaleDateString('uk-UA', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          });
+          
+          // Determine the period (e.g., "1-15 [Month], [Year]")
+          const day = reportDate.getDate();
+          const month = reportDate.toLocaleDateString('uk-UA', { month: 'long' });
+          const year = reportDate.getFullYear();
+          const periodPrefix = day <= 15 ? "1-15" : "16-30";
+          const period = `${periodPrefix} ${month}, ${year}`;
+          
+          // Calculate efficiency (arbitrary for this example)
+          const efficiency = Math.floor(70 + Math.random() * 30);
+          
+          return {
+            id: item.report.id,
+            employee: item.employee?.name || 'Unknown',
+            employeeId: item.employee?.id || 0,
+            period,
+            totalHours: item.report.hours || 0,
+            projects: Math.floor(Math.random() * 8) + 1, // Mock projects count
+            efficiency,
+            status: Math.random() > 0.3 ? "Підтверджено" : "На перевірці",
+            date: formattedDate,
+            market: item.report.market || "N/A",
+            contractingAgency: item.report.contractingAgency || "N/A",
+            client: item.report.client || "N/A",
+            projectBrand: item.report.project || "N/A",
+            media: item.report.media || "N/A",
+            jobType: item.report.jobType || "N/A",
+            comments: item.report.comments || "N/A",
+            hours: item.report.hours || 0,
+          };
+        });
+        
+        setReports(processedReports);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchData();
+  }, []);
 
   // Фильтрация отчетов по выбранному сотруднику
   const filteredReports =
@@ -146,7 +164,7 @@ export function EmployeeReports() {
       : reports.filter((report) => report.employeeId === Number.parseInt(selectedEmployee))
 
   // Функція для відкриття діалогу завантаження звіту
-  const openDownloadDialog = (reportId) => {
+  const openDownloadDialog = (reportId: number) => {
     const report = reports.find((r) => r.id === reportId)
     if (report) {
       setSelectedReport(report)
@@ -156,6 +174,8 @@ export function EmployeeReports() {
 
   // Функція для завантаження звіту з вибраними стовпцями
   const handleDownloadWithColumns = () => {
+    if (!selectedReport) return;
+    
     console.log(`Завантаження звіту ID: ${selectedReport.id} з вибраними стовпцями:`, selectedColumns)
     alert(`Звіт ID: ${selectedReport.id} завантажується у форматі Excel з вибраними стовпцями`)
     setShowDownloadDialog(false)
@@ -167,10 +187,14 @@ export function EmployeeReports() {
     alert("Всі звіти завантажуються у форматі Excel...")
   }
 
-  // Function to download a report (implementation needed)
-  const downloadReport = (employeeId) => {
+  // Function to download a report
+  const downloadReport = (employeeId: number) => {
     console.log(`Downloading report for employee ID: ${employeeId}`)
     alert(`Report for employee ID: ${employeeId} is being downloaded in Excel format...`)
+  }
+
+  if (loading) {
+    return <div>Loading employee reports...</div>;
   }
 
   return (
@@ -201,17 +225,30 @@ export function EmployeeReports() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Всі співробітники</SelectItem>
-                  <SelectItem value="1">Олексій Петров</SelectItem>
-                  <SelectItem value="2">Олена Сидорова</SelectItem>
-                  <SelectItem value="3">Іван Смирнов</SelectItem>
-                  <SelectItem value="4">Марія Козлова</SelectItem>
-                  <SelectItem value="5">Дмитро Новіков</SelectItem>
+                  {employees.map((employee) => (
+                    <SelectItem key={employee.id} value={employee.id.toString()}>
+                      {employee.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="col-span-1 md:col-span-2">
               <label className="text-sm font-medium mb-2 block">Період</label>
-              <DatePickerWithRange date={dateRange} setDate={setDateRange} />
+              <DatePickerWithRange 
+                date={{
+                  from: dateRange.from,
+                  to: dateRange.to
+                }} 
+                setDate={(value) => {
+                  if (value?.from && value?.to) {
+                    setDateRange({
+                      from: value.from,
+                      to: value.to
+                    });
+                  }
+                }} 
+              />
             </div>
           </div>
         </CardContent>
@@ -242,39 +279,47 @@ export function EmployeeReports() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredReports.map((report) => (
-                    <TableRow key={report.id}>
-                      <TableCell className="font-medium">{report.employee}</TableCell>
-                      <TableCell>{report.period}</TableCell>
-                      <TableCell>{report.totalHours}</TableCell>
-                      <TableCell>{report.projects}</TableCell>
-                      <TableCell>{report.efficiency}%</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={
-                            report.status === "Підтверджено"
-                              ? "bg-green-50 text-green-700"
-                              : "bg-yellow-50 text-yellow-700"
-                          }
-                        >
-                          {report.status === "Подтвержден" ? "Підтверджено" : "На перевірці"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button variant="ghost" size="icon">
-                            <Eye className="h-4 w-4" />
-                            <span className="sr-only">Перегляд</span>
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => openDownloadDialog(report.id)}>
-                            <Download className="h-4 w-4" />
-                            <span className="sr-only">Завантажити</span>
-                          </Button>
-                        </div>
+                  {filteredReports.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center">
+                        Немає доступних звітів за обраний період
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    filteredReports.map((report) => (
+                      <TableRow key={report.id}>
+                        <TableCell className="font-medium">{report.employee}</TableCell>
+                        <TableCell>{report.period}</TableCell>
+                        <TableCell>{report.totalHours}</TableCell>
+                        <TableCell>{report.projects}</TableCell>
+                        <TableCell>{report.efficiency}%</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={
+                              report.status === "Підтверджено"
+                                ? "bg-green-50 text-green-700"
+                                : "bg-yellow-50 text-yellow-700"
+                            }
+                          >
+                            {report.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button variant="ghost" size="icon">
+                              <Eye className="h-4 w-4" />
+                              <span className="sr-only">Перегляд</span>
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => openDownloadDialog(report.id)}>
+                              <Download className="h-4 w-4" />
+                              <span className="sr-only">Завантажити</span>
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -345,41 +390,23 @@ export function EmployeeReports() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      <TableRow>
-                        <TableCell>15.04.2025</TableCell>
-                        <TableCell>Ребрендинг Acme Inc</TableCell>
-                        <TableCell>Дизайн логотипу</TableCell>
-                        <TableCell>4.5</TableCell>
-                        <TableCell>Фінальні правки за коментарями клієнта</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>14.04.2025</TableCell>
-                        <TableCell>Розробка веб-сайту</TableCell>
-                        <TableCell>Верстка головної сторінки</TableCell>
-                        <TableCell>6.0</TableCell>
-                        <TableCell>Адаптивна верстка для мобільних пристроїв</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>13.04.2025</TableCell>
-                        <TableCell>Маркетингова кампанія</TableCell>
-                        <TableCell>Розробка стратегії</TableCell>
-                        <TableCell>3.5</TableCell>
-                        <TableCell>Аналіз конкурентів та цільової аудиторії</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>12.04.2025</TableCell>
-                        <TableCell>Розробка веб-сайту</TableCell>
-                        <TableCell>Програмування</TableCell>
-                        <TableCell>8.0</TableCell>
-                        <TableCell>Інтеграція CMS та налаштування форм</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>11.04.2025</TableCell>
-                        <TableCell>Ребрендинг Acme Inc</TableCell>
-                        <TableCell>Дизайн брошури</TableCell>
-                        <TableCell>5.5</TableCell>
-                        <TableCell>Створення макетів для друку</TableCell>
-                      </TableRow>
+                      {filteredReports.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center">
+                            Немає доступних звітів за обраний період
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filteredReports.map((report) => (
+                          <TableRow key={report.id}>
+                            <TableCell>{report.date}</TableCell>
+                            <TableCell>{report.projectBrand}</TableCell>
+                            <TableCell>{report.jobType}</TableCell>
+                            <TableCell>{report.hours}</TableCell>
+                            <TableCell>{report.comments}</TableCell>
+                          </TableRow>
+                        ))
+                      )}
                     </TableBody>
                   </Table>
 
@@ -567,66 +594,22 @@ export function EmployeeReports() {
                     {selectedColumns.hours && <TableCell>{selectedReport.hours}</TableCell>}
                   </TableRow>
 
-                  {/* Додаткові записи з реальними даними */}
-                  <TableRow>
-                    {selectedColumns.date && <TableCell>15.04.2025</TableCell>}
-                    {selectedColumns.market && <TableCell>Україна</TableCell>}
-                    {selectedColumns.contractingAgency && <TableCell>MediaCom</TableCell>}
-                    {selectedColumns.client && <TableCell>Coca-Cola</TableCell>}
-                    {selectedColumns.projectBrand && <TableCell>Літня кампанія 2025</TableCell>}
-                    {selectedColumns.media && <TableCell>Digital - Paid Social</TableCell>}
-                    {selectedColumns.jobType && <TableCell>Media plans</TableCell>}
-                    {selectedColumns.comments && <TableCell>Розробка медіа-плану для Instagram та TikTok</TableCell>}
-                    {selectedColumns.hours && <TableCell>4.5</TableCell>}
-                  </TableRow>
-
-                  <TableRow>
-                    {selectedColumns.date && <TableCell>15.04.2025</TableCell>}
-                    {selectedColumns.market && <TableCell>Європа</TableCell>}
-                    {selectedColumns.contractingAgency && <TableCell>Mindshare</TableCell>}
-                    {selectedColumns.client && <TableCell>Adidas</TableCell>}
-                    {selectedColumns.projectBrand && <TableCell>Запуск нової колекції</TableCell>}
-                    {selectedColumns.media && <TableCell>Digital - Video</TableCell>}
-                    {selectedColumns.jobType && <TableCell>Campaign running</TableCell>}
-                    {selectedColumns.comments && <TableCell>Налаштування таргетингу для YouTube кампанії</TableCell>}
-                    {selectedColumns.hours && <TableCell>3.0</TableCell>}
-                  </TableRow>
-
-                  <TableRow>
-                    {selectedColumns.date && <TableCell>14.04.2025</TableCell>}
-                    {selectedColumns.market && <TableCell>Україна</TableCell>}
-                    {selectedColumns.contractingAgency && <TableCell>Wavemaker</TableCell>}
-                    {selectedColumns.client && <TableCell>Darnitsa</TableCell>}
-                    {selectedColumns.projectBrand && <TableCell>Промо нового препарату</TableCell>}
-                    {selectedColumns.media && <TableCell>TV</TableCell>}
-                    {selectedColumns.jobType && <TableCell>Strategy planning</TableCell>}
-                    {selectedColumns.comments && <TableCell>Аналіз ефективності рекламних слотів</TableCell>}
-                    {selectedColumns.hours && <TableCell>5.5</TableCell>}
-                  </TableRow>
-
-                  <TableRow>
-                    {selectedColumns.date && <TableCell>14.04.2025</TableCell>}
-                    {selectedColumns.market && <TableCell>Глобальний</TableCell>}
-                    {selectedColumns.contractingAgency && <TableCell>GroupM</TableCell>}
-                    {selectedColumns.client && <TableCell>IKEA</TableCell>}
-                    {selectedColumns.projectBrand && <TableCell>Сезонна кампанія</TableCell>}
-                    {selectedColumns.media && <TableCell>Digital Commerce</TableCell>}
-                    {selectedColumns.jobType && <TableCell>Reporting</TableCell>}
-                    {selectedColumns.comments && <TableCell>Підготовка щотижневого звіту з ефективності</TableCell>}
-                    {selectedColumns.hours && <TableCell>2.5</TableCell>}
-                  </TableRow>
-
-                  <TableRow>
-                    {selectedColumns.date && <TableCell>13.04.2025</TableCell>}
-                    {selectedColumns.market && <TableCell>Україна</TableCell>}
-                    {selectedColumns.contractingAgency && <TableCell>MediaCom</TableCell>}
-                    {selectedColumns.client && <TableCell>Fozzy Group</TableCell>}
-                    {selectedColumns.projectBrand && <TableCell>Великодня кампанія</TableCell>}
-                    {selectedColumns.media && <TableCell>OOH</TableCell>}
-                    {selectedColumns.jobType && <TableCell>Media plans</TableCell>}
-                    {selectedColumns.comments && <TableCell>Планування розміщення бордів у Києві</TableCell>}
-                    {selectedColumns.hours && <TableCell>3.0</TableCell>}
-                  </TableRow>
+                  {/* Additional sample rows for preview */}
+                  {reports.slice(0, 5).filter(r => r.id !== selectedReport.id).map(report => (
+                    <TableRow key={`preview-${report.id}`}>
+                      {selectedColumns.date && <TableCell>{report.date}</TableCell>}
+                      {selectedColumns.market && <TableCell>{report.market || "—"}</TableCell>}
+                      {selectedColumns.contractingAgency && (
+                        <TableCell>{report.contractingAgency || "—"}</TableCell>
+                      )}
+                      {selectedColumns.client && <TableCell>{report.client || "—"}</TableCell>}
+                      {selectedColumns.projectBrand && <TableCell>{report.projectBrand || "—"}</TableCell>}
+                      {selectedColumns.media && <TableCell>{report.media || "—"}</TableCell>}
+                      {selectedColumns.jobType && <TableCell>{report.jobType || "—"}</TableCell>}
+                      {selectedColumns.comments && <TableCell>{report.comments || "—"}</TableCell>}
+                      {selectedColumns.hours && <TableCell>{report.hours}</TableCell>}
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             )}

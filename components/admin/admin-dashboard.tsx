@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { EmployeeOverview } from "@/components/admin/employee-overview"
@@ -7,6 +8,43 @@ import { CompanyOverview } from "@/components/admin/company-overview"
 import { RecentReports } from "@/components/admin/recent-reports"
 
 export function AdminDashboard() {
+  const [stats, setStats] = useState({
+    employeeCount: 0,
+    companyCount: 0,
+    loading: true
+  });
+
+  useEffect(() => {
+    async function fetchDashboardStats() {
+      try {
+        // Fetch counts from API
+        const response = await fetch('/api/admin');
+        if (!response.ok) {
+          throw new Error('Failed to fetch dashboard data');
+        }
+        
+        const data = await response.json();
+        setStats({
+          employeeCount: data.employeeCount,
+          companyCount: data.companyCount,
+          loading: false
+        });
+      } catch (error) {
+        console.error("Error fetching dashboard stats:", error);
+        setStats({
+          ...stats,
+          loading: false
+        });
+      }
+    }
+    
+    fetchDashboardStats();
+  }, []);
+
+  if (stats.loading) {
+    return <div>Loading dashboard stats...</div>;
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -21,7 +59,7 @@ export function AdminDashboard() {
             <CardDescription>Активні акаунти</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">5</div>
+            <div className="text-2xl font-bold">{stats.employeeCount}</div>
           </CardContent>
         </Card>
         <Card>
@@ -30,7 +68,7 @@ export function AdminDashboard() {
             <CardDescription>Всього в базі</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">24</div>
+            <div className="text-2xl font-bold">{stats.companyCount}</div>
           </CardContent>
         </Card>
       </div>

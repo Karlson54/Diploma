@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -18,43 +18,24 @@ import {
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 
-export function CompanyManagement() {
-  const [companies, setCompanies] = useState([
-    {
-      id: 1,
-      name: "Acme Inc",
-      contact: "Джон Сміт",
-      email: "john@acme.com",
-      phone: "+380 99 123 4567",
-      projects: 3,
-    },
-    {
-      id: 2,
-      name: "Globex Corp",
-      contact: "Марія Іванова",
-      email: "maria@globex.com",
-      phone: "+380 99 234 5678",
-      projects: 2,
-    },
-    {
-      id: 3,
-      name: "Tech Solutions",
-      contact: "Олексій Петров",
-      email: "alex@techsolutions.com",
-      phone: "+380 99 345 6789",
-      projects: 1,
-    },
-    {
-      id: 4,
-      name: "Stark Industries",
-      contact: "Олена Сидорова",
-      email: "elena@stark.com",
-      phone: "+380 99 456 7890",
-      projects: 4,
-    },
-  ])
+interface Company {
+  id: number;
+  name: string;
+  contact: string;
+  email: string;
+  phone: string;
+  projects?: number;
+  address?: string | null;
+  notes?: string | null;
+}
 
-  const [newCompany, setNewCompany] = useState({
+interface EditingCompany extends Company {}
+
+export function CompanyManagement() {
+  const [companies, setCompanies] = useState<Company[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const [newCompany, setNewCompany] = useState<Omit<Company, 'id'>>({
     name: "",
     contact: "",
     email: "",
@@ -63,39 +44,142 @@ export function CompanyManagement() {
     notes: "",
   })
 
-  const [editingCompany, setEditingCompany] = useState(null)
+  const [editingCompany, setEditingCompany] = useState<EditingCompany | null>(null)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
 
-  const handleAddCompany = () => {
-    setCompanies([
-      ...companies,
-      {
-        id: companies.length + 1,
-        ...newCompany,
-        projects: 0,
-      },
-    ])
-    setNewCompany({
-      name: "",
-      contact: "",
-      email: "",
-      phone: "",
-      address: "",
-      notes: "",
-    })
-    setIsAddDialogOpen(false)
-  }
-
-  const handleEditCompany = () => {
-    setCompanies(companies.map((company) => (company.id === editingCompany.id ? { ...editingCompany } : company)))
-    setIsEditDialogOpen(false)
-  }
-
-  const handleDeleteCompany = (id) => {
-    if (confirm("Ви впевнені, що хочете видалити цю компанію?")) {
-      setCompanies(companies.filter((company) => company.id !== id))
+  useEffect(() => {
+    async function fetchCompanies() {
+      try {
+        const response = await fetch('/api/admin', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ action: 'getCompanies' }),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch companies');
+        }
+        
+        const data = await response.json();
+        setCompanies(data.companies);
+      } catch (error) {
+        console.error("Error fetching companies:", error);
+      } finally {
+        setLoading(false);
+      }
     }
+    
+    fetchCompanies();
+  }, []);
+
+  const handleAddCompany = async () => {
+    try {
+      const response = await fetch('/api/admin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          action: 'addCompany', 
+          company: newCompany 
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to add company');
+      }
+      
+      const result = await response.json();
+      
+      // Add the new company with the returned ID to the local state
+      setCompanies([
+        ...companies,
+        {
+          id: result.id,
+          ...newCompany,
+          projects: 0,
+        },
+      ]);
+      
+      // Reset form
+      setNewCompany({
+        name: "",
+        contact: "",
+        email: "",
+        phone: "",
+        address: "",
+        notes: "",
+      });
+      setIsAddDialogOpen(false);
+    } catch (error) {
+      console.error("Error adding company:", error);
+      alert("Failed to add company. Please try again.");
+    }
+  }
+
+  const handleEditCompany = async () => {
+    if (!editingCompany) return;
+    
+    try {
+      const response = await fetch('/api/admin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          action: 'updateCompany', 
+          company: editingCompany 
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update company');
+      }
+      
+      // Update the local state with edited company
+      setCompanies(companies.map((company) => 
+        company.id === editingCompany.id ? { ...editingCompany } : company
+      ));
+      
+      setIsEditDialogOpen(false);
+    } catch (error) {
+      console.error("Error updating company:", error);
+      alert("Failed to update company. Please try again.");
+    }
+  }
+
+  const handleDeleteCompany = async (id: number) => {
+    if (confirm("Ви впевнені, що хочете видалити цю компанію?")) {
+      try {
+        const response = await fetch('/api/admin', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            action: 'deleteCompany', 
+            id 
+          }),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to delete company');
+        }
+        
+        // Remove the company from local state
+        setCompanies(companies.filter((company) => company.id !== id));
+      } catch (error) {
+        console.error("Error deleting company:", error);
+        alert("Failed to delete company. Please try again.");
+      }
+    }
+  }
+
+  if (loading) {
+    return <div>Loading companies...</div>;
   }
 
   return (
@@ -200,84 +284,106 @@ export function CompanyManagement() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {companies.map((company) => (
-                <TableRow key={company.id}>
-                  <TableCell className="font-medium">{company.name}</TableCell>
-                  <TableCell>{company.contact}</TableCell>
-                  <TableCell>{company.email}</TableCell>
-                  <TableCell>{company.phone}</TableCell>
-                  <TableCell>{company.projects}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button variant="ghost" size="icon" onClick={() => setEditingCompany(company)}>
-                            <Pencil className="h-4 w-4" />
-                            <span className="sr-only">Редагувати</span>
-                          </Button>
-                        </DialogTrigger>
-                        {editingCompany && (
-                          <DialogContent className="sm:max-w-[525px]">
-                            <DialogHeader>
-                              <DialogTitle>Редагувати компанію</DialogTitle>
-                              <DialogDescription>Змініть інформацію про компанію</DialogDescription>
-                            </DialogHeader>
-                            <div className="grid gap-4 py-4">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                  <Label htmlFor="edit-name">Назва компанії</Label>
-                                  <Input
-                                    id="edit-name"
-                                    value={editingCompany.name}
-                                    onChange={(e) => setEditingCompany({ ...editingCompany, name: e.target.value })}
-                                  />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor="edit-contact">Контактна особа</Label>
-                                  <Input
-                                    id="edit-contact"
-                                    value={editingCompany.contact}
-                                    onChange={(e) => setEditingCompany({ ...editingCompany, contact: e.target.value })}
-                                  />
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                  <Label htmlFor="edit-email">Email</Label>
-                                  <Input
-                                    id="edit-email"
-                                    type="email"
-                                    value={editingCompany.email}
-                                    onChange={(e) => setEditingCompany({ ...editingCompany, email: e.target.value })}
-                                  />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor="edit-phone">Телефон</Label>
-                                  <Input
-                                    id="edit-phone"
-                                    value={editingCompany.phone}
-                                    onChange={(e) => setEditingCompany({ ...editingCompany, phone: e.target.value })}
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                            <DialogFooter>
-                              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                                Скасувати
-                              </Button>
-                              <Button onClick={handleEditCompany}>Зберегти</Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        )}
-                      </Dialog>
-                      <Button variant="ghost" size="icon" onClick={() => handleDeleteCompany(company.id)}>
-                        <Trash className="h-4 w-4" />
-                        <span className="sr-only">Видалити</span>
-                      </Button>
-                    </div>
-                  </TableCell>
+              {companies.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center">Немає доступних компаній</TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                companies.map((company) => (
+                  <TableRow key={company.id}>
+                    <TableCell className="font-medium">{company.name}</TableCell>
+                    <TableCell>{company.contact}</TableCell>
+                    <TableCell>{company.email}</TableCell>
+                    <TableCell>{company.phone}</TableCell>
+                    <TableCell>{company.projects || 0}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Dialog open={isEditDialogOpen && editingCompany?.id === company.id} onOpenChange={setIsEditDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => setEditingCompany(company)}>
+                              <Pencil className="h-4 w-4" />
+                              <span className="sr-only">Редагувати</span>
+                            </Button>
+                          </DialogTrigger>
+                          {editingCompany && editingCompany.id === company.id && (
+                            <DialogContent className="sm:max-w-[525px]">
+                              <DialogHeader>
+                                <DialogTitle>Редагувати компанію</DialogTitle>
+                                <DialogDescription>Змініть інформацію про компанію</DialogDescription>
+                              </DialogHeader>
+                              <div className="grid gap-4 py-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-2">
+                                    <Label htmlFor="edit-name">Назва компанії</Label>
+                                    <Input
+                                      id="edit-name"
+                                      value={editingCompany.name}
+                                      onChange={(e) => setEditingCompany({ ...editingCompany, name: e.target.value })}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor="edit-contact">Контактна особа</Label>
+                                    <Input
+                                      id="edit-contact"
+                                      value={editingCompany.contact}
+                                      onChange={(e) => setEditingCompany({ ...editingCompany, contact: e.target.value })}
+                                    />
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-2">
+                                    <Label htmlFor="edit-email">Email</Label>
+                                    <Input
+                                      id="edit-email"
+                                      type="email"
+                                      value={editingCompany.email}
+                                      onChange={(e) => setEditingCompany({ ...editingCompany, email: e.target.value })}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor="edit-phone">Телефон</Label>
+                                    <Input
+                                      id="edit-phone"
+                                      value={editingCompany.phone}
+                                      onChange={(e) => setEditingCompany({ ...editingCompany, phone: e.target.value })}
+                                    />
+                                  </div>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="edit-address">Адреса</Label>
+                                  <Input
+                                    id="edit-address"
+                                    value={editingCompany.address || ''}
+                                    onChange={(e) => setEditingCompany({ ...editingCompany, address: e.target.value })}
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="edit-notes">Примітки</Label>
+                                  <Textarea
+                                    id="edit-notes"
+                                    value={editingCompany.notes || ''}
+                                    onChange={(e) => setEditingCompany({ ...editingCompany, notes: e.target.value })}
+                                  />
+                                </div>
+                              </div>
+                              <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                                  Скасувати
+                                </Button>
+                                <Button onClick={handleEditCompany}>Зберегти</Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          )}
+                        </Dialog>
+                        <Button variant="ghost" size="icon" onClick={() => handleDeleteCompany(company.id)}>
+                          <Trash className="h-4 w-4" />
+                          <span className="sr-only">Видалити</span>
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>

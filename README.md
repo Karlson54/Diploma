@@ -1,94 +1,121 @@
-# Mediacom - Система обліку робочого часу
+# Diploma Project - Database Setup with Drizzle ORM
 
-Система обліку робочого часу на базі Next.js з аутентифікацією Clerk.
+This project uses Drizzle ORM with SQLite to manage the database. Below are instructions on how to set up and use the database.
 
-## Вимоги
+## Database Structure
 
-- Node.js 18+
-- npm або yarn
+The database includes the following tables:
 
-## Налаштування проекту
+1. **Employees** - Stores information about employees
+   - id (primary key)
+   - name
+   - email
+   - position
+   - department
+   - joinDate
+   - status
 
-1. Клонуйте репозиторій
-2. Встановіть залежності:
+2. **Companies** - Stores information about companies
+   - id (primary key)
+   - name
+   - contact
+   - email
+   - phone
+   - projects
+   - address
+   - notes
 
-```bash
-npm install
-# або
-yarn install
-```
+3. **Clients** - Stores a list of client names
+   - id (primary key)
+   - name
 
-3. Налаштуйте Clerk
-   - Створіть аккаунт на [clerk.com](https://clerk.com)
-   - Створіть новий додаток
-   - Скопіюйте ключі API (publishable key та secret key)
-   - Створіть файл `.env.local` в корені проекту з такими змінними:
+4. **Reports** - Stores time tracking reports
+   - id (primary key)
+   - employeeId (foreign key to employees)
+   - date
+   - market
+   - contractingAgency
+   - client
+   - projectBrand
+   - media
+   - jobType
+   - comments
+   - hours
 
-```
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_publishable_key
-CLERK_SECRET_KEY=your_secret_key
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=/login
-NEXT_PUBLIC_CLERK_SIGN_UP_URL=/signup
-NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard
-NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard
-```
+5. **Reports to Companies** - Junction table linking reports and companies (many-to-many)
+   - id (primary key)
+   - reportId (foreign key to reports)
+   - companyId (foreign key to companies)
 
-4. Запустіть проект:
+## Getting Started
 
-```bash
-npm run dev
-# або
-yarn dev
-```
+### Prerequisites
 
-## Особливості
+- Node.js
+- npm
 
-- **Аутентифікація**: Реалізована за допомогою Clerk
-- **Захист маршрутів**: Використовується middleware для захисту маршрутів
-- **Ролі користувачів**: Підтримка ролей (адміністратор, користувач)
-- **Інтерфейс користувача**: Стилізований з використанням Tailwind CSS
+### Installation
 
-## Налаштування Clerk
+1. Clone the repository
+2. Install dependencies:
+   ```
+   npm install
+   ```
 
-Для додавання ролей користувачів в Clerk:
-1. Перейдіть до панелі керування Clerk
-2. Виберіть вкладку "Users"
-3. Виберіть користувача та перейдіть до "Public metadata"
-4. Додайте поле `role` зі значенням `admin` для адміністраторів
+### Database Setup
 
-## Примітки щодо конфігурації
+1. Generate database migrations based on the schema:
+   ```
+   npm run db:generate
+   ```
 
-### Middleware
+2. Initialize the database:
+   ```
+   npm run db:init
+   ```
 
-В файлі `middleware.ts` використовується явний список маршрутів для застосування middleware, 
-замість складних шаблонів з регулярними виразами, які можуть викликати помилки:
+3. Seed the database with initial data:
+   ```
+   npm run db:seed
+   ```
+
+4. (Optional) View and modify the database using Drizzle Studio:
+   ```
+   npm run db:studio
+   ```
+
+## Database Usage in Code
+
+To use the database in your components or API routes, import the query functions from the `db/queries.ts` file:
 
 ```typescript
-export const config = {
-  matcher: [
-    '/',
-    '/dashboard/:path*',
-    '/admin/:path*',
-    '/api/:path*',
-    '/reports/:path*',
-    '/profile/:path*',
-    '/login/:path*',
-    '/signup/:path*',
-    '/forgot-password/:path*'
-  ],
-};
+import { employeeQueries, companyQueries, clientQueries, reportQueries } from '../db/queries';
+
+// Example: Get all employees
+const employees = await employeeQueries.getAll();
+
+// Example: Add a new employee
+const newEmployee = await employeeQueries.add({
+  name: "John Doe",
+  email: "john@example.com",
+  position: "Developer",
+  department: "Engineering",
+  joinDate: "01.05.2023",
+  status: "Active"
+});
+
+// Example: Get reports with employee information
+const reports = await reportQueries.getAllWithEmployee();
 ```
 
-При додаванні нових маршрутів, які повинні бути захищені або публічні, не забудьте оновити:
-1. Список `matcher` в `middleware.ts` для застосування middleware
-2. Функцію `isPublicRoute` для правильного визначення публічних маршрутів
+## Available Scripts
 
-### Сторінки авторизації (catch-all routes)
-
-Для правильної роботи компонентів `SignIn` та `SignUp` від Clerk, сторінки авторизації повинні бути налаштовані як catch-all routes:
-
-- `/login/[[...rest]]/page.tsx` - для входу
-- `/signup/[[...rest]]/page.tsx` - для реєстрації
-- `/forgot-password/[[...rest]]/page.tsx` - для відновлення паролю
-
-Ця структура дозволяє Clerk використовувати внутрішні маршрути ці маршрути для обробки різних станів автентифікації.
+- `npm run dev` - Start the development server
+- `npm run build` - Build the project for production
+- `npm run start` - Start the production server
+- `npm run lint` - Run ESLint to check code quality
+- `npm run db:generate` - Generate database migrations
+- `npm run db:push` - Push schema changes to the database
+- `npm run db:studio` - Open Drizzle Studio to view and modify the database
+- `npm run db:init` - Initialize the database
+- `npm run db:seed` - Seed the database with initial data

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -18,60 +18,25 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Pencil, Plus, Search, Trash, Download } from "lucide-react"
 
-export function EmployeesList() {
-  // Приклад даних співробітників
-  const [employees, setEmployees] = useState([
-    {
-      id: 1,
-      name: "Олексій Петров",
-      email: "alex@example.com",
-      position: "Старший дизайнер",
-      department: "Дизайн",
-      joinDate: "15.03.2023",
-      status: "Активний",
-    },
-    {
-      id: 2,
-      name: "Олена Сидорова",
-      email: "elena@example.com",
-      position: "Копірайтер",
-      department: "Маркетинг",
-      joinDate: "02.06.2023",
-      status: "Активна",
-    },
-    {
-      id: 3,
-      name: "Іван Смирнов",
-      email: "ivan@example.com",
-      position: "Веб-розробник",
-      department: "Розробка",
-      joinDate: "10.01.2024",
-      status: "Активний",
-    },
-    {
-      id: 4,
-      name: "Марія Козлова",
-      email: "maria@example.com",
-      position: "Менеджер проєктів",
-      department: "Управління",
-      joinDate: "22.09.2022",
-      status: "Активна",
-    },
-    {
-      id: 5,
-      name: "Дмитро Новіков",
-      email: "dmitry@example.com",
-      position: "SMM спеціаліст",
-      department: "Маркетинг",
-      joinDate: "05.04.2023",
-      status: "Активний",
-    },
-  ])
+interface Employee {
+  id: number;
+  name: string;
+  email: string;
+  position: string;
+  department: string;
+  joinDate: string;
+  status: string;
+}
 
+interface EditingEmployee extends Employee {}
+
+export function EmployeesList() {
+  const [employees, setEmployees] = useState<Employee[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [editingEmployee, setEditingEmployee] = useState(null)
+  const [editingEmployee, setEditingEmployee] = useState<EditingEmployee | null>(null)
   const [newEmployee, setNewEmployee] = useState({
     name: "",
     email: "",
@@ -79,6 +44,53 @@ export function EmployeesList() {
     department: "",
     status: "Активний",
   })
+
+  useEffect(() => {
+    async function fetchEmployees() {
+      try {
+        const response = await fetch('/api/admin', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ action: 'getEmployees' }),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch employees');
+        }
+        
+        const data = await response.json();
+        
+        // Format the join date for each employee
+        const formattedEmployees = data.employees.map((emp: any) => {
+          // Convert ISO date to DD.MM.YYYY format
+          const joinDate = emp.joinDate 
+            ? new Date(emp.joinDate).toLocaleDateString('uk-UA', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+              })
+            : 'N/A';
+            
+          return {
+            ...emp,
+            joinDate,
+            // Set default status if not present
+            status: emp.status || 'Активний'
+          };
+        });
+        
+        setEmployees(formattedEmployees);
+      } catch (error) {
+        console.error("Error fetching employees:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchEmployees();
+  }, []);
 
   // Фільтрація співробітників за пошуковим запитом
   const filteredEmployees = employees.filter(
@@ -90,49 +102,135 @@ export function EmployeesList() {
   )
 
   // Додавання нового співробітника
-  const handleAddEmployee = () => {
-    const id = employees.length > 0 ? Math.max(...employees.map((e) => e.id)) + 1 : 1
-    const today = new Date()
-    const joinDate = `${today.getDate().toString().padStart(2, "0")}.${(today.getMonth() + 1)
-      .toString()
-      .padStart(2, "0")}.${today.getFullYear()}`
+  const handleAddEmployee = async () => {
+    try {
+      const response = await fetch('/api/admin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'addEmployee',
+          employee: newEmployee
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to add employee');
+      }
+      
+      const result = await response.json();
+      
+      // Format today's date
+      const today = new Date();
+      const joinDate = today.toLocaleDateString('uk-UA', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
 
-    setEmployees([
-      ...employees,
-      {
-        id,
-        ...newEmployee,
-        joinDate,
-      },
-    ])
+      // Add the new employee to local state
+      setEmployees([
+        ...employees,
+        {
+          id: result.id,
+          ...newEmployee,
+          joinDate,
+        },
+      ]);
 
-    setNewEmployee({
-      name: "",
-      email: "",
-      position: "",
-      department: "",
-      status: "Активний",
-    })
-    setIsAddDialogOpen(false)
+      // Reset form
+      setNewEmployee({
+        name: "",
+        email: "",
+        position: "",
+        department: "",
+        status: "Активний",
+      });
+      setIsAddDialogOpen(false);
+    } catch (error) {
+      console.error("Error adding employee:", error);
+      alert("Failed to add employee. Please try again.");
+    }
   }
 
   // Редагування співробітника
-  const handleEditEmployee = () => {
-    setEmployees(employees.map((emp) => (emp.id === editingEmployee.id ? editingEmployee : emp)))
-    setIsEditDialogOpen(false)
+  const handleEditEmployee = async () => {
+    if (!editingEmployee) return;
+    
+    try {
+      const response = await fetch('/api/admin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'updateEmployee',
+          employee: editingEmployee
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update employee');
+      }
+      
+      // Update local state
+      setEmployees(employees.map((emp) => 
+        emp.id === editingEmployee.id ? editingEmployee : emp
+      ));
+      
+      setIsEditDialogOpen(false);
+    } catch (error) {
+      console.error("Error updating employee:", error);
+      alert("Failed to update employee. Please try again.");
+    }
   }
 
   // Видалення співробітника
-  const handleDeleteEmployee = (id) => {
+  const handleDeleteEmployee = async (id: number) => {
     if (confirm("Ви впевнені, що хочете видалити цього співробітника?")) {
-      setEmployees(employees.filter((emp) => emp.id !== id))
+      try {
+        const response = await fetch('/api/admin', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'deleteEmployee',
+            id
+          }),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to delete employee');
+        }
+        
+        // Remove from local state
+        setEmployees(employees.filter((emp) => emp.id !== id));
+      } catch (error) {
+        console.error("Error deleting employee:", error);
+        alert("Failed to delete employee. Please try again.");
+      }
     }
   }
 
   // Завантаження звіту по співробітнику
-  const downloadEmployeeReport = (employeeId) => {
-    console.log(`Завантаження звіту для співробітника ID: ${employeeId}`)
-    alert(`Звіт для співробітника ID: ${employeeId} завантажується...`)
+  const downloadEmployeeReport = async (employeeId: number) => {
+    try {
+      console.log(`Завантаження звіту для співробітника ID: ${employeeId}`);
+      
+      // In a real application, you would call an API endpoint to generate and download a report
+      // For now, we'll just show an alert
+      alert(`Звіт для співробітника ID: ${employeeId} завантажується...`);
+      
+    } catch (error) {
+      console.error("Error downloading report:", error);
+      alert("Failed to download report. Please try again.");
+    }
+  }
+  
+  if (loading) {
+    return <div>Loading employees...</div>;
   }
 
   return (
@@ -253,9 +351,76 @@ export function EmployeesList() {
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => setEditingEmployee(employee)}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
+                          <Dialog open={isEditDialogOpen && editingEmployee?.id === employee.id} onOpenChange={setIsEditDialogOpen}>
+                            <DialogTrigger asChild>
+                              <Button variant="ghost" size="icon" onClick={() => setEditingEmployee(employee)}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </DialogTrigger>
+                            {editingEmployee && editingEmployee.id === employee.id && (
+                              <DialogContent className="sm:max-w-[525px]">
+                                <DialogHeader>
+                                  <DialogTitle>Редагувати співробітника</DialogTitle>
+                                  <DialogDescription>Змініть інформацію про співробітника</DialogDescription>
+                                </DialogHeader>
+                                <div className="grid gap-4 py-4">
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label htmlFor="edit-name">ПІБ</Label>
+                                      <Input
+                                        id="edit-name"
+                                        value={editingEmployee.name}
+                                        onChange={(e) => setEditingEmployee({ ...editingEmployee, name: e.target.value })}
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor="edit-email">Email</Label>
+                                      <Input
+                                        id="edit-email"
+                                        type="email"
+                                        value={editingEmployee.email}
+                                        onChange={(e) => setEditingEmployee({ ...editingEmployee, email: e.target.value })}
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label htmlFor="edit-position">Посада</Label>
+                                      <Input
+                                        id="edit-position"
+                                        value={editingEmployee.position}
+                                        onChange={(e) => setEditingEmployee({ ...editingEmployee, position: e.target.value })}
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor="edit-department">Відділ</Label>
+                                      <Select
+                                        value={editingEmployee.department}
+                                        onValueChange={(value) => setEditingEmployee({ ...editingEmployee, department: value })}
+                                      >
+                                        <SelectTrigger id="edit-department">
+                                          <SelectValue placeholder="Оберіть відділ" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="Дизайн">Дизайн</SelectItem>
+                                          <SelectItem value="Розробка">Розробка</SelectItem>
+                                          <SelectItem value="Маркетинг">Маркетинг</SelectItem>
+                                          <SelectItem value="Управління">Управління</SelectItem>
+                                          <SelectItem value="Продажі">Продажі</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                  </div>
+                                </div>
+                                <DialogFooter>
+                                  <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                                    Скасувати
+                                  </Button>
+                                  <Button onClick={handleEditEmployee}>Зберегти</Button>
+                                </DialogFooter>
+                              </DialogContent>
+                            )}
+                          </Dialog>
                           <Button variant="ghost" size="icon" onClick={() => handleDeleteEmployee(employee.id)}>
                             <Trash className="h-4 w-4" />
                           </Button>

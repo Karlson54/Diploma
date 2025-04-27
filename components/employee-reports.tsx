@@ -1,70 +1,108 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { DatePickerWithRange } from "@/components/date-range-picker"
 import { Download, Eye, FileSpreadsheet } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { reportQueries } from "@/db/queries"
+import type { DateRange } from "react-day-picker"
+
+interface ReportTask {
+  company: string;
+  description: string;
+  hours: number;
+}
+
+interface Report {
+  id: number;
+  date: string;
+  totalHours: number;
+  companies: string;
+  tasks: ReportTask[];
+}
 
 export function EmployeeReports() {
-  const [dateRange, setDateRange] = useState({
-    from: new Date(2025, 3, 1),
-    to: new Date(2025, 3, 16),
-  })
+  // Initialize with definite from and to dates
+  const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const today = new Date();
+  
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: firstDayOfMonth,
+    to: today
+  });
+  
+  const [reports, setReports] = useState<Report[]>([])
+  const [loading, setLoading] = useState(true)
 
-  // Приклад даних звітів поточного співробітника
-  // В реальному додатку ці дані будуть завантажуватися з API
-  const reports = [
-    {
-      id: 1,
-      date: "16.04.2025",
-      totalHours: 8.5,
-      companies: "Acme Inc, Tech Solutions",
-      tasks: [
-        { company: "Acme Inc", description: "Розробка дизайну логотипу", hours: 4.5 },
-        { company: "Tech Solutions", description: "Верстка головної сторінки", hours: 4.0 },
-      ],
-    },
-    {
-      id: 2,
-      date: "15.04.2025",
-      totalHours: 8.0,
-      companies: "Acme Inc",
-      tasks: [
-        { company: "Acme Inc", description: "Дизайн брошури", hours: 5.5 },
-        { company: "Acme Inc", description: "Зустріч з клієнтом", hours: 2.5 },
-      ],
-    },
-    {
-      id: 3,
-      date: "14.04.2025",
-      totalHours: 7.5,
-      companies: "Tech Solutions",
-      tasks: [{ company: "Tech Solutions", description: "Адаптивна верстка для мобільних пристроїв", hours: 7.5 }],
-    },
-    {
-      id: 4,
-      date: "13.04.2025",
-      totalHours: 8.0,
-      companies: "Globex Corp",
-      tasks: [
-        { company: "Globex Corp", description: "Розробка стратегії маркетингової кампанії", hours: 3.5 },
-        { company: "Globex Corp", description: "Аналіз конкурентів", hours: 4.5 },
-      ],
-    },
-    {
-      id: 5,
-      date: "12.04.2025",
-      totalHours: 6.5,
-      companies: "Tech Solutions",
-      tasks: [{ company: "Tech Solutions", description: "Інтеграція CMS та налаштування форм", hours: 6.5 }],
-    },
-  ]
+  // Fetch reports from the database
+  useEffect(() => {
+    async function fetchReports() {
+      try {
+        const allReports = await reportQueries.getAllWithEmployee()
+        
+        // Transform reports to required format
+        const formattedReports: Report[] = allReports.map(report => {
+          // Format date from ISO to DD.MM.YYYY
+          const reportDate = new Date(report.report.date)
+          const formattedDate = reportDate.toLocaleDateString('ru-RU', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          });
+          
+          // Extract companies info
+          const companies = [
+            report.report.client,
+            report.report.contractingAgency
+          ].filter(Boolean).join(", ");
+          
+          // Create task based on actual report data
+          const tasks: ReportTask[] = [];
+          if (report.report.client) {
+            tasks.push({
+              company: report.report.client,
+              description: report.report.jobType || "Work on project",
+              hours: report.report.hours
+            });
+          }
+          
+          return {
+            id: report.report.id,
+            date: formattedDate,
+            totalHours: report.report.hours,
+            companies,
+            tasks
+          };
+        });
+        
+        // Filter by date range if provided
+        const filteredReports = formattedReports.filter(report => {
+          if (!dateRange || !dateRange.from) return true; // No filter if no date range
+          
+          const reportDate = new Date(report.date.split('.').reverse().join('-'));
+          const fromDate = dateRange.from;
+          const toDate = dateRange.to || new Date(); // Use today if to is not set
+          
+          return reportDate >= fromDate && reportDate <= toDate;
+        });
+        
+        setReports(filteredReports);
+      } catch (error) {
+        console.error("Error fetching reports:", error);
+        setReports([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchReports();
+  }, [dateRange]);
 
   // Функція для завантаження звіту
-  const downloadReport = (reportId) => {
+  const downloadReport = (reportId: number) => {
     console.log(`Завантаження звіту ID: ${reportId}`)
     alert(`Звіт ID: ${reportId} завантажується у форматі Excel...`)
   }
@@ -76,16 +114,20 @@ export function EmployeeReports() {
   }
 
   // Функція для перегляду деталей звіту
-  const [selectedReport, setSelectedReport] = useState(null)
+  const [selectedReport, setSelectedReport] = useState<Report | null>(null)
   const [showDetails, setShowDetails] = useState(false)
 
-  const viewReportDetails = (report) => {
+  const viewReportDetails = (report: Report) => {
     setSelectedReport(report)
     setShowDetails(true)
   }
 
   // Розрахунок загальної кількості годин
   const totalHours = reports.reduce((sum, report) => sum + report.totalHours, 0)
+
+  if (loading) {
+    return <div>Загрузка отчетов...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -140,7 +182,9 @@ export function EmployeeReports() {
             <CardDescription>За обраний період</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{(totalHours / reports.length).toFixed(1)} годин</div>
+            <div className="text-2xl font-bold">
+              {reports.length ? (totalHours / reports.length).toFixed(1) : "0"} годин
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -167,25 +211,31 @@ export function EmployeeReports() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {reports.map((report) => (
-                    <TableRow key={report.id}>
-                      <TableCell className="font-medium">{report.date}</TableCell>
-                      <TableCell>{report.totalHours}</TableCell>
-                      <TableCell>{report.companies}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => viewReportDetails(report)}>
-                            <Eye className="h-4 w-4" />
-                            <span className="sr-only">Перегляд</span>
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => downloadReport(report.id)}>
-                            <Download className="h-4 w-4" />
-                            <span className="sr-only">Завантажити</span>
-                          </Button>
-                        </div>
-                      </TableCell>
+                  {reports.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center">Немає звітів за обраний період</TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    reports.map((report) => (
+                      <TableRow key={report.id}>
+                        <TableCell className="font-medium">{report.date}</TableCell>
+                        <TableCell>{report.totalHours}</TableCell>
+                        <TableCell>{report.companies}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button variant="ghost" size="icon" onClick={() => viewReportDetails(report)}>
+                              <Eye className="h-4 w-4" />
+                              <span className="sr-only">Перегляд</span>
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => downloadReport(report.id)}>
+                              <Download className="h-4 w-4" />
+                              <span className="sr-only">Завантажити</span>
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
