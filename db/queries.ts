@@ -259,17 +259,19 @@ export const reportQueries = {
   // Delete a report and its company associations
   delete: async (id: number) => {
     return db.transaction(async (tx) => {
-      // Delete company associations
+      // Delete report-to-company associations first
       await tx
         .delete(reportsToCompanies)
         .where(eq(reportsToCompanies.reportId, id));
       
       // Delete the report
-      return tx
+      const deletedReport = await tx
         .delete(reports)
         .where(eq(reports.id, id))
         .returning()
         .get();
+      
+      return deletedReport;
     });
   }
 }; 

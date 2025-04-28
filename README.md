@@ -119,3 +119,35 @@ const reports = await reportQueries.getAllWithEmployee();
 - `npm run db:studio` - Open Drizzle Studio to view and modify the database
 - `npm run db:init` - Initialize the database
 - `npm run db:seed` - Seed the database with initial data
+
+## User Report Management
+
+### User-Specific Reports
+
+All reports created by a user are automatically associated with that user's employee record in the database. The application ensures that:
+
+1. When a user creates a new report, it is saved with their employee ID
+2. Users can only view, edit, and delete their own reports
+3. Admins can view reports from all users
+
+### How It Works
+
+The application uses Clerk for authentication and maintains a relationship between Clerk user IDs and employee records in the database:
+
+1. When a user creates a report through the calendar interface, the system:
+   - Identifies the current user via Clerk authentication
+   - Finds the corresponding employee record
+   - Associates the report with that employee's ID
+
+2. The report data is stored in the database with the following structure:
+   - Basic report information (date, hours, comments, etc.)
+   - Reference to the employee who created it
+   - Associated companies (client and contracting agency)
+
+3. API Endpoints:
+   - `GET /api/reports` - Retrieves all reports for the current user
+   - `POST /api/reports` - Creates a new report for the current user
+   - `PUT /api/reports` - Updates an existing report (only if it belongs to the current user)
+   - `DELETE /api/reports?id={reportId}` - Deletes a report (only if it belongs to the current user)
+
+This security model ensures that users can only access and modify their own data while administrators maintain oversight capabilities for the entire system.

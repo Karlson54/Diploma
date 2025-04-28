@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, Pencil, Trash, Plus, Copy } from "lucide-react"
@@ -216,6 +216,57 @@ export function WeeklyCalendar() {
     },
   ])
 
+  // Fetch reports from the API when component mounts
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    async function fetchReports() {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/reports');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch reports');
+        }
+        
+        const data = await response.json();
+        
+        // Transform the reports to match the format expected by the component
+        const formattedReports = data.reports.map((report: any) => {
+          // Format date from ISO to DD.MM.YYYY
+          const dateObj = new Date(report.date);
+          const formattedDate = dateObj.toLocaleDateString('uk-UA', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          }).replace(/\//g, '.');
+          
+          return {
+            id: report.id,
+            date: formattedDate,
+            market: report.market || '',
+            contractingAgency: report.contractingAgency || '',
+            client: report.client || '',
+            projectBrand: report.projectBrand || '',
+            media: report.media || '',
+            jobType: report.jobType || '',
+            comments: report.comments || '',
+            hours: report.hours / 60, // Convert minutes back to hours for display
+          };
+        });
+        
+        setAllReports(formattedReports);
+      } catch (error) {
+        console.error('Error fetching reports:', error);
+        // Keep the example data if there's an error
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    fetchReports();
+  }, []);
+
   // Фільтрація звітів за вибраною датою
   const getFilteredReports = () => {
     if (!selectedDate) return []
@@ -356,42 +407,59 @@ export function WeeklyCalendar() {
 
   // Функция редактирования записи
   const handleEditReport = (report: any) => {
-    // Find the corresponding IDs for dropdown fields
-    const marketId = markets.find((m) => m.name === report.market)?.id || ""
-    const agencyId = agencies.find((a) => a.name === report.contractingAgency)?.id || ""
-    const clientId = clients.find((c) => c.name === report.client)?.id || ""
-    const mediaId = mediaTypes.find((m) => m.name === report.media)?.id || ""
-    const jobTypeId = jobTypes.find((j) => j.name === report.jobType)?.id || ""
-
-    // Convert hours to minutes (e.g., 1.5 hours = 90 minutes)
-    const minutesValue = Math.round(report.hours * 60).toString()
-
-    // Создаем объект с данными для редактирования, включая все необходимые поля
-    const editData = {
-      ...report,
-      market: marketId || report.market, // Используем ID если найден, иначе оставляем имя
-      contractingAgency: agencyId || report.contractingAgency,
-      client: clientId || report.client,
-      media: mediaId || report.media,
-      jobType: jobTypeId || report.jobType,
-      hours: minutesValue, // Convert hours to minutes
+    // Parse the date from the report
+    const [day, month, year] = report.date.split(".")
+    const reportDate = new Date(`${year}-${month}-${day}`)
+    setSelectedDate(reportDate)
+    
+    // Преобразуем названия в ID для селекторов
+    const findIdByName = (items: Array<{id: string, name: string}>, name: string) => {
+      const item = items.find(item => item.name === name)
+      return item ? item.id : name
     }
-
-    console.log("Данные для редактирования:", editData)
     
-    // Устанавливаем данные для редактирования
-    setEditingReport(editData);
+    // Convert hours to minutes for the form
+    const hoursToMinutes = Math.round(report.hours * 60);
     
-    // Открываем форму в режиме редактирования
-    setShowEntryForm(true);
-    console.log(`Редагування запису ID: ${report.id}`)
+    const reportForEdit = {
+      ...report,
+      // Convert values to IDs for the form dropdowns
+      market: findIdByName(markets, report.market),
+      contractingAgency: findIdByName(agencies, report.contractingAgency),
+      client: findIdByName(clients, report.client),
+      media: findIdByName(mediaTypes, report.media),
+      jobType: findIdByName(jobTypes, report.jobType),
+      // Update hours to minutes for the form
+      hours: hoursToMinutes.toString(),
+    }
+    
+    setEditingReport(reportForEdit)
+    setShowEntryForm(true)
   }
 
-  // Функція для видалення запису
+  // Delete a report
   const handleDeleteReport = (reportId: number) => {
-    if (confirm(`Ви впевнені, що хочете видалити запис ID: ${reportId}?`)) {
-      setAllReports(allReports.filter((report) => report.id !== reportId))
-      console.log(`Видалення запису ID: ${reportId}`)
+    if (confirm('Ви впевнені, що хочете видалити цей запис?')) {
+      // Delete the report from the API
+      const deleteReport = async () => {
+        try {
+          const response = await fetch(`/api/reports?id=${reportId}`, {
+            method: 'DELETE',
+          });
+          
+          if (!response.ok) {
+            throw new Error('Failed to delete report');
+          }
+          
+          // Update local state after successful deletion
+          setAllReports(allReports.filter((report) => report.id !== reportId));
+        } catch (error) {
+          console.error('Error deleting report:', error);
+          alert('Failed to delete the report. Please try again.');
+        }
+      };
+      
+      deleteReport();
     }
   }
 
@@ -619,21 +687,64 @@ export function WeeklyCalendar() {
                   hours: Number(data.hours) / 60 || 0, // Правильное преобразование минут в часы
                 }
 
-                // Update the report if we're editing an existing one
-                if (editingReport) {
-                  setAllReports(
-                    allReports.map((report) =>
-                      report.id === editingReport.id ? { ...updatedData } : report
-                    ),
-                  )
-                } else {
-                  // Add new report
-                  setAllReports([...allReports, updatedData])
-                }
-
-                // Закрываем форму и очищаем данные одновременно
-                setShowEntryForm(false);
-                setEditingReport(null);
+                // Save the report to the server
+                const saveReport = async () => {
+                  try {
+                    const apiUrl = '/api/reports';
+                    const method = editingReport ? 'PUT' : 'POST';
+                    
+                    // Fetch companies to associate with the report
+                    const companiesToAssociate = [];
+                    if (clientName) companiesToAssociate.push(clientName);
+                    if (agencyName && agencyName !== clientName) companiesToAssociate.push(agencyName);
+                    
+                    // Format the date properly for the database (YYYY-MM-DD)
+                    const dateForDB = selectedDate.toISOString().split('T')[0];
+                    
+                    const response = await fetch(apiUrl, {
+                      method,
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        ...updatedData,
+                        id: editingReport?.id, // Only include ID for updates
+                        date: dateForDB, // Use ISO format for database
+                        hours: Math.round(Number(data.hours)), // Store minutes instead of hours
+                        companies: companiesToAssociate, // Include companies to associate
+                      }),
+                    });
+                    
+                    if (!response.ok) {
+                      throw new Error('Failed to save report');
+                    }
+                    
+                    const result = await response.json();
+                    console.log('Report saved:', result);
+                    
+                    // Update local state after successful save to server
+                    // Update the report if we're editing an existing one
+                    if (editingReport) {
+                      setAllReports(
+                        allReports.map((report) =>
+                          report.id === editingReport.id ? { ...updatedData } : report
+                        ),
+                      )
+                    } else {
+                      // Add new report
+                      setAllReports([...allReports, updatedData])
+                    }
+                    
+                    // Close the form and clear editing state
+                    setShowEntryForm(false);
+                    setEditingReport(null);
+                  } catch (error) {
+                    console.error('Error saving report:', error);
+                    alert('Failed to save the report. Please try again.');
+                  }
+                };
+                
+                saveReport();
               }}
             />
           </CardContent>
