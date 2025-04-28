@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Pencil, Plus, Search, Trash, Download } from "lucide-react"
+import { Pencil, Plus, Search, Trash, Download, AlertCircle } from "lucide-react"
 
 interface Employee {
   id: number;
@@ -36,6 +36,8 @@ export function EmployeesList() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [employeeToDelete, setEmployeeToDelete] = useState<number | null>(null)
   const [editingEmployee, setEditingEmployee] = useState<EditingEmployee | null>(null)
   const [newEmployee, setNewEmployee] = useState({
     name: "",
@@ -192,30 +194,36 @@ export function EmployeesList() {
 
   // Видалення співробітника
   const handleDeleteEmployee = async (id: number) => {
-    if (confirm("Ви впевнені, що хочете видалити цього співробітника?")) {
-      try {
-        const response = await fetch('/api/admin', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            action: 'deleteEmployee',
-            id
-          }),
-        });
-        
-        if (!response.ok) {
-          throw new Error('Failed to delete employee');
-        }
-        
-        // Remove from local state
-        setEmployees(employees.filter((emp) => emp.id !== id));
-      } catch (error) {
-        console.error("Error deleting employee:", error);
-        alert("Failed to delete employee. Please try again.");
+    try {
+      const response = await fetch('/api/admin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'deleteEmployee',
+          id
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete employee');
       }
+      
+      // Remove from local state
+      setEmployees(employees.filter((emp) => emp.id !== id));
+      setIsDeleteDialogOpen(false);
+      setEmployeeToDelete(null);
+    } catch (error) {
+      console.error("Error deleting employee:", error);
+      alert("Failed to delete employee. Please try again.");
     }
+  }
+
+  // Open delete confirmation dialog
+  const confirmDelete = (id: number) => {
+    setEmployeeToDelete(id);
+    setIsDeleteDialogOpen(true);
   }
 
   // Завантаження звіту по співробітнику
@@ -325,6 +333,34 @@ export function EmployeesList() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Видалити співробітника</DialogTitle>
+            <DialogDescription>
+              Ви впевнені, що хочете видалити цього співробітника? Ця дія не може бути скасована.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-center py-4">
+            <div className="rounded-full bg-red-100 p-3">
+              <AlertCircle className="h-6 w-6 text-red-600" />
+            </div>
+          </div>
+          <DialogFooter className="flex space-x-2 sm:justify-center">
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Скасувати
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => employeeToDelete && handleDeleteEmployee(employeeToDelete)}
+            >
+              Видалити
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Card>
         <CardHeader className="pb-3">
@@ -436,7 +472,7 @@ export function EmployeesList() {
                               </DialogContent>
                             )}
                           </Dialog>
-                          <Button variant="ghost" size="icon" onClick={() => handleDeleteEmployee(employee.id)}>
+                          <Button variant="ghost" size="icon" onClick={() => confirmDelete(employee.id)}>
                             <Trash className="h-4 w-4" />
                           </Button>
                           <Button variant="ghost" size="icon" onClick={() => downloadEmployeeReport(employee.id)}>

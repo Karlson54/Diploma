@@ -97,8 +97,36 @@ export async function POST(request: Request) {
     }
     else if (action === 'deleteEmployee') {
       const { id } = body;
-      // TODO: Implement actual DB deletion
-      return NextResponse.json({ success: true });
+      
+      try {
+        // Get the employee to find their Clerk ID
+        const employee = await employeeQueries.getById(id);
+        
+        if (!employee) {
+          return NextResponse.json({ error: "Employee not found" }, { status: 404 });
+        }
+        
+        // Delete the employee from the database
+        const deletedEmployee = await employeeQueries.delete(id);
+        
+        // If employee has a clerkId, delete from Clerk as well
+        if (employee.clerkId) {
+          try {
+            await client.users.deleteUser(employee.clerkId);
+          } catch (clerkError) {
+            console.error("Error deleting user from Clerk:", clerkError);
+            // Continue anyway as we've already deleted from our DB
+          }
+        }
+        
+        return NextResponse.json({ 
+          success: true, 
+          message: `Employee ${employee.name} successfully deleted` 
+        });
+      } catch (error) {
+        console.error("Error deleting employee:", error);
+        return NextResponse.json({ error: "Failed to delete employee" }, { status: 500 });
+      }
     }
     else if (action === 'getCompanies') {
       const companies = await companyQueries.getAll();
