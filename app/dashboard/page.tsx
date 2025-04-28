@@ -3,8 +3,45 @@ import { WeeklyCalendar } from "@/components/weekly-calendar"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { SimpleSidebar } from "@/components/simple-sidebar"
 import { withAuth } from "@/lib/AuthContext"
+import { useEffect, useState } from 'react';
+import { useUser } from '@clerk/nextjs';
 
 function DashboardPage() {
+  const { user, isLoaded } = useUser();
+  const [adminCheckDone, setAdminCheckDone] = useState(false);
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    // Проверяем, является ли пользователь первым и назначаем ему права админа если да
+    const checkFirstUser = async () => {
+      if (isLoaded && user) {
+        try {
+          const response = await fetch('/api/auth/first-user');
+          const data = await response.json();
+          
+          if (data.success && data.isAdmin) {
+            // Первый пользователь, ставший админом
+            setMessage('Вы стали первым администратором системы!');
+            
+            // Обновляем страницу через 2 секунды, чтобы обновить данные о пользователе
+            setTimeout(() => {
+              window.location.reload();
+            }, 2000);
+          }
+          
+          setAdminCheckDone(true);
+        } catch (error) {
+          console.error('Ошибка при проверке первого пользователя:', error);
+          setAdminCheckDone(true);
+        }
+      }
+    };
+    
+    if (!adminCheckDone) {
+      checkFirstUser();
+    }
+  }, [isLoaded, user, adminCheckDone]);
+
   return (
     <div className="flex h-screen bg-gray-50">
       <SimpleSidebar />
@@ -18,5 +55,5 @@ function DashboardPage() {
   )
 }
 
-// Wrap with the auth protection HOC
+// Экспортируем компонент с защитой авторизации
 export default withAuth(DashboardPage);

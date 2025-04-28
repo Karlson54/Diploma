@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Pencil, Plus, Search, Trash, Download, AlertCircle } from "lucide-react"
+import { Pencil, Plus, Search, Trash, AlertCircle } from "lucide-react"
 
 interface Employee {
   id: number;
@@ -226,21 +226,6 @@ export function EmployeesList() {
     setIsDeleteDialogOpen(true);
   }
 
-  // Завантаження звіту по співробітнику
-  const downloadEmployeeReport = async (employeeId: number) => {
-    try {
-      console.log(`Завантаження звіту для співробітника ID: ${employeeId}`);
-      
-      // In a real application, you would call an API endpoint to generate and download a report
-      // For now, we'll just show an alert
-      alert(`Звіт для співробітника ID: ${employeeId} завантажується...`);
-      
-    } catch (error) {
-      console.error("Error downloading report:", error);
-      alert("Failed to download report. Please try again.");
-    }
-  }
-  
   if (loading) {
     return <div>Loading employees...</div>;
   }
@@ -474,9 +459,6 @@ export function EmployeesList() {
                           </Dialog>
                           <Button variant="ghost" size="icon" onClick={() => confirmDelete(employee.id)}>
                             <Trash className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => downloadEmployeeReport(employee.id)}>
-                            <Download className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
