@@ -4,6 +4,29 @@ import { WebhookEvent } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import { employeeQueries } from '@/db/queries';
 import { clerkClient } from '@clerk/nextjs/server';
+import fs from 'fs/promises';
+import path from 'path';
+
+// Simple file-based mutex to prevent race conditions
+async function acquireLock(): Promise<boolean> {
+  const lockFile = path.join(process.cwd(), 'user-creation.lock');
+  try {
+    await fs.writeFile(lockFile, Date.now().toString(), { flag: 'wx' });
+    return true;
+  } catch (error) {
+    // File exists, lock is held
+    return false;
+  }
+}
+
+async function releaseLock(): Promise<void> {
+  const lockFile = path.join(process.cwd(), 'user-creation.lock');
+  try {
+    await fs.unlink(lockFile);
+  } catch (error) {
+    console.error('Error releasing lock:', error);
+  }
+}
 
 export async function POST(req: Request) {
   // Get the headers
@@ -66,8 +89,39 @@ export async function POST(req: Request) {
     }
     
     try {
-      // Check if there are any existing employees
+      // Try to acquire lock before proceeding with user creation
+      const lockAcquired = await acquireLock();
+      if (!lockAcquired) {
+        // Wait a moment and check if user was created by another process
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      // Check if this Clerk user already exists in our database
       const employees = await employeeQueries.getAll();
+      const existingEmployee = employees.find(emp => emp.clerkId === id);
+      
+      if (existingEmployee) {
+        if (lockAcquired) await releaseLock();
+        console.log('User already exists in database, skipping creation');
+        return NextResponse.json({ 
+          success: true, 
+          message: 'User already exists in database',
+          userId: id
+        });
+      }
+      
+      // Check if any employee exists with the same email
+      const emailEmployee = employees.find(emp => emp.email === email);
+      if (emailEmployee) {
+        if (lockAcquired) await releaseLock();
+        console.log('User with this email already exists, skipping creation');
+        return NextResponse.json({ 
+          success: true, 
+          message: 'User with this email already exists',
+          userId: id
+        });
+      }
+      
       const isFirstUser = employees.length === 0;
       
       if (isFirstUser) {
@@ -93,15 +147,18 @@ export async function POST(req: Request) {
           clerkId: id,
         });
         
+        if (lockAcquired) await releaseLock();
         return NextResponse.json({ success: true, isAdmin: true });
       } else {
         // For subsequent users, we won't automatically add them to the database
         // The admin will need to add them manually
         console.log('User created but not added to database (admin needs to add manually)');
         
+        if (lockAcquired) await releaseLock();
         return NextResponse.json({ success: true, isAdmin: false });
       }
     } catch (error) {
+      await releaseLock();
       console.error('Error processing user.created webhook:', error);
       return new Response('Error processing webhook', { status: 500 });
     }
