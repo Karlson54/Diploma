@@ -9,6 +9,8 @@ import { Download, Eye, FileSpreadsheet } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { reportQueries } from "@/db/queries"
 import type { DateRange } from "react-day-picker"
+import ExcelJS from 'exceljs'
+import { ReportExportModal } from "@/components/report-export-modal"
 
 interface ReportTask {
   company: string;
@@ -36,6 +38,8 @@ export function EmployeeReports() {
   
   const [reports, setReports] = useState<Report[]>([])
   const [loading, setLoading] = useState(true)
+  const [showExportModal, setShowExportModal] = useState(false)
+  const [exportData, setExportData] = useState<any[]>([])
 
   // Fetch reports from the database
   useEffect(() => {
@@ -101,16 +105,117 @@ export function EmployeeReports() {
     fetchReports();
   }, [dateRange]);
 
+  // Підготувати дані для експорту
+  const prepareExportData = (reportsToExport: Report[] = reports) => {
+    return reportsToExport.map(report => {
+      const task = report.tasks[0] || {};
+      return {
+        date: report.date,
+        market: 'Європа',
+        agency: 'MediaCom',
+        client: report.companies.split(', ')[0] || '',
+        project: 'N/A',
+        media: 'Radio',
+        jobType: task.description || '',
+        comments: 'Автоматичний експорт',
+        hours: report.totalHours
+      };
+    });
+  }
+
+  // Функція для створення Excel файлу зі звітом або звітами
+  const createReportExcel = async (reportsToExport: Report[]) => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Звіти');
+    
+    // Додаємо заголовки
+    worksheet.columns = [
+      { header: 'Дата', key: 'date', width: 15 },
+      { header: 'Ринок', key: 'market', width: 15 },
+      { header: 'Агентство', key: 'agency', width: 20 },
+      { header: 'Клієнт', key: 'client', width: 20 },
+      { header: 'Проект/Бренд', key: 'project', width: 20 },
+      { header: 'Медіа', key: 'media', width: 15 },
+      { header: 'Тип роботи', key: 'jobType', width: 20 },
+      { header: 'Коментарі', key: 'comments', width: 25 },
+      { header: 'Години', key: 'hours', width: 10 }
+    ];
+    
+    // Стилізуємо заголовки
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE6E6E6' }
+    };
+    
+    // Додаємо дані зі звітів
+    reportsToExport.forEach(report => {
+      const task = report.tasks[0] || {};
+      
+      worksheet.addRow({
+        date: report.date,
+        market: 'Європа', // Припускаємо, що це за замовчуванням
+        agency: 'MediaCom', // Припускаємо, що це за замовчуванням
+        client: report.companies.split(', ')[0] || '',
+        project: 'N/A',
+        media: 'Radio', // Припускаємо, що це за замовчуванням
+        jobType: task.description || '',
+        comments: 'Автоматичний експорт', // Припускаємо, що це за замовчуванням
+        hours: report.totalHours
+      });
+    });
+    
+    // Встановлюємо рамки для всіх клітинок
+    worksheet.eachRow({ includeEmpty: false }, row => {
+      row.eachCell({ includeEmpty: false }, cell => {
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+      });
+    });
+    
+    // Створюємо буфер з даними Excel
+    return workbook.xlsx.writeBuffer();
+  }
+
   // Функція для завантаження звіту
-  const downloadReport = (reportId: number) => {
-    console.log(`Завантаження звіту ID: ${reportId}`)
-    alert(`Звіт ID: ${reportId} завантажується у форматі Excel...`)
+  const downloadReport = async (reportId: number) => {
+    try {
+      const report = reports.find(r => r.id === reportId);
+      if (!report) {
+        throw new Error(`Звіт з ID ${reportId} не знайдено`);
+      }
+      
+      // Підготувати дані для модального вікна
+      const exportData = prepareExportData([report]);
+      setExportData(exportData);
+      setShowExportModal(true);
+    } catch (error) {
+      console.error('Помилка при завантаженні звіту:', error);
+      alert('Виникла помилка при створенні Excel файлу');
+    }
   }
 
   // Функція для завантаження всіх звітів
-  const downloadAllReports = () => {
-    console.log("Завантаження всіх звітів")
-    alert("Всі звіти завантажуються у форматі Excel...")
+  const downloadAllReports = async () => {
+    try {
+      if (reports.length === 0) {
+        alert('Немає звітів для експорту');
+        return;
+      }
+      
+      // Підготувати дані для модального вікна
+      const exportData = prepareExportData();
+      setExportData(exportData);
+      setShowExportModal(true);
+    } catch (error) {
+      console.error('Помилка при завантаженні всіх звітів:', error);
+      alert('Виникла помилка при створенні Excel файлу');
+    }
   }
 
   // Функція для перегляду деталей звіту
@@ -352,6 +457,12 @@ export function EmployeeReports() {
           </CardContent>
         </Card>
       )}
+
+      <ReportExportModal 
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        reportData={exportData}
+      />
     </div>
   )
 }

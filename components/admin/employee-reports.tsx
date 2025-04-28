@@ -18,6 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import ExcelJS from 'exceljs'
 
 interface Employee {
   id: number;
@@ -163,34 +164,139 @@ export function EmployeeReports() {
       ? reports
       : reports.filter((report) => report.employeeId === Number.parseInt(selectedEmployee))
 
-  // Функція для відкриття діалогу завантаження звіту
-  const openDownloadDialog = (reportId: number) => {
-    const report = reports.find((r) => r.id === reportId)
-    if (report) {
-      setSelectedReport(report)
-      setShowDownloadDialog(true)
+  // Функція для створення та завантаження Excel файлу
+  const createAndDownloadExcel = async (reportsToExport: Report[], fileName: string) => {
+    try {
+      // Create a new workbook and worksheet
+      const workbook = new ExcelJS.Workbook()
+      const worksheet = workbook.addWorksheet('Звіти')
+      
+      // Define columns based on selected columns
+      const columns = []
+      if (selectedColumns.date) columns.push({ header: 'Дата', key: 'date', width: 15 })
+      if (selectedColumns.market) columns.push({ header: 'Ринок', key: 'market', width: 15 })
+      if (selectedColumns.contractingAgency) columns.push({ header: 'Агентство', key: 'contractingAgency', width: 20 })
+      if (selectedColumns.client) columns.push({ header: 'Клієнт', key: 'client', width: 20 })
+      if (selectedColumns.projectBrand) columns.push({ header: 'Проект/Бренд', key: 'projectBrand', width: 20 })
+      if (selectedColumns.media) columns.push({ header: 'Медіа', key: 'media', width: 15 })
+      if (selectedColumns.jobType) columns.push({ header: 'Тип роботи', key: 'jobType', width: 20 })
+      if (selectedColumns.comments) columns.push({ header: 'Коментарі', key: 'comments', width: 25 })
+      if (selectedColumns.hours) columns.push({ header: 'Години', key: 'hours', width: 10 })
+      
+      worksheet.columns = columns
+      
+      // Style the headers
+      worksheet.getRow(1).font = { bold: true }
+      worksheet.getRow(1).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE6E6E6' }
+      }
+      
+      // Add data rows
+      reportsToExport.forEach(report => {
+        const rowData: any = {}
+        if (selectedColumns.date) rowData.date = report.date
+        if (selectedColumns.market) rowData.market = report.market
+        if (selectedColumns.contractingAgency) rowData.contractingAgency = report.contractingAgency
+        if (selectedColumns.client) rowData.client = report.client
+        if (selectedColumns.projectBrand) rowData.projectBrand = report.projectBrand
+        if (selectedColumns.media) rowData.media = report.media
+        if (selectedColumns.jobType) rowData.jobType = report.jobType
+        if (selectedColumns.comments) rowData.comments = report.comments
+        if (selectedColumns.hours) rowData.hours = report.hours
+        
+        worksheet.addRow(rowData)
+      })
+      
+      // Add borders to all cells
+      worksheet.eachRow({ includeEmpty: false }, row => {
+        row.eachCell({ includeEmpty: false }, cell => {
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          }
+        })
+      })
+      
+      // Generate Excel file
+      const buffer = await workbook.xlsx.writeBuffer()
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      const url = URL.createObjectURL(blob)
+      
+      // Create download link
+      const a = document.createElement('a')
+      a.href = url
+      a.download = fileName
+      a.click()
+      
+      // Clean up
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Помилка при створенні Excel файлу:', error)
+      alert('Виникла помилка при створенні Excel файлу')
     }
   }
 
   // Функція для завантаження звіту з вибраними стовпцями
-  const handleDownloadWithColumns = () => {
+  const handleDownloadWithColumns = async () => {
     if (!selectedReport) return;
     
-    console.log(`Завантаження звіту ID: ${selectedReport.id} з вибраними стовпцями:`, selectedColumns)
-    alert(`Звіт ID: ${selectedReport.id} завантажується у форматі Excel з вибраними стовпцями`)
-    setShowDownloadDialog(false)
+    try {
+      await createAndDownloadExcel(
+        [selectedReport], 
+        `Звіт_${selectedReport.employee.replace(/\s+/g, '_')}_${selectedReport.date.replace(/\./g, '-')}.xlsx`
+      )
+      setShowDownloadDialog(false)
+    } catch (error) {
+      console.error('Помилка при завантаженні звіту:', error)
+      alert('Виникла помилка при створенні Excel файлу')
+    }
   }
 
   // Функция для скачивания всех отчетов в Excel формате
-  const downloadAllReports = () => {
-    console.log("Завантаження всіх звітів")
-    alert("Всі звіти завантажуються у форматі Excel...")
+  const downloadAllReports = async () => {
+    try {
+      const reportsToExport = filteredReports
+      if (reportsToExport.length === 0) {
+        alert('Немає звітів для експорту')
+        return
+      }
+      
+      const employeeInfo = selectedEmployee === 'all' 
+        ? 'All_Employees' 
+        : employees.find(e => e.id.toString() === selectedEmployee)?.name.replace(/\s+/g, '_') || 'Employee'
+      
+      const fromDate = dateRange.from.toLocaleDateString().replace(/\./g, '-')
+      const toDate = dateRange.to.toLocaleDateString().replace(/\./g, '-')
+      
+      await createAndDownloadExcel(
+        reportsToExport,
+        `Звіти_${employeeInfo}_${fromDate}_${toDate}.xlsx`
+      )
+    } catch (error) {
+      console.error('Помилка при завантаженні всіх звітів:', error)
+      alert('Виникла помилка при створенні Excel файлу')
+    }
   }
 
   // Function to download a report
-  const downloadReport = (employeeId: number) => {
-    console.log(`Downloading report for employee ID: ${employeeId}`)
-    alert(`Report for employee ID: ${employeeId} is being downloaded in Excel format...`)
+  const downloadReport = async (reportId: number) => {
+    try {
+      const report = reports.find(r => r.id === reportId)
+      if (!report) {
+        alert(`Звіт з ID ${reportId} не знайдено`)
+        return
+      }
+      
+      setSelectedReport(report)
+      setShowDownloadDialog(true)
+    } catch (error) {
+      console.error(`Помилка при завантаженні звіту ID: ${reportId}:`, error)
+      alert('Виникла помилка при створенні Excel файлу')
+    }
   }
 
   if (loading) {
@@ -311,7 +417,7 @@ export function EmployeeReports() {
                               <Eye className="h-4 w-4" />
                               <span className="sr-only">Перегляд</span>
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => openDownloadDialog(report.id)}>
+                            <Button variant="ghost" size="icon" onClick={() => downloadReport(report.id)}>
                               <Download className="h-4 w-4" />
                               <span className="sr-only">Завантажити</span>
                             </Button>
