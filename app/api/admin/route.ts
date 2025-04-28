@@ -28,7 +28,30 @@ export async function POST(request: Request) {
     
     if (action === 'getEmployees') {
       const employees = await employeeQueries.getAll();
-      return NextResponse.json({ employees });
+      
+      // For each employee with a clerkId, get their role information
+      const enhancedEmployees = await Promise.all(
+        employees.map(async (employee) => {
+          let isAdmin = false;
+          
+          // If employee has a clerkId, check if they have admin role
+          if (employee.clerkId) {
+            try {
+              const clerkUser = await client.users.getUser(employee.clerkId);
+              isAdmin = clerkUser.publicMetadata.role === 'admin';
+            } catch (error) {
+              console.error(`Error fetching Clerk user for employee ${employee.id}:`, error);
+            }
+          }
+          
+          return {
+            ...employee,
+            isAdmin
+          };
+        })
+      );
+      
+      return NextResponse.json({ employees: enhancedEmployees });
     } 
     else if (action === 'addEmployee') {
       const { employee } = body;
@@ -92,8 +115,67 @@ export async function POST(request: Request) {
     }
     else if (action === 'updateEmployee') {
       const { employee } = body;
-      // TODO: Implement actual DB update
-      return NextResponse.json({ success: true });
+      
+      try {
+        // First verify that the requester is admin
+        const { userId } = await auth();
+        
+        if (!userId) {
+          return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        
+        // Get the admin user to check if they have admin role
+        const adminUser = await client.users.getUser(userId);
+        const isAdmin = adminUser.publicMetadata.role === 'admin';
+        
+        if (!isAdmin) {
+          return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+        }
+        
+        // Get the employee to find their Clerk ID
+        const existingEmployee = await employeeQueries.getById(employee.id);
+        
+        if (!existingEmployee) {
+          return NextResponse.json({ error: "Employee not found" }, { status: 404 });
+        }
+        
+        // Update employee in the database
+        const updatedEmployee = await employeeQueries.update(employee.id, {
+          name: employee.name,
+          email: employee.email,
+          position: employee.position,
+          department: employee.department,
+          status: employee.status || 'Active',
+        });
+        
+        // If employee has a clerkId, update Clerk user with admin role if changed
+        if (existingEmployee.clerkId) {
+          try {
+            // Handle admin role update if necessary
+            if (employee.isAdmin !== undefined) {
+              await client.users.updateUser(existingEmployee.clerkId, {
+                publicMetadata: {
+                  role: employee.isAdmin ? 'admin' : 'user'
+                }
+              });
+            }
+          } catch (clerkError) {
+            console.error("Error updating user in Clerk:", clerkError);
+            return NextResponse.json({ 
+              error: "Employee data updated but role change failed" 
+            }, { status: 500 });
+          }
+        }
+        
+        return NextResponse.json({ 
+          success: true, 
+          employee: updatedEmployee,
+          message: `Employee ${employee.name} updated successfully`
+        });
+      } catch (error) {
+        console.error("Error updating employee:", error);
+        return NextResponse.json({ error: "Failed to update employee" }, { status: 500 });
+      }
     }
     else if (action === 'deleteEmployee') {
       const { id } = body;
@@ -180,6 +262,19 @@ export async function POST(request: Request) {
       const { company } = body;
       
       try {
+        // Validate required fields
+        if (!company.name || !company.contact || !company.email || !company.phone) {
+          return NextResponse.json({ 
+            error: "Required fields missing: name, contact, email, and phone are required" 
+          }, { status: 400 });
+        }
+        
+        // Check if company exists
+        const existingCompany = await companyQueries.getById(company.id);
+        if (!existingCompany) {
+          return NextResponse.json({ error: "Company not found" }, { status: 404 });
+        }
+        
         // Update the company in the database
         const updatedCompany = await companyQueries.update(company.id, {
           name: company.name,
@@ -190,7 +285,11 @@ export async function POST(request: Request) {
           notes: company.notes || null
         });
         
-        return NextResponse.json({ success: true, company: updatedCompany });
+        return NextResponse.json({ 
+          success: true, 
+          company: updatedCompany,
+          message: "Company updated successfully"
+        });
       } catch (error) {
         console.error("Error updating company:", error);
         return NextResponse.json({ error: "Failed to update company" }, { status: 500 });

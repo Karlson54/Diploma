@@ -53,7 +53,34 @@ export const companyQueries = {
   
   // Update a company
   update: async (id: number, data: Partial<typeof companies.$inferInsert>) => {
-    return db.update(companies).set(data).where(eq(companies.id, id)).returning().get();
+    try {
+      // Make sure we have valid data to update
+      if (Object.keys(data).length === 0) {
+        throw new Error('No data provided for update');
+      }
+      
+      // Get the existing company to verify it exists
+      const existingCompany = await db.select()
+        .from(companies)
+        .where(eq(companies.id, id))
+        .get();
+        
+      if (!existingCompany) {
+        throw new Error(`Company with ID ${id} not found`);
+      }
+      
+      // Perform the update
+      const updated = await db.update(companies)
+        .set(data)
+        .where(eq(companies.id, id))
+        .returning()
+        .get();
+        
+      return updated;
+    } catch (error) {
+      console.error("Error updating company:", error);
+      throw error;
+    }
   },
   
   // Delete a company

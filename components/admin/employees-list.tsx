@@ -26,6 +26,7 @@ interface Employee {
   department: string;
   joinDate: string;
   status: string;
+  isAdmin?: boolean;
 }
 
 interface EditingEmployee extends Employee {}
@@ -39,6 +40,8 @@ export function EmployeesList() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [employeeToDelete, setEmployeeToDelete] = useState<number | null>(null)
   const [editingEmployee, setEditingEmployee] = useState<EditingEmployee | null>(null)
+  const [isUpdating, setIsUpdating] = useState<number | null>(null)
+  const [updateMessage, setUpdateMessage] = useState<string | null>(null)
   const [newEmployee, setNewEmployee] = useState({
     name: "",
     email: "",
@@ -80,7 +83,9 @@ export function EmployeesList() {
             ...emp,
             joinDate,
             // Set default status if not present
-            status: emp.status || 'Активний'
+            status: emp.status || 'Активний',
+            // Check if user has admin role
+            isAdmin: emp.isAdmin || false
           };
         });
         
@@ -165,6 +170,9 @@ export function EmployeesList() {
     if (!editingEmployee) return;
     
     try {
+      setIsUpdating(editingEmployee.id);
+      setUpdateMessage(null);
+      
       const response = await fetch('/api/admin', {
         method: 'POST',
         headers: {
@@ -176,8 +184,10 @@ export function EmployeesList() {
         }),
       });
       
+      const result = await response.json();
+      
       if (!response.ok) {
-        throw new Error('Failed to update employee');
+        throw new Error(result.error || 'Failed to update employee');
       }
       
       // Update local state
@@ -185,10 +195,19 @@ export function EmployeesList() {
         emp.id === editingEmployee.id ? editingEmployee : emp
       ));
       
-      setIsEditDialogOpen(false);
+      // Show success message
+      setUpdateMessage(result.message || 'Employee updated successfully');
+      
+      // Close the dialog after a short delay
+      setTimeout(() => {
+        setIsEditDialogOpen(false);
+        setUpdateMessage(null);
+      }, 1500);
     } catch (error) {
       console.error("Error updating employee:", error);
-      alert("Failed to update employee. Please try again.");
+      setUpdateMessage('Failed to update employee. Please try again.');
+    } finally {
+      setIsUpdating(null);
     }
   }
 
@@ -384,6 +403,11 @@ export function EmployeesList() {
                           <div className="text-sm text-gray-500">{employee.email}</div>
                           <div className="text-xs text-gray-400 mt-1">
                             {employee.position}, {employee.department}
+                            {employee.isAdmin && (
+                              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
+                                Адміністратор
+                              </span>
+                            )}
                           </div>
                         </div>
                         <div className="flex gap-2">
@@ -447,13 +471,50 @@ export function EmployeesList() {
                                       </Select>
                                     </div>
                                   </div>
+                                  <div className="space-y-2 mt-4">
+                                    <div className="flex items-center space-x-2">
+                                      <input
+                                        type="checkbox"
+                                        id="edit-admin-role"
+                                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                        checked={editingEmployee.isAdmin}
+                                        onChange={(e) => setEditingEmployee({ 
+                                          ...editingEmployee, 
+                                          isAdmin: e.target.checked 
+                                        })}
+                                      />
+                                      <Label htmlFor="edit-admin-role" className="font-medium">
+                                        Права адміністратора
+                                      </Label>
+                                    </div>
+                                    <p className="text-sm text-gray-500">
+                                      Надає повний доступ до адміністративної панелі та управління користувачами
+                                    </p>
+                                  </div>
                                 </div>
                                 <DialogFooter>
                                   <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                                     Скасувати
                                   </Button>
-                                  <Button onClick={handleEditEmployee}>Зберегти</Button>
+                                  <Button 
+                                    onClick={handleEditEmployee}
+                                    disabled={isUpdating === editingEmployee?.id}
+                                  >
+                                    {isUpdating === editingEmployee?.id ? (
+                                      <span className="flex items-center gap-2">
+                                        <span className="animate-spin h-4 w-4 border-2 border-white rounded-full border-t-transparent" />
+                                        Оновлення...
+                                      </span>
+                                    ) : (
+                                      'Зберегти'
+                                    )}
+                                  </Button>
                                 </DialogFooter>
+                                {updateMessage && (
+                                  <div className={`mt-2 p-2 text-center rounded ${updateMessage.includes('Failed') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                                    {updateMessage}
+                                  </div>
+                                )}
                               </DialogContent>
                             )}
                           </Dialog>

@@ -35,6 +35,8 @@ export function CompanyManagement() {
   const [companies, setCompanies] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
   const [isDeleting, setIsDeleting] = useState<number | null>(null)
+  const [isUpdating, setIsUpdating] = useState<number | null>(null)
+  const [updateMessage, setUpdateMessage] = useState<string | null>(null)
 
   const [newCompany, setNewCompany] = useState<Omit<Company, 'id'>>({
     name: "",
@@ -125,6 +127,9 @@ export function CompanyManagement() {
     if (!editingCompany) return;
     
     try {
+      setIsUpdating(editingCompany.id);
+      setUpdateMessage(null);
+      
       const response = await fetch('/api/admin', {
         method: 'POST',
         headers: {
@@ -136,8 +141,10 @@ export function CompanyManagement() {
         }),
       });
       
+      const result = await response.json();
+      
       if (!response.ok) {
-        throw new Error('Failed to update company');
+        throw new Error(result.error || 'Failed to update company');
       }
       
       // Update the local state with edited company
@@ -145,10 +152,19 @@ export function CompanyManagement() {
         company.id === editingCompany.id ? { ...editingCompany } : company
       ));
       
-      setIsEditDialogOpen(false);
+      // Show success message
+      setUpdateMessage(result.message || 'Company updated successfully');
+      
+      // Close the dialog after a short delay
+      setTimeout(() => {
+        setIsEditDialogOpen(false);
+        setUpdateMessage(null);
+      }, 1500);
     } catch (error) {
       console.error("Error updating company:", error);
-      alert("Failed to update company. Please try again.");
+      setUpdateMessage('Failed to update company. Please try again.');
+    } finally {
+      setIsUpdating(null);
     }
   }
 
@@ -380,8 +396,25 @@ export function CompanyManagement() {
                                 <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                                   Скасувати
                                 </Button>
-                                <Button onClick={handleEditCompany}>Зберегти</Button>
+                                <Button 
+                                  onClick={handleEditCompany} 
+                                  disabled={isUpdating === editingCompany?.id}
+                                >
+                                  {isUpdating === editingCompany?.id ? (
+                                    <span className="flex items-center gap-2">
+                                      <span className="animate-spin h-4 w-4 border-2 border-white rounded-full border-t-transparent" />
+                                      Оновлення...
+                                    </span>
+                                  ) : (
+                                    'Зберегти'
+                                  )}
+                                </Button>
                               </DialogFooter>
+                              {updateMessage && (
+                                <div className={`mt-2 p-2 text-center rounded ${updateMessage.includes('Failed') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                                  {updateMessage}
+                                </div>
+                              )}
                             </DialogContent>
                           )}
                         </Dialog>
