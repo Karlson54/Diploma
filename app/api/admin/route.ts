@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { employeeQueries, companyQueries, reportQueries } from '@/db/queries';
+import { auth } from '@clerk/nextjs/server';
+import { clerkClient } from '@clerk/nextjs/server'
 
 // Get dashboard stats
 export async function GET(request: Request) {
@@ -19,6 +21,7 @@ export async function GET(request: Request) {
 
 // Employee data endpoint
 export async function POST(request: Request) {
+  const client = await clerkClient()
   try {
     const body = await request.json();
     const { action } = body;
@@ -29,9 +32,63 @@ export async function POST(request: Request) {
     } 
     else if (action === 'addEmployee') {
       const { employee } = body;
-      // TODO: Implement actual DB insertion
-      const newEmployeeId = Math.floor(Math.random() * 10000) + 100; // Mock ID generation
-      return NextResponse.json({ id: newEmployeeId, success: true });
+      
+      try {
+        // First verify that the requester is admin
+        const { userId } = await auth();
+        
+        if (!userId) {
+          return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        
+        // Get the admin user to check if they have admin role
+        const adminUser = await client.users.getUser(userId);
+        const isAdmin = adminUser.publicMetadata.role === 'admin';
+        
+        if (!isAdmin) {
+          return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+        }
+        
+        // Required fields check
+        if (!employee.email || !employee.password || !employee.name) {
+          return NextResponse.json({ error: 'Email, password and name are required' }, { status: 400 });
+        }
+        
+        // First create a user in Clerk
+        const newUser = await client.users.createUser({
+          emailAddress: [employee.email],
+          password: employee.password,
+        });
+        
+        
+        // Then add the employee to the database
+        const today = new Date().toISOString();
+        
+        const newEmployee = await employeeQueries.add({
+          name: employee.name,
+          email: employee.email,
+          position: employee.position,
+          department: employee.department,
+          joinDate: today,
+          status: employee.status,
+          clerkId: newUser.id,
+        });
+        
+        return NextResponse.json({ 
+          id: newEmployee.id, 
+          userId: newUser.id,
+          success: true 
+        });
+      } catch (error: any) {
+        console.error("Error adding employee:", error);
+        console.log(error.errors);
+        return NextResponse.json({ 
+          error: error.message || "Failed to add employee" 
+        }, { 
+          status: error.status || 500 
+        });
+        
+      }
     }
     else if (action === 'updateEmployee') {
       const { employee } = body;

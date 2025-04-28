@@ -10,6 +10,7 @@ export const employees = sqliteTable('employees', {
   department: text('department').notNull(),
   joinDate: text('join_date').notNull(),
   status: text('status').notNull(),
+  clerkId: text('clerk_id'),
 });
 
 // Companies table

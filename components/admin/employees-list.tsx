@@ -43,6 +43,7 @@ export function EmployeesList() {
     position: "",
     department: "",
     status: "Активний",
+    password: "",
   })
 
   useEffect(() => {
@@ -104,6 +105,7 @@ export function EmployeesList() {
   // Додавання нового співробітника
   const handleAddEmployee = async () => {
     try {
+      // Use the combined endpoint for adding employee with Clerk user
       const response = await fetch('/api/admin', {
         method: 'POST',
         headers: {
@@ -116,7 +118,8 @@ export function EmployeesList() {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to add employee');
+        const errorData = await response.json();
+        throw new Error(`Failed to add employee: ${errorData.error || 'Unknown error'}`);
       }
       
       const result = await response.json();
@@ -146,6 +149,7 @@ export function EmployeesList() {
         position: "",
         department: "",
         status: "Активний",
+        password: "",
       });
       setIsAddDialogOpen(false);
     } catch (error) {
@@ -274,6 +278,15 @@ export function EmployeesList() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
+                  <Label htmlFor="password">Пароль</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={newEmployee.password}
+                    onChange={(e) => setNewEmployee({ ...newEmployee, password: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="position">Посада</Label>
                   <Input
                     id="position"
@@ -281,6 +294,8 @@ export function EmployeesList() {
                     onChange={(e) => setNewEmployee({ ...newEmployee, position: e.target.value })}
                   />
                 </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="department">Відділ</Label>
                   <Select
