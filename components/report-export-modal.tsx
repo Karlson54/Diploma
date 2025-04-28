@@ -13,10 +13,13 @@ interface ReportData {
   agency: string
   client: string
   project: string
+  projectBrand?: string
   media: string
   jobType: string
   comments: string
   hours: number
+  fullName?: string
+  company?: string
 }
 
 interface ReportExportModalProps {
@@ -36,6 +39,8 @@ export function ReportExportModal({ isOpen, onClose, reportData }: ReportExportM
     jobType: true,
     comments: true,
     hours: true,
+    fullName: true,
+    company: true,
   })
 
   // Ensure previewData has content even if reportData is empty
@@ -64,6 +69,8 @@ export function ReportExportModal({ isOpen, onClose, reportData }: ReportExportM
         jobType: true,
         comments: true,
         hours: true,
+        fullName: true,
+        company: true,
       })
     }
   }, [isOpen])
@@ -94,15 +101,17 @@ export function ReportExportModal({ isOpen, onClose, reportData }: ReportExportM
 
       // Define columns based on selected options
       const columns = []
-      if (selectedColumns.date) columns.push({ header: 'Дата', key: 'date', width: 15 })
-      if (selectedColumns.market) columns.push({ header: 'Ринок', key: 'market', width: 15 })
-      if (selectedColumns.agency) columns.push({ header: 'Агентство', key: 'agency', width: 20 })
-      if (selectedColumns.client) columns.push({ header: 'Клієнт', key: 'client', width: 20 })
-      if (selectedColumns.project) columns.push({ header: 'Проект/Бренд', key: 'project', width: 20 })
-      if (selectedColumns.media) columns.push({ header: 'Медіа', key: 'media', width: 15 })
-      if (selectedColumns.jobType) columns.push({ header: 'Тип роботи', key: 'jobType', width: 20 })
-      if (selectedColumns.comments) columns.push({ header: 'Коментарі', key: 'comments', width: 25 })
-      if (selectedColumns.hours) columns.push({ header: 'Години', key: 'hours', width: 10 })
+      if (selectedColumns.agency) columns.push({ header: 'Agency', key: 'agency', width: 15 })
+      if (selectedColumns.fullName) columns.push({ header: 'Name', key: 'fullName', width: 20 })
+      if (selectedColumns.date) columns.push({ header: 'Date', key: 'date', width: 15 })
+      if (selectedColumns.market) columns.push({ header: 'Market', key: 'market', width: 15 })
+      if (selectedColumns.company) columns.push({ header: 'Contracting Agency / Unit', key: 'company', width: 20 })
+      if (selectedColumns.client) columns.push({ header: 'Client', key: 'client', width: 20 })
+      if (selectedColumns.project) columns.push({ header: 'Project / brand', key: 'project', width: 20 })
+      if (selectedColumns.media) columns.push({ header: 'Media', key: 'media', width: 15 })
+      if (selectedColumns.jobType) columns.push({ header: 'Job type', key: 'jobType', width: 20 })
+      if (selectedColumns.hours) columns.push({ header: 'Hours', key: 'hours', width: 10 })
+      if (selectedColumns.comments) columns.push({ header: 'Comments', key: 'comments', width: 25 })
 
       worksheet.columns = columns
 
@@ -117,15 +126,17 @@ export function ReportExportModal({ isOpen, onClose, reportData }: ReportExportM
       // Add data rows
       reportData.forEach(row => {
         const rowData: any = {}
+        if (selectedColumns.agency) rowData.agency = row.agency
+        if (selectedColumns.fullName) rowData.fullName = row.fullName || 'Unknown'
         if (selectedColumns.date) rowData.date = row.date
         if (selectedColumns.market) rowData.market = row.market
-        if (selectedColumns.agency) rowData.agency = row.agency
+        if (selectedColumns.company) rowData.company = row.company || 'MediaCom'
         if (selectedColumns.client) rowData.client = row.client
-        if (selectedColumns.project) rowData.project = row.project
+        if (selectedColumns.project) rowData.project = row.projectBrand || row.project || 'N/A'
         if (selectedColumns.media) rowData.media = row.media
         if (selectedColumns.jobType) rowData.jobType = row.jobType
-        if (selectedColumns.comments) rowData.comments = row.comments
         if (selectedColumns.hours) rowData.hours = row.hours
+        if (selectedColumns.comments) rowData.comments = row.comments
 
         worksheet.addRow(rowData)
       })
@@ -164,23 +175,39 @@ export function ReportExportModal({ isOpen, onClose, reportData }: ReportExportM
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-5xl">
         <DialogHeader>
-          <DialogTitle>Завантаження звіту</DialogTitle>
+          <DialogTitle>Завантажити звіт</DialogTitle>
         </DialogHeader>
         <div className="py-4">
           <p className="text-sm text-gray-500 mb-4">
-            Оберіть стовпці для завантаження та перегляньте попередній вигляд таблиці
+            Оберіть стовпці для включення в Excel звіт
           </p>
           
-          <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="flex flex-row flex-wrap gap-4 mb-6">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="agency"
+                checked={selectedColumns.agency}
+                onCheckedChange={() => toggleColumn('agency')}
+              />
+              <label htmlFor="agency" className="text-sm font-medium">Agency</label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="fullName"
+                checked={selectedColumns.fullName}
+                onCheckedChange={() => toggleColumn('fullName')}
+              />
+              <label htmlFor="fullName" className="text-sm font-medium">Name</label>
+            </div>
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="date"
                 checked={selectedColumns.date}
                 onCheckedChange={() => toggleColumn('date')}
               />
-              <label htmlFor="date" className="text-sm font-medium">Дата</label>
+              <label htmlFor="date" className="text-sm font-medium">Date</label>
             </div>
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -188,15 +215,15 @@ export function ReportExportModal({ isOpen, onClose, reportData }: ReportExportM
                 checked={selectedColumns.market}
                 onCheckedChange={() => toggleColumn('market')}
               />
-              <label htmlFor="market" className="text-sm font-medium">Ринок</label>
+              <label htmlFor="market" className="text-sm font-medium">Market</label>
             </div>
             <div className="flex items-center space-x-2">
               <Checkbox
-                id="agency"
-                checked={selectedColumns.agency}
-                onCheckedChange={() => toggleColumn('agency')}
+                id="company"
+                checked={selectedColumns.company}
+                onCheckedChange={() => toggleColumn('company')}
               />
-              <label htmlFor="agency" className="text-sm font-medium">Агентство</label>
+              <label htmlFor="company" className="text-sm font-medium">Contracting Agency / Unit</label>
             </div>
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -204,7 +231,7 @@ export function ReportExportModal({ isOpen, onClose, reportData }: ReportExportM
                 checked={selectedColumns.client}
                 onCheckedChange={() => toggleColumn('client')}
               />
-              <label htmlFor="client" className="text-sm font-medium">Клієнт</label>
+              <label htmlFor="client" className="text-sm font-medium">Client</label>
             </div>
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -212,7 +239,7 @@ export function ReportExportModal({ isOpen, onClose, reportData }: ReportExportM
                 checked={selectedColumns.project}
                 onCheckedChange={() => toggleColumn('project')}
               />
-              <label htmlFor="project" className="text-sm font-medium">Проект/Бренд</label>
+              <label htmlFor="project" className="text-sm font-medium">Project / brand</label>
             </div>
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -220,7 +247,7 @@ export function ReportExportModal({ isOpen, onClose, reportData }: ReportExportM
                 checked={selectedColumns.media}
                 onCheckedChange={() => toggleColumn('media')}
               />
-              <label htmlFor="media" className="text-sm font-medium">Медіа</label>
+              <label htmlFor="media" className="text-sm font-medium">Media</label>
             </div>
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -228,15 +255,7 @@ export function ReportExportModal({ isOpen, onClose, reportData }: ReportExportM
                 checked={selectedColumns.jobType}
                 onCheckedChange={() => toggleColumn('jobType')}
               />
-              <label htmlFor="jobType" className="text-sm font-medium">Тип роботи</label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="comments"
-                checked={selectedColumns.comments}
-                onCheckedChange={() => toggleColumn('comments')}
-              />
-              <label htmlFor="comments" className="text-sm font-medium">Коментарі</label>
+              <label htmlFor="jobType" className="text-sm font-medium">Job type</label>
             </div>
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -244,36 +263,50 @@ export function ReportExportModal({ isOpen, onClose, reportData }: ReportExportM
                 checked={selectedColumns.hours}
                 onCheckedChange={() => toggleColumn('hours')}
               />
-              <label htmlFor="hours" className="text-sm font-medium">Години</label>
+              <label htmlFor="hours" className="text-sm font-medium">Hours</label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="comments"
+                checked={selectedColumns.comments}
+                onCheckedChange={() => toggleColumn('comments')}
+              />
+              <label htmlFor="comments" className="text-sm font-medium">Comments</label>
             </div>
           </div>
           
           <h3 className="text-sm font-medium mb-2">Попередній перегляд таблиці</h3>
-          <div className="border rounded-md overflow-auto max-h-64">
-            <Table>
+          <div className="border rounded-md overflow-auto" style={{ maxHeight: "400px" }}>
+            <Table className="min-w-full">
               <TableHeader>
-                {selectedColumns.date && <TableHead>Дата</TableHead>}
-                {selectedColumns.market && <TableHead>Ринок</TableHead>}
-                {selectedColumns.agency && <TableHead>Агентство</TableHead>}
-                {selectedColumns.client && <TableHead>Клієнт</TableHead>}
-                {selectedColumns.project && <TableHead>Проект/Бренд</TableHead>}
-                {selectedColumns.media && <TableHead>Медіа</TableHead>}
-                {selectedColumns.jobType && <TableHead>Тип роботи</TableHead>}
-                {selectedColumns.comments && <TableHead>Коментарі</TableHead>}
-                {selectedColumns.hours && <TableHead>Години</TableHead>}
+                <TableRow>
+                  {selectedColumns.agency && <TableHead>Agency</TableHead>}
+                  {selectedColumns.fullName && <TableHead>Name</TableHead>}
+                  {selectedColumns.date && <TableHead>Date</TableHead>}
+                  {selectedColumns.market && <TableHead>Market</TableHead>}
+                  {selectedColumns.company && <TableHead>Contracting Agency / Unit</TableHead>}
+                  {selectedColumns.client && <TableHead>Client</TableHead>}
+                  {selectedColumns.project && <TableHead>Project / brand</TableHead>}
+                  {selectedColumns.media && <TableHead>Media</TableHead>}
+                  {selectedColumns.jobType && <TableHead>Job type</TableHead>}
+                  {selectedColumns.hours && <TableHead>Hours</TableHead>}
+                  {selectedColumns.comments && <TableHead>Comments</TableHead>}
+                </TableRow>
               </TableHeader>
               <TableBody>
                 {previewData.map((row, index) => (
                   <TableRow key={index}>
+                    {selectedColumns.agency && <TableCell>{row.agency}</TableCell>}
+                    {selectedColumns.fullName && <TableCell>{row.fullName}</TableCell>}
                     {selectedColumns.date && <TableCell>{row.date}</TableCell>}
                     {selectedColumns.market && <TableCell>{row.market}</TableCell>}
-                    {selectedColumns.agency && <TableCell>{row.agency}</TableCell>}
+                    {selectedColumns.company && <TableCell>{row.company}</TableCell>}
                     {selectedColumns.client && <TableCell>{row.client}</TableCell>}
                     {selectedColumns.project && <TableCell>{row.project}</TableCell>}
                     {selectedColumns.media && <TableCell>{row.media}</TableCell>}
                     {selectedColumns.jobType && <TableCell>{row.jobType}</TableCell>}
-                    {selectedColumns.comments && <TableCell>{row.comments}</TableCell>}
                     {selectedColumns.hours && <TableCell>{row.hours}</TableCell>}
+                    {selectedColumns.comments && <TableCell>{row.comments}</TableCell>}
                   </TableRow>
                 ))}
               </TableBody>

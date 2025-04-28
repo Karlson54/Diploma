@@ -26,6 +26,7 @@ interface Employee {
   email: string;
   position: string;
   department: string;
+  agency: string;
 }
 
 interface Report {
@@ -46,6 +47,7 @@ interface Report {
   jobType: string;
   comments: string;
   hours: number;
+  company: string;
 }
 
 export function EmployeeReports() {
@@ -67,6 +69,8 @@ export function EmployeeReports() {
     comments: true,
     hours: true,
     date: true,
+    fullName: true,
+    company: true,
   })
 
   const [reports, setReports] = useState<Report[]>([])
@@ -126,6 +130,14 @@ export function EmployeeReports() {
           // Calculate efficiency (arbitrary for this example)
           const efficiency = Math.floor(70 + Math.random() * 30);
           
+          // Check if the projectBrand field is available in the API response
+          // We'll try both 'project' and 'projectBrand' fields, as well as nested fields
+          const projectBrandValue = 
+            item.report.projectBrand || 
+            item.report.project_brand || 
+            item.report.project || 
+            (item.project ? item.project : "N/A");
+          
           return {
             id: item.report.id,
             employee: item.employee?.name || 'Unknown',
@@ -139,13 +151,19 @@ export function EmployeeReports() {
             market: item.report.market || "N/A",
             contractingAgency: item.report.contractingAgency || "N/A",
             client: item.report.client || "N/A",
-            projectBrand: item.report.project || "N/A",
+            projectBrand: projectBrandValue,
             media: item.report.media || "N/A",
             jobType: item.report.jobType || "N/A",
             comments: item.report.comments || "N/A",
             hours: item.report.hours || 0,
+            company: item.employee?.agency || 'MediaCom',
           };
         });
+        
+        // Log the first report for debugging
+        if (reportsData.reports.length > 0) {
+          console.log("First report data:", reportsData.reports[0]);
+        }
         
         setReports(processedReports);
       } catch (error) {
@@ -173,15 +191,17 @@ export function EmployeeReports() {
       
       // Define columns based on selected columns
       const columns = []
-      if (selectedColumns.date) columns.push({ header: 'Дата', key: 'date', width: 15 })
-      if (selectedColumns.market) columns.push({ header: 'Ринок', key: 'market', width: 15 })
-      if (selectedColumns.contractingAgency) columns.push({ header: 'Агентство', key: 'contractingAgency', width: 20 })
-      if (selectedColumns.client) columns.push({ header: 'Клієнт', key: 'client', width: 20 })
-      if (selectedColumns.projectBrand) columns.push({ header: 'Проект/Бренд', key: 'projectBrand', width: 20 })
-      if (selectedColumns.media) columns.push({ header: 'Медіа', key: 'media', width: 15 })
-      if (selectedColumns.jobType) columns.push({ header: 'Тип роботи', key: 'jobType', width: 20 })
-      if (selectedColumns.comments) columns.push({ header: 'Коментарі', key: 'comments', width: 25 })
-      if (selectedColumns.hours) columns.push({ header: 'Години', key: 'hours', width: 10 })
+      if (selectedColumns.company) columns.push({ header: 'Agency', key: 'company', width: 20 })
+      if (selectedColumns.fullName) columns.push({ header: 'Name', key: 'fullName', width: 20 })
+      if (selectedColumns.date) columns.push({ header: 'Date', key: 'date', width: 15 })
+      if (selectedColumns.market) columns.push({ header: 'Market', key: 'market', width: 15 })
+      if (selectedColumns.contractingAgency) columns.push({ header: 'Contracting Agency / Unit', key: 'contractingAgency', width: 20 })
+      if (selectedColumns.client) columns.push({ header: 'Client', key: 'client', width: 20 })
+      if (selectedColumns.projectBrand) columns.push({ header: 'Project / brand', key: 'projectBrand', width: 20 })
+      if (selectedColumns.media) columns.push({ header: 'Media', key: 'media', width: 15 })
+      if (selectedColumns.jobType) columns.push({ header: 'Job type', key: 'jobType', width: 20 })
+      if (selectedColumns.hours) columns.push({ header: 'Hours', key: 'hours', width: 10 })
+      if (selectedColumns.comments) columns.push({ header: 'Comments', key: 'comments', width: 25 })
       
       worksheet.columns = columns
       
@@ -196,6 +216,8 @@ export function EmployeeReports() {
       // Add data rows
       reportsToExport.forEach(report => {
         const rowData: any = {}
+        if (selectedColumns.company) rowData.company = report.company // Use employee's agency field
+        if (selectedColumns.fullName) rowData.fullName = report.employee // Using employee name field as full name
         if (selectedColumns.date) rowData.date = report.date
         if (selectedColumns.market) rowData.market = report.market
         if (selectedColumns.contractingAgency) rowData.contractingAgency = report.contractingAgency
@@ -203,8 +225,8 @@ export function EmployeeReports() {
         if (selectedColumns.projectBrand) rowData.projectBrand = report.projectBrand
         if (selectedColumns.media) rowData.media = report.media
         if (selectedColumns.jobType) rowData.jobType = report.jobType
-        if (selectedColumns.comments) rowData.comments = report.comments
         if (selectedColumns.hours) rowData.hours = report.hours
+        if (selectedColumns.comments) rowData.comments = report.comments
         
         worksheet.addRow(rowData)
       })
@@ -376,6 +398,7 @@ export function EmployeeReports() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Співробітник</TableHead>
+                    <TableHead>Агентство</TableHead>
                     <TableHead>Період</TableHead>
                     <TableHead>Всього годин</TableHead>
                     <TableHead>Проєкти</TableHead>
@@ -387,7 +410,7 @@ export function EmployeeReports() {
                 <TableBody>
                   {filteredReports.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center">
+                      <TableCell colSpan={8} className="text-center">
                         Немає доступних звітів за обраний період
                       </TableCell>
                     </TableRow>
@@ -395,6 +418,7 @@ export function EmployeeReports() {
                     filteredReports.map((report) => (
                       <TableRow key={report.id}>
                         <TableCell className="font-medium">{report.employee}</TableCell>
+                        <TableCell>{report.company}</TableCell>
                         <TableCell>{report.period}</TableCell>
                         <TableCell>{report.totalHours}</TableCell>
                         <TableCell>{report.projects}</TableCell>
@@ -539,154 +563,171 @@ export function EmployeeReports() {
 
       {/* Діалог для вибору стовпців та попереднього перегляду */}
       <Dialog open={showDownloadDialog} onOpenChange={setShowDownloadDialog}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="sm:max-w-4xl">
           <DialogHeader>
-            <DialogTitle>Завантаження звіту</DialogTitle>
+            <DialogTitle>Завантажити звіт</DialogTitle>
             <DialogDescription>
-              Оберіть стовпці для завантаження та перегляньте попередній вигляд таблиці
+              Оберіть стовпці для включення в Excel звіт
             </DialogDescription>
           </DialogHeader>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 py-4">
+          <div className="flex flex-row flex-wrap gap-4 py-4">
             <div className="flex items-center space-x-2">
-              <Checkbox
-                id="column-date"
+              <Checkbox 
+                id="company-checkbox" 
+                checked={selectedColumns.company}
+                onCheckedChange={(checked) => 
+                  setSelectedColumns({...selectedColumns, company: !!checked})
+                }
+              />
+              <label htmlFor="company-checkbox" className="text-sm font-medium">
+                Agency
+              </label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="fullName-checkbox" 
+                checked={selectedColumns.fullName}
+                onCheckedChange={(checked) => 
+                  setSelectedColumns({...selectedColumns, fullName: !!checked})
+                }
+              />
+              <label htmlFor="fullName-checkbox" className="text-sm font-medium">
+                Name
+              </label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="date-checkbox" 
                 checked={selectedColumns.date}
-                onCheckedChange={(checked) => setSelectedColumns({ ...selectedColumns, date: !!checked })}
+                onCheckedChange={(checked) => 
+                  setSelectedColumns({...selectedColumns, date: !!checked})
+                }
               />
-              <label
-                htmlFor="column-date"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Дата
+              <label htmlFor="date-checkbox" className="text-sm font-medium">
+                Date
               </label>
             </div>
             <div className="flex items-center space-x-2">
-              <Checkbox
-                id="column-market"
+              <Checkbox 
+                id="market-checkbox" 
                 checked={selectedColumns.market}
-                onCheckedChange={(checked) => setSelectedColumns({ ...selectedColumns, market: !!checked })}
+                onCheckedChange={(checked) => 
+                  setSelectedColumns({...selectedColumns, market: !!checked})
+                }
               />
-              <label
-                htmlFor="column-market"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Ринок
+              <label htmlFor="market-checkbox" className="text-sm font-medium">
+                Market
               </label>
             </div>
             <div className="flex items-center space-x-2">
-              <Checkbox
-                id="column-agency"
+              <Checkbox 
+                id="contractingAgency-checkbox" 
                 checked={selectedColumns.contractingAgency}
-                onCheckedChange={(checked) => setSelectedColumns({ ...selectedColumns, contractingAgency: !!checked })}
+                onCheckedChange={(checked) => 
+                  setSelectedColumns({...selectedColumns, contractingAgency: !!checked})
+                }
               />
-              <label
-                htmlFor="column-agency"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Агентство
+              <label htmlFor="contractingAgency-checkbox" className="text-sm font-medium">
+                Contracting Agency / Unit
               </label>
             </div>
             <div className="flex items-center space-x-2">
-              <Checkbox
-                id="column-client"
+              <Checkbox 
+                id="client-checkbox" 
                 checked={selectedColumns.client}
-                onCheckedChange={(checked) => setSelectedColumns({ ...selectedColumns, client: !!checked })}
+                onCheckedChange={(checked) => 
+                  setSelectedColumns({...selectedColumns, client: !!checked})
+                }
               />
-              <label
-                htmlFor="column-client"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Клієнт
+              <label htmlFor="client-checkbox" className="text-sm font-medium">
+                Client
               </label>
             </div>
             <div className="flex items-center space-x-2">
-              <Checkbox
-                id="column-project"
+              <Checkbox 
+                id="projectBrand-checkbox" 
                 checked={selectedColumns.projectBrand}
-                onCheckedChange={(checked) => setSelectedColumns({ ...selectedColumns, projectBrand: !!checked })}
+                onCheckedChange={(checked) => 
+                  setSelectedColumns({...selectedColumns, projectBrand: !!checked})
+                }
               />
-              <label
-                htmlFor="column-project"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Проект/Бренд
+              <label htmlFor="projectBrand-checkbox" className="text-sm font-medium">
+                Project / brand
               </label>
             </div>
             <div className="flex items-center space-x-2">
-              <Checkbox
-                id="column-media"
+              <Checkbox 
+                id="media-checkbox" 
                 checked={selectedColumns.media}
-                onCheckedChange={(checked) => setSelectedColumns({ ...selectedColumns, media: !!checked })}
+                onCheckedChange={(checked) => 
+                  setSelectedColumns({...selectedColumns, media: !!checked})
+                }
               />
-              <label
-                htmlFor="column-media"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Медіа
+              <label htmlFor="media-checkbox" className="text-sm font-medium">
+                Media
               </label>
             </div>
             <div className="flex items-center space-x-2">
-              <Checkbox
-                id="column-jobType"
+              <Checkbox 
+                id="jobType-checkbox" 
                 checked={selectedColumns.jobType}
-                onCheckedChange={(checked) => setSelectedColumns({ ...selectedColumns, jobType: !!checked })}
+                onCheckedChange={(checked) => 
+                  setSelectedColumns({...selectedColumns, jobType: !!checked})
+                }
               />
-              <label
-                htmlFor="column-jobType"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Тип роботи
+              <label htmlFor="jobType-checkbox" className="text-sm font-medium">
+                Job type
               </label>
             </div>
             <div className="flex items-center space-x-2">
-              <Checkbox
-                id="column-comments"
-                checked={selectedColumns.comments}
-                onCheckedChange={(checked) => setSelectedColumns({ ...selectedColumns, comments: !!checked })}
-              />
-              <label
-                htmlFor="column-comments"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Коментарі
-              </label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="column-hours"
+              <Checkbox 
+                id="hours-checkbox" 
                 checked={selectedColumns.hours}
-                onCheckedChange={(checked) => setSelectedColumns({ ...selectedColumns, hours: !!checked })}
+                onCheckedChange={(checked) => 
+                  setSelectedColumns({...selectedColumns, hours: !!checked})
+                }
               />
-              <label
-                htmlFor="column-hours"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Години
+              <label htmlFor="hours-checkbox" className="text-sm font-medium">
+                Hours
+              </label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="comments-checkbox" 
+                checked={selectedColumns.comments}
+                onCheckedChange={(checked) => 
+                  setSelectedColumns({...selectedColumns, comments: !!checked})
+                }
+              />
+              <label htmlFor="comments-checkbox" className="text-sm font-medium">
+                Comments
               </label>
             </div>
           </div>
-
-          <div className="border rounded-md p-2 my-4 overflow-x-auto" style={{ maxHeight: "400px", overflowY: "auto" }}>
+          <div className="border rounded-md p-2 my-4 overflow-x-auto" style={{ maxHeight: "500px", overflowY: "auto" }}>
             <h3 className="font-medium mb-2">Попередній перегляд таблиці</h3>
             {selectedReport && (
-              <Table>
+              <Table className="min-w-full">
                 <TableHeader>
                   <TableRow>
-                    {selectedColumns.date && <TableHead>Дата</TableHead>}
-                    {selectedColumns.market && <TableHead>Ринок</TableHead>}
-                    {selectedColumns.contractingAgency && <TableHead>Агентство</TableHead>}
-                    {selectedColumns.client && <TableHead>Клієнт</TableHead>}
-                    {selectedColumns.projectBrand && <TableHead>Проект/Бренд</TableHead>}
-                    {selectedColumns.media && <TableHead>Медіа</TableHead>}
-                    {selectedColumns.jobType && <TableHead>Тип роботи</TableHead>}
-                    {selectedColumns.comments && <TableHead>Коментарі</TableHead>}
-                    {selectedColumns.hours && <TableHead>Години</TableHead>}
+                    {selectedColumns.company && <TableHead>Agency</TableHead>}
+                    {selectedColumns.fullName && <TableHead>Name</TableHead>}
+                    {selectedColumns.date && <TableHead>Date</TableHead>}
+                    {selectedColumns.market && <TableHead>Market</TableHead>}
+                    {selectedColumns.contractingAgency && <TableHead>Contracting Agency / Unit</TableHead>}
+                    {selectedColumns.client && <TableHead>Client</TableHead>}
+                    {selectedColumns.projectBrand && <TableHead>Project / brand</TableHead>}
+                    {selectedColumns.media && <TableHead>Media</TableHead>}
+                    {selectedColumns.jobType && <TableHead>Job type</TableHead>}
+                    {selectedColumns.hours && <TableHead>Hours</TableHead>}
+                    {selectedColumns.comments && <TableHead>Comments</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {/* Перший запис - вибраний звіт */}
+                  {/* Выбранный отчет */}
                   <TableRow>
+                    {selectedColumns.company && <TableCell>{selectedReport.company}</TableCell>}
+                    {selectedColumns.fullName && <TableCell>{selectedReport.employee}</TableCell>}
                     {selectedColumns.date && <TableCell>{selectedReport.date}</TableCell>}
                     {selectedColumns.market && <TableCell>{selectedReport.market || "—"}</TableCell>}
                     {selectedColumns.contractingAgency && (
@@ -696,13 +737,15 @@ export function EmployeeReports() {
                     {selectedColumns.projectBrand && <TableCell>{selectedReport.projectBrand || "—"}</TableCell>}
                     {selectedColumns.media && <TableCell>{selectedReport.media || "—"}</TableCell>}
                     {selectedColumns.jobType && <TableCell>{selectedReport.jobType || "—"}</TableCell>}
-                    {selectedColumns.comments && <TableCell>{selectedReport.comments || "—"}</TableCell>}
                     {selectedColumns.hours && <TableCell>{selectedReport.hours}</TableCell>}
+                    {selectedColumns.comments && <TableCell>{selectedReport.comments || "—"}</TableCell>}
                   </TableRow>
 
-                  {/* Additional sample rows for preview */}
-                  {reports.slice(0, 5).filter(r => r.id !== selectedReport.id).map(report => (
+                  {/* Дополнительные отчеты для примера */}
+                  {reports.slice(0, 2).filter(r => r.id !== selectedReport.id).map(report => (
                     <TableRow key={`preview-${report.id}`}>
+                      {selectedColumns.company && <TableCell>{report.company}</TableCell>}
+                      {selectedColumns.fullName && <TableCell>{report.employee}</TableCell>}
                       {selectedColumns.date && <TableCell>{report.date}</TableCell>}
                       {selectedColumns.market && <TableCell>{report.market || "—"}</TableCell>}
                       {selectedColumns.contractingAgency && (
@@ -712,21 +755,19 @@ export function EmployeeReports() {
                       {selectedColumns.projectBrand && <TableCell>{report.projectBrand || "—"}</TableCell>}
                       {selectedColumns.media && <TableCell>{report.media || "—"}</TableCell>}
                       {selectedColumns.jobType && <TableCell>{report.jobType || "—"}</TableCell>}
-                      {selectedColumns.comments && <TableCell>{report.comments || "—"}</TableCell>}
                       {selectedColumns.hours && <TableCell>{report.hours}</TableCell>}
+                      {selectedColumns.comments && <TableCell>{report.comments || "—"}</TableCell>}
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             )}
           </div>
-
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDownloadDialog(false)}>
               Скасувати
             </Button>
-            <Button onClick={handleDownloadWithColumns} className="gap-2">
-              <Download className="h-4 w-4" />
+            <Button onClick={handleDownloadWithColumns}>
               Завантажити
             </Button>
           </DialogFooter>

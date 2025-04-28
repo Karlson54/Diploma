@@ -141,6 +141,7 @@ async function seed() {
             department: person.agency,
             joinDate: new Date().toISOString().split('T')[0],
             status: 'Active',
+            company: person.agency,
           }).onConflictDoNothing();
           employeeCount++;
         } catch (error) {

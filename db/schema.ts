@@ -11,6 +11,7 @@ export const employees = sqliteTable('employees', {
   joinDate: text('join_date').notNull(),
   status: text('status').notNull(),
   clerkId: text('clerk_id'),
+  agency: text('agency'),
 });
 
 // Companies table

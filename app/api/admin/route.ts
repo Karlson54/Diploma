@@ -95,6 +95,7 @@ export async function POST(request: Request) {
           joinDate: today,
           status: employee.status,
           clerkId: newUser.id,
+          agency: employee.agency || employee.department, // Use provided agency or default to department
         });
         
         return NextResponse.json({ 
@@ -146,6 +147,7 @@ export async function POST(request: Request) {
           position: employee.position,
           department: employee.department,
           status: employee.status || 'Active',
+          agency: employee.agency || employee.department, // Use provided agency or default to department
         });
         
         // If employee has a clerkId, update Clerk user with admin role if changed

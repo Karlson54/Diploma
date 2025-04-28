@@ -136,6 +136,7 @@ export const reportQueries = {
         employee: {
           id: employees.id,
           name: employees.name,
+          agency: employees.agency,
         },
       })
       .from(reports)
@@ -162,6 +163,7 @@ export const reportQueries = {
         employee: {
           id: employees.id,
           name: employees.name,
+          agency: employees.agency,
         },
       })
       .from(reports)

@@ -27,6 +27,7 @@ interface Employee {
   joinDate: string;
   status: string;
   isAdmin?: boolean;
+  agency?: string;
 }
 
 interface EditingEmployee extends Employee {}
@@ -49,6 +50,7 @@ export function EmployeesList() {
     department: "",
     status: "Активний",
     password: "",
+    agency: "",
   })
 
   useEffect(() => {
@@ -157,6 +159,7 @@ export function EmployeesList() {
         department: "",
         status: "Активний",
         password: "",
+        agency: "",
       });
       setIsAddDialogOpen(false);
     } catch (error) {
@@ -326,6 +329,15 @@ export function EmployeesList() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="agency">Агенція</Label>
+                  <Input
+                    id="agency"
+                    value={newEmployee.agency}
+                    onChange={(e) => setNewEmployee({ ...newEmployee, agency: e.target.value })}
+                    placeholder="Введіть назву агенції"
+                  />
+                </div>
               </div>
             </div>
             <DialogFooter>
@@ -390,6 +402,12 @@ export function EmployeesList() {
             <TableHeader>
               <TableRow>
                 <TableHead>Співробітник</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Посада</TableHead>
+                <TableHead>Відділ</TableHead>
+                <TableHead>Агенція</TableHead>
+                <TableHead>Статус</TableHead>
+                <TableHead className="text-right">Дії</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -397,138 +415,152 @@ export function EmployeesList() {
                 filteredEmployees.map((employee) => (
                   <TableRow key={employee.id}>
                     <TableCell>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium">{employee.name}</div>
-                          <div className="text-sm text-gray-500">{employee.email}</div>
-                          <div className="text-xs text-gray-400 mt-1">
-                            {employee.position}, {employee.department}
-                            {employee.isAdmin && (
-                              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
-                                Адміністратор
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Dialog open={isEditDialogOpen && editingEmployee?.id === employee.id} onOpenChange={setIsEditDialogOpen}>
-                            <DialogTrigger asChild>
-                              <Button variant="ghost" size="icon" onClick={() => setEditingEmployee(employee)}>
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                            </DialogTrigger>
-                            {editingEmployee && editingEmployee.id === employee.id && (
-                              <DialogContent className="sm:max-w-[525px]">
-                                <DialogHeader>
-                                  <DialogTitle>Редагувати співробітника</DialogTitle>
-                                  <DialogDescription>Змініть інформацію про співробітника</DialogDescription>
-                                </DialogHeader>
-                                <div className="grid gap-4 py-4">
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                      <Label htmlFor="edit-name">ПІБ</Label>
-                                      <Input
-                                        id="edit-name"
-                                        value={editingEmployee.name}
-                                        onChange={(e) => setEditingEmployee({ ...editingEmployee, name: e.target.value })}
-                                      />
-                                    </div>
-                                    <div className="space-y-2">
-                                      <Label htmlFor="edit-email">Email</Label>
-                                      <Input
-                                        id="edit-email"
-                                        type="email"
-                                        value={editingEmployee.email}
-                                        onChange={(e) => setEditingEmployee({ ...editingEmployee, email: e.target.value })}
-                                      />
-                                    </div>
+                      <div className="font-medium">{employee.name}</div>
+                    </TableCell>
+                    <TableCell>{employee.email}</TableCell>
+                    <TableCell>{employee.position}</TableCell>
+                    <TableCell>{employee.department}</TableCell>
+                    <TableCell>{employee.agency || '-'}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <div className={`w-2 h-2 rounded-full mr-2 ${
+                          employee.status === 'active' ? 'bg-green-500' : 'bg-gray-300'
+                        }`} />
+                        {employee.isAdmin && (
+                          <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
+                            Адміністратор
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Dialog open={isEditDialogOpen && editingEmployee?.id === employee.id} onOpenChange={setIsEditDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => setEditingEmployee(employee)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          {editingEmployee && editingEmployee.id === employee.id && (
+                            <DialogContent className="sm:max-w-[525px]">
+                              <DialogHeader>
+                                <DialogTitle>Редагувати співробітника</DialogTitle>
+                                <DialogDescription>Змініть інформацію про співробітника</DialogDescription>
+                              </DialogHeader>
+                              <div className="grid gap-4 py-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-2">
+                                    <Label htmlFor="edit-name">ПІБ</Label>
+                                    <Input
+                                      id="edit-name"
+                                      value={editingEmployee.name}
+                                      onChange={(e) => setEditingEmployee({ ...editingEmployee, name: e.target.value })}
+                                    />
                                   </div>
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                      <Label htmlFor="edit-position">Посада</Label>
-                                      <Input
-                                        id="edit-position"
-                                        value={editingEmployee.position}
-                                        onChange={(e) => setEditingEmployee({ ...editingEmployee, position: e.target.value })}
-                                      />
-                                    </div>
-                                    <div className="space-y-2">
-                                      <Label htmlFor="edit-department">Відділ</Label>
-                                      <Select
-                                        value={editingEmployee.department}
-                                        onValueChange={(value) => setEditingEmployee({ ...editingEmployee, department: value })}
-                                      >
-                                        <SelectTrigger id="edit-department">
-                                          <SelectValue placeholder="Оберіть відділ" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="Дизайн">Дизайн</SelectItem>
-                                          <SelectItem value="Розробка">Розробка</SelectItem>
-                                          <SelectItem value="Маркетинг">Маркетинг</SelectItem>
-                                          <SelectItem value="Управління">Управління</SelectItem>
-                                          <SelectItem value="Продажі">Продажі</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-                                  </div>
-                                  <div className="space-y-2 mt-4">
-                                    <div className="flex items-center space-x-2">
-                                      <input
-                                        type="checkbox"
-                                        id="edit-admin-role"
-                                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                                        checked={editingEmployee.isAdmin}
-                                        onChange={(e) => setEditingEmployee({ 
-                                          ...editingEmployee, 
-                                          isAdmin: e.target.checked 
-                                        })}
-                                      />
-                                      <Label htmlFor="edit-admin-role" className="font-medium">
-                                        Права адміністратора
-                                      </Label>
-                                    </div>
-                                    <p className="text-sm text-gray-500">
-                                      Надає повний доступ до адміністративної панелі та управління користувачами
-                                    </p>
+                                  <div className="space-y-2">
+                                    <Label htmlFor="edit-email">Email</Label>
+                                    <Input
+                                      id="edit-email"
+                                      type="email"
+                                      value={editingEmployee.email}
+                                      onChange={(e) => setEditingEmployee({ ...editingEmployee, email: e.target.value })}
+                                    />
                                   </div>
                                 </div>
-                                <DialogFooter>
-                                  <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                                    Скасувати
-                                  </Button>
-                                  <Button 
-                                    onClick={handleEditEmployee}
-                                    disabled={isUpdating === editingEmployee?.id}
-                                  >
-                                    {isUpdating === editingEmployee?.id ? (
-                                      <span className="flex items-center gap-2">
-                                        <span className="animate-spin h-4 w-4 border-2 border-white rounded-full border-t-transparent" />
-                                        Оновлення...
-                                      </span>
-                                    ) : (
-                                      'Зберегти'
-                                    )}
-                                  </Button>
-                                </DialogFooter>
-                                {updateMessage && (
-                                  <div className={`mt-2 p-2 text-center rounded ${updateMessage.includes('Failed') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                                    {updateMessage}
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-2">
+                                    <Label htmlFor="edit-position">Посада</Label>
+                                    <Input
+                                      id="edit-position"
+                                      value={editingEmployee.position}
+                                      onChange={(e) => setEditingEmployee({ ...editingEmployee, position: e.target.value })}
+                                    />
                                   </div>
-                                )}
-                              </DialogContent>
-                            )}
-                          </Dialog>
-                          <Button variant="ghost" size="icon" onClick={() => confirmDelete(employee.id)}>
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor="edit-department">Відділ</Label>
+                                    <Select
+                                      value={editingEmployee.department}
+                                      onValueChange={(value) => setEditingEmployee({ ...editingEmployee, department: value })}
+                                    >
+                                      <SelectTrigger id="edit-department">
+                                        <SelectValue placeholder="Оберіть відділ" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="Дизайн">Дизайн</SelectItem>
+                                        <SelectItem value="Розробка">Розробка</SelectItem>
+                                        <SelectItem value="Маркетинг">Маркетинг</SelectItem>
+                                        <SelectItem value="Управління">Управління</SelectItem>
+                                        <SelectItem value="Продажі">Продажі</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </div>
+                                <div className="space-y-2 mt-2">
+                                  <Label htmlFor="edit-agency">Агенція</Label>
+                                  <Input
+                                    id="edit-agency"
+                                    value={editingEmployee.agency || ''}
+                                    onChange={(e) => setEditingEmployee({ ...editingEmployee, agency: e.target.value })}
+                                    placeholder="Введіть назву агенції"
+                                  />
+                                </div>
+                                <div className="space-y-2 mt-4">
+                                  <div className="flex items-center space-x-2">
+                                    <input
+                                      type="checkbox"
+                                      id="edit-admin-role"
+                                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                      checked={editingEmployee.isAdmin}
+                                      onChange={(e) => setEditingEmployee({ 
+                                        ...editingEmployee, 
+                                        isAdmin: e.target.checked 
+                                      })}
+                                    />
+                                    <Label htmlFor="edit-admin-role" className="font-medium">
+                                      Права адміністратора
+                                    </Label>
+                                  </div>
+                                  <p className="text-sm text-gray-500">
+                                    Надає повний доступ до адміністративної панелі та управління користувачами
+                                  </p>
+                                </div>
+                              </div>
+                              <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                                  Скасувати
+                                </Button>
+                                <Button 
+                                  onClick={handleEditEmployee}
+                                  disabled={isUpdating === editingEmployee?.id}
+                                >
+                                  {isUpdating === editingEmployee?.id ? (
+                                    <span className="flex items-center gap-2">
+                                      <span className="animate-spin h-4 w-4 border-2 border-white rounded-full border-t-transparent" />
+                                      Оновлення...
+                                    </span>
+                                  ) : (
+                                    'Зберегти'
+                                  )}
+                                </Button>
+                              </DialogFooter>
+                              {updateMessage && (
+                                <div className={`mt-2 p-2 text-center rounded ${updateMessage.includes('Failed') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                                  {updateMessage}
+                                </div>
+                              )}
+                            </DialogContent>
+                          )}
+                        </Dialog>
+                        <Button variant="ghost" size="icon" onClick={() => confirmDelete(employee.id)}>
+                          <Trash className="h-4 w-4" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={1} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                     {searchTerm ? "Співробітників не знайдено" : "Немає співробітників"}
                   </TableCell>
                 </TableRow>
