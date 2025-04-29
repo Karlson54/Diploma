@@ -401,6 +401,43 @@ export function EmployeeReports() {
               />
             </div>
           </div>
+          
+          <div className="flex justify-end mt-4 gap-2">
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => {
+              if (filteredReports.length > 0) {
+                // If we have selected a specific employee, download their report
+                if (selectedEmployee !== "all") {
+                  const empId = Number.parseInt(selectedEmployee);
+                  const employeeReport = filteredReports.find(r => r.employeeId === empId);
+                  if (employeeReport) {
+                    setSelectedReport(employeeReport);
+                    setShowDownloadDialog(true);
+                    return;
+                  }
+                }
+                
+                // Otherwise, show dialog for the first filtered report
+                setSelectedReport(filteredReports[0]);
+                setShowDownloadDialog(true);
+              } else {
+                alert('Немає звітів для завантаження за обраними фільтрами');
+              }
+            }}>
+              <Download className="h-4 w-4" />
+              <span>Завантажити звіт</span>
+            </Button>
+            
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => {
+              if (filteredReports.length > 0) {
+                createAndDownloadExcel(filteredReports, `reports_${dateRange.from.toISOString().split('T')[0]}_${dateRange.to.toISOString().split('T')[0]}.xlsx`);
+              } else {
+                alert('Немає звітів для завантаження за обраними фільтрами');
+              }
+            }}>
+              <FileSpreadsheet className="h-4 w-4" />
+              <span>Завантажити всі відфільтровані</span>
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -459,10 +496,6 @@ export function EmployeeReports() {
                             <Button variant="ghost" size="icon">
                               <Eye className="h-4 w-4" />
                               <span className="sr-only">Перегляд</span>
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => downloadReport(report.id)}>
-                              <Download className="h-4 w-4" />
-                              <span className="sr-only">Завантажити</span>
                             </Button>
                           </div>
                         </TableCell>
