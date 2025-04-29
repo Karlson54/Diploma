@@ -39,6 +39,7 @@ interface Report {
   efficiency: number;
   status: string;
   date: string;
+  reportDate: Date;
   market: string;
   contractingAgency: string;
   client: string;
@@ -148,6 +149,7 @@ export function EmployeeReports() {
             efficiency,
             status: Math.random() > 0.3 ? "Підтверджено" : "На перевірці",
             date: formattedDate,
+            reportDate: reportDate, // Store the actual Date object for filtering
             market: item.report.market || "N/A",
             contractingAgency: item.report.contractingAgency || "N/A",
             client: item.report.client || "N/A",
@@ -176,11 +178,31 @@ export function EmployeeReports() {
     fetchData();
   }, []);
 
-  // Фильтрация отчетов по выбранному сотруднику
-  const filteredReports =
-    selectedEmployee === "all"
-      ? reports
-      : reports.filter((report) => report.employeeId === Number.parseInt(selectedEmployee))
+  // Filter reports based on employee and date range
+  const filteredReports = reports
+    .filter(report => {
+      // First filter by employee
+      if (selectedEmployee !== "all" && report.employeeId !== Number.parseInt(selectedEmployee)) {
+        return false;
+      }
+      
+      // Then filter by date range if we have a complete date range
+      if (dateRange.from && dateRange.to) {
+        // Parse the date string to a Date object if we don't have reportDate
+        const reportDate = report.reportDate || new Date(report.date.split('.').reverse().join('-'));
+        
+        // Set hours to 0 for accurate date comparison (ignore time)
+        const fromDate = new Date(dateRange.from);
+        fromDate.setHours(0, 0, 0, 0);
+        
+        const toDate = new Date(dateRange.to);
+        toDate.setHours(23, 59, 59, 999); // End of the day
+        
+        return reportDate >= fromDate && reportDate <= toDate;
+      }
+      
+      return true;
+    });
 
   // Функція для створення та завантаження Excel файлу
   const createAndDownloadExcel = async (reportsToExport: Report[], fileName: string) => {
