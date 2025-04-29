@@ -421,18 +421,22 @@ export function EmployeeReports() {
                   <TableRow>
                     <TableHead>Співробітник</TableHead>
                     <TableHead>Агентство</TableHead>
-                    <TableHead>Період</TableHead>
-                    <TableHead>Всього годин</TableHead>
-                    <TableHead>Проєкти</TableHead>
-                    <TableHead>Ефективність</TableHead>
-                    <TableHead>Статус</TableHead>
+                    <TableHead>Дата</TableHead>
+                    <TableHead>Ринок</TableHead>
+                    <TableHead>Контрактна агенція</TableHead>
+                    <TableHead>Клієнт</TableHead>
+                    <TableHead>Проект / бренд</TableHead>
+                    <TableHead>Медіа</TableHead>
+                    <TableHead>Тип роботи</TableHead>
+                    <TableHead>Години</TableHead>
+                    <TableHead>Коментарі</TableHead>
                     <TableHead>Дії</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredReports.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center">
+                      <TableCell colSpan={12} className="text-center">
                         Немає доступних звітів за обраний період
                       </TableCell>
                     </TableRow>
@@ -441,22 +445,15 @@ export function EmployeeReports() {
                       <TableRow key={report.id}>
                         <TableCell className="font-medium">{report.employee}</TableCell>
                         <TableCell>{report.company}</TableCell>
-                        <TableCell>{report.period}</TableCell>
-                        <TableCell>{report.totalHours}</TableCell>
-                        <TableCell>{report.projects}</TableCell>
-                        <TableCell>{report.efficiency}%</TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className={
-                              report.status === "Підтверджено"
-                                ? "bg-green-50 text-green-700"
-                                : "bg-yellow-50 text-yellow-700"
-                            }
-                          >
-                            {report.status}
-                          </Badge>
-                        </TableCell>
+                        <TableCell>{report.date}</TableCell>
+                        <TableCell>{report.market}</TableCell>
+                        <TableCell>{report.contractingAgency}</TableCell>
+                        <TableCell>{report.client}</TableCell>
+                        <TableCell>{report.projectBrand}</TableCell>
+                        <TableCell>{report.media}</TableCell>
+                        <TableCell>{report.jobType}</TableCell>
+                        <TableCell>{report.hours}</TableCell>
+                        <TableCell>{report.comments}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
                             <Button variant="ghost" size="icon">
