@@ -385,58 +385,51 @@ export function EmployeeReports() {
             </div>
             <div className="col-span-1 md:col-span-2">
               <label className="text-sm font-medium mb-2 block">Період</label>
-              <DatePickerWithRange 
-                date={{
-                  from: dateRange.from,
-                  to: dateRange.to
-                }} 
-                setDate={(value) => {
-                  if (value?.from && value?.to) {
-                    setDateRange({
-                      from: value.from,
-                      to: value.to
-                    });
+              <div className="flex gap-2">
+                <div className="flex-grow">
+                  <DatePickerWithRange 
+                    date={{
+                      from: dateRange.from,
+                      to: dateRange.to
+                    }} 
+                    setDate={(value) => {
+                      if (value?.from && value?.to) {
+                        setDateRange({
+                          from: value.from,
+                          to: value.to
+                        });
+                      }
+                    }} 
+                  />
+                </div>
+                <Button variant="outline" size="sm" className="gap-2 self-end" onClick={() => {
+                  if (filteredReports.length > 0) {
+                    // If we have selected a specific employee, download their report
+                    if (selectedEmployee !== "all") {
+                      const empId = Number.parseInt(selectedEmployee);
+                      const employeeReport = filteredReports.find(r => r.employeeId === empId);
+                      if (employeeReport) {
+                        setSelectedReport(employeeReport);
+                        setShowDownloadDialog(true);
+                        return;
+                      }
+                    }
+                    
+                    // Otherwise, show dialog for the first filtered report
+                    setSelectedReport(filteredReports[0]);
+                    setShowDownloadDialog(true);
+                  } else {
+                    alert('Немає звітів для завантаження за обраними фільтрами');
                   }
-                }} 
-              />
+                }}>
+                  <Download className="h-4 w-4" />
+                  <span>Завантажити звіт</span>
+                </Button>
+              </div>
             </div>
           </div>
           
           <div className="flex justify-end mt-4 gap-2">
-            <Button variant="outline" size="sm" className="gap-2" onClick={() => {
-              if (filteredReports.length > 0) {
-                // If we have selected a specific employee, download their report
-                if (selectedEmployee !== "all") {
-                  const empId = Number.parseInt(selectedEmployee);
-                  const employeeReport = filteredReports.find(r => r.employeeId === empId);
-                  if (employeeReport) {
-                    setSelectedReport(employeeReport);
-                    setShowDownloadDialog(true);
-                    return;
-                  }
-                }
-                
-                // Otherwise, show dialog for the first filtered report
-                setSelectedReport(filteredReports[0]);
-                setShowDownloadDialog(true);
-              } else {
-                alert('Немає звітів для завантаження за обраними фільтрами');
-              }
-            }}>
-              <Download className="h-4 w-4" />
-              <span>Завантажити звіт</span>
-            </Button>
-            
-            <Button variant="outline" size="sm" className="gap-2" onClick={() => {
-              if (filteredReports.length > 0) {
-                createAndDownloadExcel(filteredReports, `reports_${dateRange.from.toISOString().split('T')[0]}_${dateRange.to.toISOString().split('T')[0]}.xlsx`);
-              } else {
-                alert('Немає звітів для завантаження за обраними фільтрами');
-              }
-            }}>
-              <FileSpreadsheet className="h-4 w-4" />
-              <span>Завантажити всі відфільтровані</span>
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -456,18 +449,17 @@ export function EmployeeReports() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Співробітник</TableHead>
-                    <TableHead>Агентство</TableHead>
-                    <TableHead>Дата</TableHead>
-                    <TableHead>Ринок</TableHead>
-                    <TableHead>Контрактна агенція</TableHead>
-                    <TableHead>Клієнт</TableHead>
-                    <TableHead>Проект / бренд</TableHead>
-                    <TableHead>Медіа</TableHead>
-                    <TableHead>Тип роботи</TableHead>
-                    <TableHead>Години</TableHead>
-                    <TableHead>Коментарі</TableHead>
-                    <TableHead>Дії</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Agency</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Market</TableHead>
+                    <TableHead>Contracting Agency / Unit</TableHead>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Project / brand</TableHead>
+                    <TableHead>Media</TableHead>
+                    <TableHead>Job type</TableHead>
+                    <TableHead>Hours</TableHead>
+                    <TableHead>Comments</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -491,14 +483,6 @@ export function EmployeeReports() {
                         <TableCell>{report.jobType}</TableCell>
                         <TableCell>{report.hours}</TableCell>
                         <TableCell>{report.comments}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button variant="ghost" size="icon">
-                              <Eye className="h-4 w-4" />
-                              <span className="sr-only">Перегляд</span>
-                            </Button>
-                          </div>
-                        </TableCell>
                       </TableRow>
                     ))
                   )}
