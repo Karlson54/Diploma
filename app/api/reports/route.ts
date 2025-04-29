@@ -63,7 +63,7 @@ export async function POST(request: Request) {
       media,
       jobType,
       comments,
-      hours: parseInt(hours, 10) || 0,
+      hours: Number(hours) || 0,
     };
     
     // Get company IDs if provided
@@ -135,7 +135,7 @@ export async function PUT(request: Request) {
       media,
       jobType,
       comments,
-      hours: parseInt(hours, 10) || 0,
+      hours: Number(hours) || 0,
     };
     
     // Get company IDs if provided

@@ -684,7 +684,7 @@ export function WeeklyCalendar() {
                   client: clientName,
                   media: mediaName,
                   jobType: jobTypeName,
-                  hours: Number(data.hours) / 60 || 0, // Правильное преобразование минут в часы
+                  hours: Number(data.hours) / 60 || 0, // Convert minutes to hours for the database
                 }
 
                 // Save the report to the server
@@ -710,7 +710,7 @@ export function WeeklyCalendar() {
                         ...updatedData,
                         id: editingReport?.id, // Only include ID for updates
                         date: dateForDB, // Use ISO format for database
-                        hours: Math.round(Number(data.hours)), // Store minutes instead of hours
+                        hours: Number(data.hours) / 60 || 0, // Convert minutes to hours for the database
                         companies: companiesToAssociate, // Include companies to associate
                       }),
                     });
@@ -764,7 +764,7 @@ export function WeeklyCalendar() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.totalHours} годин</div>
+                <div className="text-2xl font-bold">{stats.totalHours.toFixed(1)} годин</div>
               </CardContent>
             </Card>
             <Card>
@@ -830,7 +830,7 @@ export function WeeklyCalendar() {
                           <TableCell className="max-w-[200px] truncate" title={report.comments}>
                             {report.comments}
                           </TableCell>
-                          <TableCell>{report.hours}</TableCell>
+                          <TableCell>{Number(report.hours).toFixed(1)}</TableCell>
                           <TableCell>
                             <div className="flex gap-2">
                               <Button variant="ghost" size="icon" onClick={() => handleEditReport(report)}>

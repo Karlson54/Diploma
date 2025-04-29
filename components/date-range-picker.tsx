@@ -1,5 +1,6 @@
 "use client"
 import { format } from "date-fns"
+import { uk } from "date-fns/locale"
 import { CalendarIcon } from "lucide-react"
 import type { DateRange } from "react-day-picker"
 
@@ -33,7 +34,7 @@ export function DatePickerWithRange({ date, setDate }: DatePickerWithRangeProps)
                 format(date.from, "dd.MM.yyyy")
               )
             ) : (
-              <span>Выберите период</span>
+              <span>Виберіть період</span>
             )}
           </Button>
         </PopoverTrigger>
@@ -45,6 +46,18 @@ export function DatePickerWithRange({ date, setDate }: DatePickerWithRangeProps)
             selected={date}
             onSelect={setDate}
             numberOfMonths={2}
+            locale={uk}
+            weekStartsOn={1}
+            showOutsideDays={true}
+            classNames={{
+              caption_label: "text-sm font-medium",
+              head_cell: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem] uppercase",
+              day: cn(
+                "h-9 w-9 p-0 font-normal text-center text-sm"
+              ),
+              day_today: "bg-accent text-accent-foreground font-medium",
+              day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground"
+            }}
           />
         </PopoverContent>
       </Popover>

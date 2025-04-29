@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { integer, sqliteTable, text, real } from 'drizzle-orm/sqlite-core';
 
 // Employees table
 export const employees = sqliteTable('employees', {
@@ -44,7 +44,7 @@ export const reports = sqliteTable('reports', {
   media: text('media'),
   jobType: text('job_type'),
   comments: text('comments'),
-  hours: integer('hours').notNull(),
+  hours: real('hours').notNull(),
 });
 
 // Reports to Companies (many-to-many relationship)
