@@ -303,11 +303,18 @@ export function EmployeesList() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="position">Посада</Label>
-                  <Input
-                    id="position"
+                  <Select
                     value={newEmployee.position}
-                    onChange={(e) => setNewEmployee({ ...newEmployee, position: e.target.value })}
-                  />
+                    onValueChange={(value) => setNewEmployee({ ...newEmployee, position: value })}
+                  >
+                    <SelectTrigger id="position">
+                      <SelectValue placeholder="Оберіть посаду" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Бухгалтер">Бухгалтер</SelectItem>
+                      <SelectItem value="Головний бухгалтер">Головний бухгалтер</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -321,22 +328,26 @@ export function EmployeesList() {
                       <SelectValue placeholder="Оберіть відділ" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Дизайн">Дизайн</SelectItem>
-                      <SelectItem value="Розробка">Розробка</SelectItem>
-                      <SelectItem value="Маркетинг">Маркетинг</SelectItem>
-                      <SelectItem value="Управління">Управління</SelectItem>
-                      <SelectItem value="Продажі">Продажі</SelectItem>
+                      <SelectItem value="Бухгалтерія">Бухгалтерія</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="agency">Агенція</Label>
-                  <Input
-                    id="agency"
+                  <Select
                     value={newEmployee.agency}
-                    onChange={(e) => setNewEmployee({ ...newEmployee, agency: e.target.value })}
-                    placeholder="Введіть назву агенції"
-                  />
+                    onValueChange={(value) => setNewEmployee({ ...newEmployee, agency: value })}
+                  >
+                    <SelectTrigger id="agency">
+                      <SelectValue placeholder="Оберіть агенцію" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="GroupM">GroupM</SelectItem>
+                      <SelectItem value="MediaCom">MediaCom</SelectItem>
+                      <SelectItem value="Mindshare">Mindshare</SelectItem>
+                      <SelectItem value="Wavemaker">Wavemaker</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
@@ -470,11 +481,18 @@ export function EmployeesList() {
                                 <div className="grid grid-cols-2 gap-4">
                                   <div className="space-y-2">
                                     <Label htmlFor="edit-position">Посада</Label>
-                                    <Input
-                                      id="edit-position"
+                                    <Select
                                       value={editingEmployee.position}
-                                      onChange={(e) => setEditingEmployee({ ...editingEmployee, position: e.target.value })}
-                                    />
+                                      onValueChange={(value) => setEditingEmployee({ ...editingEmployee, position: value })}
+                                    >
+                                      <SelectTrigger id="edit-position">
+                                        <SelectValue placeholder="Оберіть посаду" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="Бухгалтер">Бухгалтер</SelectItem>
+                                        <SelectItem value="Головний бухгалтер">Головний бухгалтер</SelectItem>
+                                      </SelectContent>
+                                    </Select>
                                   </div>
                                   <div className="space-y-2">
                                     <Label htmlFor="edit-department">Відділ</Label>
@@ -486,23 +504,27 @@ export function EmployeesList() {
                                         <SelectValue placeholder="Оберіть відділ" />
                                       </SelectTrigger>
                                       <SelectContent>
-                                        <SelectItem value="Дизайн">Дизайн</SelectItem>
-                                        <SelectItem value="Розробка">Розробка</SelectItem>
-                                        <SelectItem value="Маркетинг">Маркетинг</SelectItem>
-                                        <SelectItem value="Управління">Управління</SelectItem>
-                                        <SelectItem value="Продажі">Продажі</SelectItem>
+                                        <SelectItem value="Бухгалтерія">Бухгалтерія</SelectItem>
                                       </SelectContent>
                                     </Select>
                                   </div>
                                 </div>
                                 <div className="space-y-2 mt-2">
                                   <Label htmlFor="edit-agency">Агенція</Label>
-                                  <Input
-                                    id="edit-agency"
+                                  <Select
                                     value={editingEmployee.agency || ''}
-                                    onChange={(e) => setEditingEmployee({ ...editingEmployee, agency: e.target.value })}
-                                    placeholder="Введіть назву агенції"
-                                  />
+                                    onValueChange={(value) => setEditingEmployee({ ...editingEmployee, agency: value })}
+                                  >
+                                    <SelectTrigger id="edit-agency">
+                                      <SelectValue placeholder="Оберіть агенцію" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="GroupM">GroupM</SelectItem>
+                                      <SelectItem value="MediaCom">MediaCom</SelectItem>
+                                      <SelectItem value="Mindshare">Mindshare</SelectItem>
+                                      <SelectItem value="Wavemaker">Wavemaker</SelectItem>
+                                    </SelectContent>
+                                  </Select>
                                 </div>
                                 <div className="space-y-2 mt-4">
                                   <div className="flex items-center space-x-2">
