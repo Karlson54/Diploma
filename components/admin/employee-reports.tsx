@@ -60,6 +60,7 @@ export function EmployeeReports() {
 
   const [showDownloadDialog, setShowDownloadDialog] = useState(false)
   const [selectedReport, setSelectedReport] = useState<Report | null>(null)
+  const [previewReports, setPreviewReports] = useState<Report[]>([])
   const [selectedColumns, setSelectedColumns] = useState({
     market: true,
     contractingAgency: true,
@@ -336,6 +337,12 @@ export function EmployeeReports() {
       }
       
       setSelectedReport(report)
+      
+      // Get all filtered reports except the selected one
+      const otherReports = filteredReports
+        .filter(r => r.id !== reportId);
+      
+      setPreviewReports(otherReports);
       setShowDownloadDialog(true)
     } catch (error) {
       console.error(`Помилка при завантаженні звіту ID: ${reportId}:`, error)
@@ -410,13 +417,26 @@ export function EmployeeReports() {
                       const employeeReport = filteredReports.find(r => r.employeeId === empId);
                       if (employeeReport) {
                         setSelectedReport(employeeReport);
+                        
+                        // Get all filtered reports except the selected one
+                        const otherReports = filteredReports
+                          .filter(r => r.id !== employeeReport.id);
+                        
+                        setPreviewReports(otherReports);
                         setShowDownloadDialog(true);
                         return;
                       }
                     }
                     
                     // Otherwise, show dialog for the first filtered report
-                    setSelectedReport(filteredReports[0]);
+                    const firstReport = filteredReports[0];
+                    setSelectedReport(firstReport);
+                    
+                    // Get all filtered reports except the selected one
+                    const otherReports = filteredReports
+                      .filter(r => r.id !== firstReport.id);
+                    
+                    setPreviewReports(otherReports);
                     setShowDownloadDialog(true);
                   } else {
                     alert('Немає звітів для завантаження за обраними фільтрами');
@@ -599,14 +619,15 @@ export function EmployeeReports() {
 
       {/* Діалог для вибору стовпців та попереднього перегляду */}
       <Dialog open={showDownloadDialog} onOpenChange={setShowDownloadDialog}>
-        <DialogContent className="sm:max-w-4xl">
+        <DialogContent className="sm:max-w-4xl max-h-screen flex flex-col">
           <DialogHeader>
             <DialogTitle>Завантажити звіт</DialogTitle>
             <DialogDescription>
               Оберіть стовпці для включення в Excel звіт
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-row flex-wrap gap-4 py-4">
+          
+          <div className="flex flex-row flex-wrap gap-4 py-4 overflow-y-auto">
             <div className="flex items-center space-x-2">
               <Checkbox 
                 id="company-checkbox" 
@@ -740,8 +761,9 @@ export function EmployeeReports() {
               </label>
             </div>
           </div>
-          <div className="border rounded-md p-2 my-4 overflow-x-auto" style={{ maxHeight: "500px", overflowY: "auto" }}>
-            <h3 className="font-medium mb-2">Попередній перегляд таблиці</h3>
+          
+          <div className="overflow-y-auto" style={{ maxHeight: "350px" }}>
+            <h3 className="font-medium mb-2">Попередній перегляд таблиці ({previewReports.length + (selectedReport ? 1 : 0)} звітів)</h3>
             {selectedReport && (
               <Table className="min-w-full">
                 <TableHeader>
@@ -778,7 +800,7 @@ export function EmployeeReports() {
                   </TableRow>
 
                   {/* Дополнительные отчеты для примера */}
-                  {reports.slice(0, 2).filter(r => r.id !== selectedReport.id).map(report => (
+                  {previewReports.map(report => (
                     <TableRow key={`preview-${report.id}`}>
                       {selectedColumns.company && <TableCell>{report.company}</TableCell>}
                       {selectedColumns.fullName && <TableCell>{report.employee}</TableCell>}
@@ -799,7 +821,8 @@ export function EmployeeReports() {
               </Table>
             )}
           </div>
-          <DialogFooter>
+          
+          <DialogFooter className="mt-4 pt-2 border-t">
             <Button variant="outline" onClick={() => setShowDownloadDialog(false)}>
               Скасувати
             </Button>
