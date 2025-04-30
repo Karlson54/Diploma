@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import { Calendar, Menu, X, FileText, LogOut, BarChart3, Users, Building, FileSpreadsheet } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -13,6 +13,7 @@ export function SimpleSidebar() {
   const isMobile = useMobile()
   const [isOpen, setIsOpen] = useState(!isMobile)
   const router = useRouter()
+  const pathname = usePathname()
   const { signOut } = useClerk()
   const { user, isLoaded } = useUser()
   const isAdmin = isLoaded && user?.publicMetadata?.role === "admin"
@@ -69,7 +70,12 @@ export function SimpleSidebar() {
                 <li>
                   <Link
                     href="/dashboard"
-                    className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 hover:text-gray-900 hover:bg-gray-50",
+                      pathname === "/dashboard" 
+                        ? "text-gray-900 bg-gray-100 font-medium" 
+                        : "text-gray-500"
+                    )}
                   >
                     <Calendar className="h-5 w-5" />
                     <span>Облік часу</span>
@@ -78,7 +84,12 @@ export function SimpleSidebar() {
                 <li>
                   <Link
                     href="/reports"
-                    className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 hover:text-gray-900 hover:bg-gray-50",
+                      pathname === "/reports" 
+                        ? "text-gray-900 bg-gray-100 font-medium" 
+                        : "text-gray-500"
+                    )}
                   >
                     <FileText className="h-5 w-5" />
                     <span>Мої звіти</span>
@@ -93,7 +104,12 @@ export function SimpleSidebar() {
                 <li>
                   <Link
                     href="/admin"
-                    className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-900 bg-gray-100 font-medium"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 hover:text-gray-900 hover:bg-gray-50",
+                      pathname === "/admin" 
+                        ? "text-gray-900 bg-gray-100 font-medium" 
+                        : "text-gray-500"
+                    )}
                   >
                     <BarChart3 className="h-5 w-5" />
                     <span>Дашборд</span>
@@ -102,7 +118,12 @@ export function SimpleSidebar() {
                 <li>
                   <Link
                     href="/admin/reports"
-                    className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 hover:text-gray-900 hover:bg-gray-50",
+                      pathname === "/admin/reports" 
+                        ? "text-gray-900 bg-gray-100 font-medium" 
+                        : "text-gray-500"
+                    )}
                   >
                     <FileSpreadsheet className="h-5 w-5" />
                     <span>Звіти</span>
@@ -111,7 +132,12 @@ export function SimpleSidebar() {
                 <li>
                   <Link
                     href="/admin/companies"
-                    className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 hover:text-gray-900 hover:bg-gray-50",
+                      pathname === "/admin/companies" 
+                        ? "text-gray-900 bg-gray-100 font-medium" 
+                        : "text-gray-500"
+                    )}
                   >
                     <Building className="h-5 w-5" />
                     <span>Компанії</span>
@@ -120,7 +146,12 @@ export function SimpleSidebar() {
                 <li>
                   <Link
                     href="/admin/employees"
-                    className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 hover:text-gray-900 hover:bg-gray-50",
+                      pathname === "/admin/employees" 
+                        ? "text-gray-900 bg-gray-100 font-medium" 
+                        : "text-gray-500"
+                    )}
                   >
                     <Users className="h-5 w-5" />
                     <span>Співробітники</span>
@@ -133,7 +164,12 @@ export function SimpleSidebar() {
               <li>
                 <Link
                   href="/dashboard"
-                  className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-900 bg-gray-100 font-medium"
+                  className={cn(
+                    "flex items-center gap-3 rounded-md px-3 py-2 hover:text-gray-900 hover:bg-gray-50",
+                    pathname === "/dashboard" 
+                      ? "text-gray-900 bg-gray-100 font-medium" 
+                      : "text-gray-500"
+                  )}
                 >
                   <Calendar className="h-5 w-5" />
                   <span>Облік часу</span>
@@ -142,7 +178,12 @@ export function SimpleSidebar() {
               <li>
                 <Link
                   href="/reports"
-                  className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                  className={cn(
+                    "flex items-center gap-3 rounded-md px-3 py-2 hover:text-gray-900 hover:bg-gray-50",
+                    pathname === "/reports" 
+                      ? "text-gray-900 bg-gray-100 font-medium" 
+                      : "text-gray-500"
+                  )}
                 >
                   <FileText className="h-5 w-5" />
                   <span>Мої звіти</span>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import { BarChart3, Clock, Users, FileText, Menu, X, Building, FileSpreadsheet, LogOut, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -17,6 +17,7 @@ export function DashboardSidebar({ isAdmin = false }: DashboardSidebarProps) {
   const isMobile = useMobile()
   const [isOpen, setIsOpen] = useState(!isMobile)
   const router = useRouter()
+  const pathname = usePathname()
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen)
@@ -59,7 +60,12 @@ export function DashboardSidebar({ isAdmin = false }: DashboardSidebarProps) {
                 <li>
                   <Link
                     href="/admin/user-dashboard"
-                    className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 hover:text-gray-900 hover:bg-gray-50",
+                      pathname === "/admin/user-dashboard" 
+                        ? "text-gray-900 bg-gray-100 font-medium" 
+                        : "text-gray-500"
+                    )}
                   >
                     <Calendar className="h-5 w-5" />
                     <span>Календар</span>
@@ -68,7 +74,12 @@ export function DashboardSidebar({ isAdmin = false }: DashboardSidebarProps) {
                 <li>
                   <Link
                     href="/admin/user-reports"
-                    className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 hover:text-gray-900 hover:bg-gray-50",
+                      pathname === "/admin/user-reports" 
+                        ? "text-gray-900 bg-gray-100 font-medium" 
+                        : "text-gray-500"
+                    )}
                   >
                     <FileText className="h-5 w-5" />
                     <span>Мої звіти</span>
@@ -83,7 +94,12 @@ export function DashboardSidebar({ isAdmin = false }: DashboardSidebarProps) {
                 <li>
                   <Link
                     href="/admin"
-                    className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-900 bg-gray-100 font-medium"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 hover:text-gray-900 hover:bg-gray-50",
+                      pathname === "/admin" 
+                        ? "text-gray-900 bg-gray-100 font-medium" 
+                        : "text-gray-500"
+                    )}
                   >
                     <BarChart3 className="h-5 w-5" />
                     <span>Дашборд</span>
@@ -92,7 +108,12 @@ export function DashboardSidebar({ isAdmin = false }: DashboardSidebarProps) {
                 <li>
                   <Link
                     href="/admin/reports"
-                    className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 hover:text-gray-900 hover:bg-gray-50",
+                      pathname === "/admin/reports" 
+                        ? "text-gray-900 bg-gray-100 font-medium" 
+                        : "text-gray-500"
+                    )}
                   >
                     <FileSpreadsheet className="h-5 w-5" />
                     <span>Звіти</span>
@@ -101,7 +122,12 @@ export function DashboardSidebar({ isAdmin = false }: DashboardSidebarProps) {
                 <li>
                   <Link
                     href="/admin/companies"
-                    className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 hover:text-gray-900 hover:bg-gray-50",
+                      pathname === "/admin/companies" 
+                        ? "text-gray-900 bg-gray-100 font-medium" 
+                        : "text-gray-500"
+                    )}
                   >
                     <Building className="h-5 w-5" />
                     <span>Компанії</span>
@@ -110,7 +136,12 @@ export function DashboardSidebar({ isAdmin = false }: DashboardSidebarProps) {
                 <li>
                   <Link
                     href="/admin/employees"
-                    className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 hover:text-gray-900 hover:bg-gray-50",
+                      pathname === "/admin/employees" 
+                        ? "text-gray-900 bg-gray-100 font-medium" 
+                        : "text-gray-500"
+                    )}
                   >
                     <Users className="h-5 w-5" />
                     <span>Співробітники</span>
@@ -133,7 +164,12 @@ export function DashboardSidebar({ isAdmin = false }: DashboardSidebarProps) {
               <li>
                 <Link
                   href="/"
-                  className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-900 bg-gray-100 font-medium"
+                  className={cn(
+                    "flex items-center gap-3 rounded-md px-3 py-2 hover:text-gray-900 hover:bg-gray-50",
+                    pathname === "/" 
+                      ? "text-gray-900 bg-gray-100 font-medium" 
+                      : "text-gray-500"
+                  )}
                 >
                   <BarChart3 className="h-5 w-5" />
                   <span>Дашборд</span>
@@ -141,8 +177,13 @@ export function DashboardSidebar({ isAdmin = false }: DashboardSidebarProps) {
               </li>
               <li>
                 <Link
-                  href="#"
-                  className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                  href="/time-tracking"
+                  className={cn(
+                    "flex items-center gap-3 rounded-md px-3 py-2 hover:text-gray-900 hover:bg-gray-50",
+                    pathname === "/time-tracking" 
+                      ? "text-gray-900 bg-gray-100 font-medium" 
+                      : "text-gray-500"
+                  )}
                 >
                   <Clock className="h-5 w-5" />
                   <span>Облік часу</span>
@@ -150,8 +191,13 @@ export function DashboardSidebar({ isAdmin = false }: DashboardSidebarProps) {
               </li>
               <li>
                 <Link
-                  href="#"
-                  className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                  href="/reports"
+                  className={cn(
+                    "flex items-center gap-3 rounded-md px-3 py-2 hover:text-gray-900 hover:bg-gray-50",
+                    pathname === "/reports" 
+                      ? "text-gray-900 bg-gray-100 font-medium" 
+                      : "text-gray-500"
+                  )}
                 >
                   <FileText className="h-5 w-5" />
                   <span>Звіти</span>
