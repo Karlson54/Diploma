@@ -318,7 +318,7 @@ export function EmployeeReports() {
               <CardDescription>Загальна інформація по звітах</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
+              <Table className="min-w-full table-fixed">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Дата</TableHead>
@@ -395,7 +395,7 @@ export function EmployeeReports() {
                   </div>
                 </div>
 
-                <Table>
+                <Table className="min-w-full table-fixed">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Дата</TableHead>

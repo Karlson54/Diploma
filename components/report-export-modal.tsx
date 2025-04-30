@@ -277,7 +277,7 @@ export function ReportExportModal({ isOpen, onClose, reportData }: ReportExportM
           
           <h3 className="text-sm font-medium mb-2">Попередній перегляд таблиці</h3>
           <div className="border rounded-md overflow-auto" style={{ maxHeight: "400px" }}>
-            <Table className="min-w-full">
+            <Table className="min-w-full table-fixed">
               <TableHeader>
                 <TableRow>
                   {selectedColumns.agency && <TableHead>Agency</TableHead>}
