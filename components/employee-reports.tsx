@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { DatePickerWithRange } from "@/components/date-range-picker"
-import { Download, Eye, FileSpreadsheet } from "lucide-react"
+import { Download, FileSpreadsheet } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { DateRange } from "react-day-picker"
 import ExcelJS from 'exceljs'
@@ -239,15 +239,6 @@ export function EmployeeReports() {
     }
   }
 
-  // Функція для перегляду деталей звіту
-  const [selectedReport, setSelectedReport] = useState<Report | null>(null)
-  const [showDetails, setShowDetails] = useState(false)
-
-  const viewReportDetails = (report: Report) => {
-    setSelectedReport(report)
-    setShowDetails(true)
-  }
-
   // Розрахунок загальної кількості годин
   const totalHours = reports.reduce((sum, report) => sum + report.totalHours, 0)
 
@@ -349,10 +340,6 @@ export function EmployeeReports() {
                         <TableCell>{report.companies}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
-                            <Button variant="ghost" size="icon" onClick={() => viewReportDetails(report)}>
-                              <Eye className="h-4 w-4" />
-                              <span className="sr-only">Перегляд</span>
-                            </Button>
                             <Button variant="ghost" size="icon" onClick={() => downloadReport(report.id)}>
                               <Download className="h-4 w-4" />
                               <span className="sr-only">Завантажити</span>
@@ -442,42 +429,6 @@ export function EmployeeReports() {
           </Card>
         </TabsContent>
       </Tabs>
-
-      {showDetails && selectedReport && (
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <div>
-                <CardTitle>Деталі звіту за {selectedReport.date}</CardTitle>
-                <CardDescription>Загальний час: {selectedReport.totalHours} годин</CardDescription>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => setShowDetails(false)}>
-                Закрити
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Компанія</TableHead>
-                  <TableHead>Опис роботи</TableHead>
-                  <TableHead>Години</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {selectedReport.tasks.map((task, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{task.company}</TableCell>
-                    <TableCell>{task.description}</TableCell>
-                    <TableCell>{task.hours}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
 
       <ReportExportModal 
         isOpen={showExportModal}
