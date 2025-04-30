@@ -5,28 +5,12 @@ import { auth } from '@clerk/nextjs/server';
 // Get user's reports
 export async function GET(request: Request) {
   try {
-    // Get the current user's ID
-    const { userId } = await auth();
-    
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    
-    // Find the employee record for the current user
-    const employees = await employeeQueries.getAll();
-    const currentEmployee = employees.find(emp => emp.clerkId === userId);
-    
-    if (!currentEmployee) {
-      return NextResponse.json({ error: 'Employee record not found' }, { status: 404 });
-    }
-    
-    // Get reports for this employee
-    const reports = await reportQueries.getByEmployeeId(currentEmployee.id);
-    
-    return NextResponse.json({ reports });
+    // Get all reports with employee data
+    const reports = await reportQueries.getAllWithEmployee();
+    return NextResponse.json(reports);
   } catch (error) {
-    console.error("API Error:", error);
-    return NextResponse.json({ error: "Failed to fetch reports" }, { status: 500 });
+    console.error('Error fetching reports:', error);
+    return NextResponse.json({ error: 'Failed to fetch reports' }, { status: 500 });
   }
 }
 

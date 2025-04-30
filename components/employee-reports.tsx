@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { DatePickerWithRange } from "@/components/date-range-picker"
 import { Download, Eye, FileSpreadsheet } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { reportQueries } from "@/db/queries"
 import type { DateRange } from "react-day-picker"
 import ExcelJS from 'exceljs'
 import { ReportExportModal } from "@/components/report-export-modal"
@@ -26,6 +25,23 @@ interface Report {
   tasks: ReportTask[];
 }
 
+// Define interface for API response
+interface ApiReport {
+  report: {
+    id: number;
+    date: string;
+    hours: number;
+    client?: string;
+    contractingAgency?: string;
+    jobType?: string;
+  };
+  employee: {
+    id: number;
+    name: string;
+    agency: string;
+  };
+}
+
 export function EmployeeReports() {
   // Initialize with definite from and to dates
   const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
@@ -41,11 +57,16 @@ export function EmployeeReports() {
   const [showExportModal, setShowExportModal] = useState(false)
   const [exportData, setExportData] = useState<any[]>([])
 
-  // Fetch reports from the database
+  // Fetch reports from the API instead of directly from the database
   useEffect(() => {
     async function fetchReports() {
       try {
-        const allReports = await reportQueries.getAllWithEmployee()
+        // Fetch from API endpoint instead of directly using database functions
+        const response = await fetch('/api/reports');
+        if (!response.ok) {
+          throw new Error('Failed to fetch reports');
+        }
+        const allReports: ApiReport[] = await response.json();
         
         // Transform reports to required format
         const formattedReports: Report[] = allReports.map(report => {
