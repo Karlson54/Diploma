@@ -161,6 +161,20 @@ export async function POST(request: Request) {
                 }
               });
             }
+            
+            // Handle password update if a new password was provided
+            if (employee.password && employee.password.trim() !== '') {
+              try {
+                await client.users.updateUser(existingEmployee.clerkId, {
+                  password: employee.password
+                });
+              } catch (passwordError) {
+                console.error("Error updating user password in Clerk:", passwordError);
+                return NextResponse.json({ 
+                  error: "Employee data updated but password change failed" 
+                }, { status: 500 });
+              }
+            }
           } catch (clerkError) {
             console.error("Error updating user in Clerk:", clerkError);
             return NextResponse.json({ 

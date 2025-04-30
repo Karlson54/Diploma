@@ -30,7 +30,9 @@ interface Employee {
   agency?: string;
 }
 
-interface EditingEmployee extends Employee {}
+interface EditingEmployee extends Employee {
+  password?: string;
+}
 
 export function EmployeesList() {
   const [employees, setEmployees] = useState<Employee[]>([])
@@ -508,6 +510,19 @@ export function EmployeesList() {
                                       </SelectContent>
                                     </Select>
                                   </div>
+                                </div>
+                                <div className="space-y-2 mt-2">
+                                  <Label htmlFor="edit-password">Пароль</Label>
+                                  <Input
+                                    id="edit-password"
+                                    type="password"
+                                    placeholder="Введіть новий пароль"
+                                    value={editingEmployee.password || ''}
+                                    onChange={(e) => setEditingEmployee({ ...editingEmployee, password: e.target.value })}
+                                  />
+                                  <p className="text-sm text-gray-500">
+                                    Залиште порожнім, якщо не хочете змінювати пароль
+                                  </p>
                                 </div>
                                 <div className="space-y-2 mt-2">
                                   <Label htmlFor="edit-agency">Агенція</Label>
