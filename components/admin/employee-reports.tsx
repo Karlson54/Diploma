@@ -290,14 +290,33 @@ export function EmployeeReports() {
     if (!selectedReport) return;
     
     try {
-      await createAndDownloadExcel(
-        [selectedReport], 
-        `Звіт_${selectedReport.employee.replace(/\s+/g, '_')}_${selectedReport.date.replace(/\./g, '-')}.xlsx`
-      )
-      setShowDownloadDialog(false)
+      // Формируем массив отчетов для экспорта - все отфильтрованные отчеты
+      // Начиная с выбранного, затем все остальные из previewReports
+      const reportsToExport = [selectedReport, ...previewReports];
+      
+      // Формируем имя файла
+      let fileName = 'Reports_';
+      
+      // Если выбран конкретный сотрудник, добавляем его имя в имя файла
+      if (selectedEmployee !== "all") {
+        const emp = employees.find(e => e.id.toString() === selectedEmployee);
+        if (emp) {
+          fileName += `${emp.name.replace(/\s+/g, '_')}_`;
+        }
+      }
+      
+      // Добавляем даты в имя файла
+      const fromDate = dateRange.from.toLocaleDateString().replace(/\./g, '-');
+      const toDate = dateRange.to.toLocaleDateString().replace(/\./g, '-');
+      fileName += `${fromDate}_${toDate}.xlsx`;
+      
+      // Экспортируем все отчеты в один Excel файл
+      await createAndDownloadExcel(reportsToExport, fileName);
+      
+      setShowDownloadDialog(false);
     } catch (error) {
-      console.error('Помилка при завантаженні звіту:', error)
-      alert('Виникла помилка при створенні Excel файлу')
+      console.error('Помилка при завантаженні звіту:', error);
+      alert('Виникла помилка при створенні Excel файлу');
     }
   }
 
