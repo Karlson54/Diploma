@@ -9,6 +9,7 @@ import { cn, formatEmployeeName } from "@/lib/utils"
 import { useMobile } from "@/hooks/use-mobile"
 import { useClerk, useUser } from "@clerk/nextjs"
 import { useCurrentEmployee } from "@/hooks/use-current-employee"
+import { LanguageSwitcher } from "./language-switcher"
 
 export function SimpleSidebar() {
   const isMobile = useMobile()
@@ -206,14 +207,17 @@ export function SimpleSidebar() {
           )}
           
           <div className="mt-6 pt-6 border-t">
-            <Button
-              variant="ghost"
-              className="w-full flex items-center justify-start gap-3 rounded-md px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-              onClick={handleLogout}
-            >
-              <LogOut className="h-5 w-5" />
-              <span>Вийти</span>
-            </Button>
+            <div className="flex justify-between items-center">
+              <Button
+                variant="ghost"
+                className="flex items-center justify-start gap-3 rounded-md px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-5 w-5" />
+                <span>Вийти</span>
+              </Button>
+              <LanguageSwitcher />
+            </div>
           </div>
         </nav>
       </div>

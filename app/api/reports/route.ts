@@ -5,12 +5,34 @@ import { auth } from '@clerk/nextjs/server';
 // Get user's reports
 export async function GET(request: Request) {
   try {
+    // Get the request URL to check for query parameters
+    const { searchParams } = new URL(request.url);
+    const currentUserOnly = searchParams.get('currentUserOnly') === 'true';
+    
+    // Get the current user's ID if we need to filter
+    const { userId } = await auth();
+    
     // Get all reports with employee data and related company information
     const reports = await reportQueries.getAllWithEmployee();
     
+    // Filter reports by current user if requested
+    let filteredReports = reports;
+    if (currentUserOnly && userId) {
+      // Find the employee record for the current user
+      const employees = await employeeQueries.getAll();
+      const currentEmployee = employees.find(emp => emp.clerkId === userId);
+      
+      if (currentEmployee) {
+        // Filter reports to only include those belonging to the current user
+        filteredReports = reports.filter(report => 
+          report.employee && report.employee.id === currentEmployee.id
+        );
+      }
+    }
+    
     // For each report, ensure we have all the data needed for export
     const enrichedReports = await Promise.all(
-      reports.map(async (report) => {
+      filteredReports.map(async (report) => {
         // Get additional details for each report if needed
         const detailedReport = await reportQueries.getByIdWithDetails(report.report.id);
         

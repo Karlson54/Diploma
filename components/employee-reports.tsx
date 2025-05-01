@@ -74,12 +74,22 @@ export function EmployeeReports() {
   useEffect(() => {
     async function fetchReports() {
       try {
-        // Fetch from API endpoint instead of directly using database functions
-        const response = await fetch('/api/reports');
+        // Fetch from API endpoint with the current user filter
+        const response = await fetch('/api/reports?currentUserOnly=true');
         if (!response.ok) {
           throw new Error('Failed to fetch reports');
         }
-        const allReports: ApiReport[] = await response.json();
+        const data = await response.json();
+        
+        // Check if the response contains a reports array
+        const allReports: ApiReport[] = Array.isArray(data) ? data : (data.reports || []);
+        
+        // Ensure allReports is an array before using map
+        if (!Array.isArray(allReports)) {
+          console.error("API returned non-array data:", allReports);
+          setReports([]);
+          return;
+        }
         
         // Transform reports to required format
         const formattedReports: Report[] = allReports.map(report => {
@@ -443,10 +453,10 @@ export function EmployeeReports() {
               <Table className="min-w-full table-fixed">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('calendar.date')}</TableHead>
-                    <TableHead>{t('calendar.hours')}</TableHead>
-                    <TableHead>{t('calendar.companies')}</TableHead>
-                    <TableHead>{t('calendar.actions')}</TableHead>
+                    <TableHead>{t('admin.reports.tableHeaders.date')}</TableHead>
+                    <TableHead>{t('admin.reports.tableHeaders.hours')}</TableHead>
+                    <TableHead>{t('admin.reports.tableHeaders.companies')}</TableHead>
+                    <TableHead>{t('admin.reports.tableHeaders.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -520,10 +530,10 @@ export function EmployeeReports() {
                 <Table className="min-w-full table-fixed">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('calendar.date')}</TableHead>
-                      <TableHead>{t('admin.reports.detailed.company')}</TableHead>
-                      <TableHead>{t('admin.reports.detailed.task')}</TableHead>
-                      <TableHead>{t('calendar.hours')}</TableHead>
+                      <TableHead>{t('admin.reports.tableHeaders.date')}</TableHead>
+                      <TableHead>{t('admin.reports.tableHeaders.company')}</TableHead>
+                      <TableHead>{t('admin.reports.tableHeaders.jobType')}</TableHead>
+                      <TableHead>{t('admin.reports.tableHeaders.hours')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
