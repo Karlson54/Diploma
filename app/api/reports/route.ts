@@ -8,15 +8,11 @@ export async function GET(request: Request) {
     // Get all reports with employee data and related company information
     const reports = await reportQueries.getAllWithEmployee();
     
-    console.log("Raw reports from database:", reports.slice(0, 1));
-    
     // For each report, ensure we have all the data needed for export
     const enrichedReports = await Promise.all(
       reports.map(async (report) => {
         // Get additional details for each report if needed
         const detailedReport = await reportQueries.getByIdWithDetails(report.report.id);
-        
-        console.log("Detailed report from database:", detailedReport);
         
         // Make sure we have complete employee data
         let employeeData = report.employee;
@@ -68,8 +64,6 @@ export async function GET(request: Request) {
           // Add any companies associated with the report
           companies: detailedReport?.companies || []
         };
-        
-        console.log("Enhanced report:", enhancedReport);
         
         return enhancedReport;
       })

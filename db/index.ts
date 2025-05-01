@@ -10,10 +10,8 @@ export const db = drizzle(sqlite, { schema });
 
 // Run migrations on database initialization
 export async function runMigrations() {
-  console.log('Running migrations...');
   try {
     migrate(db, { migrationsFolder: path.resolve(process.cwd(), 'drizzle') });
-    console.log('Migrations completed successfully');
   } catch (error) {
     console.error('Error running migrations:', error);
     throw error;

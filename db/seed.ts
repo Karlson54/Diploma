@@ -26,8 +26,6 @@ function createEmail(name: string, agency: string): string {
 }
 
 async function seed() {
-  console.log('🌱 Seeding database...');
-  
   try {
     // Read and parse the CSV file
     const csvData = fs.readFileSync('./Книга1.csv', 'utf8');
@@ -43,8 +41,6 @@ async function seed() {
     const contractingAgencies = new Set<string>();
     const mediaTypes = new Set<string>();
     const jobTypes = new Set<string>();
-    
-    console.log(`📊 Processing ${records.length} CSV records...`);
     
     // Skip the first two rows (headers)
     for (let i = 2; i < records.length; i++) {
@@ -85,7 +81,6 @@ async function seed() {
     }
     
     // Insert agencies as companies
-    console.log('🏢 Inserting agencies as companies...');
     let agencyCount = 0;
     for (const agency of agencies) {
       if (agency) {
@@ -107,7 +102,6 @@ async function seed() {
     }
     
     // Insert contracting agencies as companies if not already added
-    console.log('🏢 Inserting contracting agencies as companies...');
     let contractingAgencyCount = 0;
     for (const agency of contractingAgencies) {
       if (agency && !agencies.has(agency)) {
@@ -129,7 +123,6 @@ async function seed() {
     }
     
     // Insert people as employees
-    console.log('👥 Inserting people as employees...');
     let employeeCount = 0;
     for (const person of peopleData) {
       if (person.name) {
@@ -141,7 +134,7 @@ async function seed() {
             department: person.agency,
             joinDate: new Date().toISOString().split('T')[0],
             status: 'Active',
-            company: person.agency,
+            agency: person.agency,
           }).onConflictDoNothing();
           employeeCount++;
         } catch (error) {
@@ -151,7 +144,6 @@ async function seed() {
     }
     
     // Insert clients
-    console.log('🔶 Inserting clients...');
     let clientCount = 0;
     for (const client of clientsData) {
       if (client) {
@@ -165,18 +157,8 @@ async function seed() {
         }
       }
     }
-    
-    console.log('\n✅ Seed completed successfully!');
-    console.log(`📊 Summary:`);
-    console.log(`  - Inserted ${agencyCount} agencies as companies`);
-    console.log(`  - Inserted ${contractingAgencyCount} contracting agencies`);
-    console.log(`  - Inserted ${employeeCount} employees`);
-    console.log(`  - Inserted ${clientCount} clients`);
-    console.log(`  - Found ${mediaTypes.size} media types`);
-    console.log(`  - Found ${jobTypes.size} job types`);
-    
   } catch (error) {
-    console.error('❌ Seed failed:', error);
+    console.error('Seed failed:', error);
   } finally {
     sqlite.close();
   }

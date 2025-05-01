@@ -12,14 +12,11 @@ async function generateRandomDate(start: Date, end: Date): Promise<string> {
 }
 
 async function loadReports() {
-  console.log('🌱 Loading 10 more reports into database...');
-  
   try {
     // Get all employees
     const allEmployees = await db.select().from(employees).all();
     
     if (allEmployees.length === 0) {
-      console.log('❌ No employees found. Please add employees before creating reports.');
       return;
     }
     
@@ -27,7 +24,6 @@ async function loadReports() {
     const allCompanies = await db.select().from(companies).all();
     
     if (allCompanies.length === 0) {
-      console.log('❌ No companies found. Please add companies before creating reports.');
       return;
     }
     
@@ -37,7 +33,6 @@ async function loadReports() {
     }).from(reports).all();
     
     if (existingReports.length === 0) {
-      console.log('❌ No existing reports found to use dates from.');
       return;
     }
     
@@ -102,15 +97,10 @@ async function loadReports() {
               }))
             );
         }
-        
-        console.log(`✅ Additional Report ${i + 1} added for employee ${employee.name} on ${reportDate}`);
       });
     }
-    
-    console.log('\n✅ Successfully added 10 more reports to the database!');
-    
   } catch (error) {
-    console.error('❌ Failed to load reports:', error);
+    console.error('Failed to load reports:', error);
   } finally {
     sqlite.close();
   }

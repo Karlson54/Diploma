@@ -2,105 +2,68 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import { db } from './index';
 
-async function migrateAddCompanyColumn() {
-  console.log('🔄 Starting database migration to add company column...');
-  
-  // Initialize the database connection
-  const sqlite = new Database('./data.db');
-  const db = drizzle(sqlite);
-  
+export async function addCompanyColumn() {
   try {
-    // Add company column to employees table if it doesn't exist
-    console.log('📊 Adding "company" column to employees table...');
-    await db.run(`ALTER TABLE employees ADD COLUMN company TEXT;`);
+    // Add the company column
+    db.run(`ALTER TABLE employees ADD COLUMN company TEXT;`);
     
-    // Update employees to set company equal to department
-    console.log('📊 Updating employees to set company = department...');
-    await db.run(`UPDATE employees SET company = department WHERE company IS NULL;`);
+    // Update existing employees to set company equal to department
+    db.run(`UPDATE employees SET company = department;`);
     
-    console.log(`\n✅ Migration completed successfully!`);
-    
+    return true;
   } catch (error) {
-    console.error('❌ Migration failed:', error);
-  } finally {
-    sqlite.close();
+    console.error('Error in migration:', error);
+    return false;
   }
 }
 
-async function migrateCompanyToAgency() {
-  console.log('🔄 Starting database migration to rename company column to agency...');
-  
+export async function renameCompanyToAgency() {
   try {
-    // Create a new agency column
-    console.log('📊 Adding "agency" column to employees table...');
-    await db.run(`ALTER TABLE employees ADD COLUMN agency TEXT;`);
+    // Add the agency column
+    db.run(`ALTER TABLE employees ADD COLUMN agency TEXT;`);
     
-    // Copy data from company column to agency column
-    console.log('📊 Copying data from company column to agency column...');
-    await db.run(`UPDATE employees SET agency = company;`);
+    // Copy data from company to agency
+    db.run(`UPDATE employees SET agency = company;`);
     
-    // You can't drop columns in SQLite directly, but in a production environment 
-    // you would recreate the table without the company column
-    console.log('✅ Migration completed successfully!');
+    return true;
   } catch (error) {
-    console.error('❌ Migration failed:', error);
+    console.error('Error in migration:', error);
+    return false;
   }
 }
 
-async function removeCompanyColumn() {
-  console.log('🔄 Starting migration to remove company column...');
-  
-  // Initialize a direct connection to SQLite
-  const sqlite = new Database('./data.db');
-  
+export async function removeCompanyColumn() {
   try {
-    // In SQLite, you can't directly drop a column.
-    // We need to create a new table without the column, copy the data, and swap tables.
-    
-    // Step 1: Begin transaction
-    sqlite.prepare('BEGIN TRANSACTION').run();
-    
-    // Step 2: Create a new table without the company column
-    console.log('📊 Creating new employees table without company column...');
-    sqlite.prepare(`
+    // Create new table without company column
+    db.run(`
       CREATE TABLE employees_new (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
-        email TEXT NOT NULL,
-        position TEXT NOT NULL,
-        department TEXT NOT NULL,
-        join_date TEXT NOT NULL,
-        status TEXT NOT NULL,
-        clerk_id TEXT,
-        agency TEXT
-      )
-    `).run();
+        email TEXT,
+        department TEXT,
+        agency TEXT,
+        clerkId TEXT,
+        role TEXT DEFAULT 'user',
+        active INTEGER DEFAULT 1
+      );
+    `);
     
-    // Step 3: Copy data from old table to new table
-    console.log('📊 Migrating data to new structure...');
-    sqlite.prepare(`
-      INSERT INTO employees_new (id, name, email, position, department, join_date, status, clerk_id, agency)
-      SELECT id, name, email, position, department, join_date, status, clerk_id, agency FROM employees
-    `).run();
+    // Migrate data to new structure
+    db.run(`
+      INSERT INTO employees_new (id, name, email, department, agency, clerkId, role, active)
+      SELECT id, name, email, department, agency, clerkId, role, active FROM employees;
+    `);
     
-    // Step 4: Drop the old table
-    console.log('📊 Removing old table structure...');
-    sqlite.prepare('DROP TABLE employees').run();
+    // Remove old table structure
+    db.run(`DROP TABLE employees;`);
     
-    // Step 5: Rename the new table to the original name
-    console.log('📊 Finalizing new structure...');
-    sqlite.prepare('ALTER TABLE employees_new RENAME TO employees').run();
+    // Rename new table to employees
+    db.run(`ALTER TABLE employees_new RENAME TO employees;`);
     
-    // Step 6: Commit transaction
-    sqlite.prepare('COMMIT').run();
-    
-    console.log('✅ Migration completed successfully! Column "company" has been removed.');
+    return true;
   } catch (error) {
-    // Rollback on error
-    console.error('❌ Migration failed:', error);
-    sqlite.prepare('ROLLBACK').run();
-  } finally {
-    sqlite.close();
+    console.error('Error in migration:', error);
+    return false;
   }
 }
 
