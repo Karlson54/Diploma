@@ -54,7 +54,7 @@ export function ReportExportModal({ isOpen, onClose, reportData }: ReportExportM
   }, [isOpen, reportData]);
 
   // Ensure previewData has content even if reportData is empty
-  const previewData = reportData.length > 0 ? reportData.slice(0, 2) : [{
+  const previewData = reportData.length > 0 ? reportData.slice(0, 10) : [{
     date: '22.04.2025',
     market: 'Європа',
     agency: 'MediaCom',
