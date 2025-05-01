@@ -4,6 +4,7 @@
       "title": "Employee Reports",
       "description": "View and export time reports",
       "exportAllToExcel": "Export All to Excel",
+      "loadingReports": "Loading reports...",
       "filters": {
         "title": "Report Filters",
         "description": "Select parameters to display reports",
@@ -19,7 +20,11 @@
         "detailed": "Detailed Report",
         "summaryTitle": "Report Summary",
         "summaryDescription": "General information about employee reports",
-        "noReportsAvailable": "No reports available for the selected period"
+        "noReportsAvailable": "No reports available for the selected period",
+        "totalHoursTitle": "Total Hours",
+        "period": "For the selected period",
+        "reportsCountTitle": "Number of Reports",
+        "avgTimePerDay": "Average Time per Day"
       },
       "detailed": {
         "title": "Detailed Report",
@@ -37,7 +42,8 @@
         "comment": "Comment",
         "exportToExcel": "Export to Excel",
         "selectEmployeeTitle": "Select an employee",
-        "selectEmployeeHint": "To view a detailed report, select a specific employee in the filters above"
+        "selectEmployeeHint": "To view a detailed report, select a specific employee in the filters above",
+        "company": "Company"
       },
       "downloadDialog": {
         "title": "Download Report",
@@ -45,7 +51,9 @@
         "tablePreview": "Table Preview",
         "reports": "reports",
         "download": "Download",
-        "cancel": "Cancel"
+        "cancel": "Cancel",
+        "noDataToExport": "No data to export",
+        "noReportsToExport": "No reports to export"
       },
       "tableHeaders": {
         "name": "Name", 
@@ -169,6 +177,7 @@
   "calendar": {
     "title": "Working Time Calendar",
     "description": "Select a day to add or view entries",
+    "adminRole": "Administrator",
     "week": "Week {{from}} - {{to}}",
     "entriesForDate": "Entries for {{date}}",
     "addEntry": "Add Entry",
@@ -229,5 +238,13 @@
     "spentTime": "Time spent (minutes)",
     "minutesHint": "90 = 1:30 h",
     "commentsPlaceholder": "Additional comments..."
+  },
+  "auth": {
+    "redirecting": "Redirecting...",
+    "checkingStatus": "Checking authentication status..."
+  },
+  "logout": {
+    "signingOut": "Signing out...",
+    "signingOutAndRedirecting": "Signing out and redirecting to login page."
   }
 } 

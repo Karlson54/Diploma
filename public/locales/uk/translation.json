@@ -4,6 +4,7 @@
       "title": "Звіти співробітників",
       "description": "Перегляд та експорт звітів про робочий час",
       "exportAllToExcel": "Експорт всіх в Excel",
+      "loadingReports": "Завантаження звітів...",
       "filters": {
         "title": "Фільтри звітів",
         "description": "Оберіть параметри для відображення звітів",
@@ -18,8 +19,12 @@
         "title": "Зведення",
         "detailed": "Детальний звіт",
         "summaryTitle": "Зведення звітів",
-        "summaryDescription": "Загальна інформація по звітах співробітників",
-        "noReportsAvailable": "Немає доступних звітів за обраний період"
+        "summaryDescription": "Загальна інформація по звітам співробітників",
+        "noReportsAvailable": "Немає доступних звітів за обраний період",
+        "totalHoursTitle": "Загальна кількість годин",
+        "period": "За обраний період",
+        "reportsCountTitle": "Кількість звітів",
+        "avgTimePerDay": "Середній час на день"
       },
       "detailed": {
         "title": "Детальний звіт",
@@ -37,7 +42,8 @@
         "comment": "Коментар",
         "exportToExcel": "Експорт в Excel",
         "selectEmployeeTitle": "Оберіть співробітника",
-        "selectEmployeeHint": "Для перегляду детального звіту оберіть конкретного співробітника у фільтрах вище"
+        "selectEmployeeHint": "Для перегляду детального звіту оберіть конкретного співробітника у фільтрах вище",
+        "company": "Компанія"
       },
       "downloadDialog": {
         "title": "Завантажити звіт",
@@ -45,7 +51,9 @@
         "tablePreview": "Попередній перегляд таблиці",
         "reports": "звітів",
         "download": "Завантажити",
-        "cancel": "Скасувати"
+        "cancel": "Скасувати",
+        "noDataToExport": "Немає даних для експорту",
+        "noReportsToExport": "Немає звітів для експорту"
       },
       "tableHeaders": {
         "name": "Name", 
@@ -169,6 +177,7 @@
   "calendar": {
     "title": "Календар робочого часу",
     "description": "Оберіть день для внесення або перегляду записів",
+    "adminRole": "Адміністратор",
     "week": "Тиждень {{from}} - {{to}}",
     "entriesForDate": "Записи за {{date}}",
     "addEntry": "Додати запис",
@@ -229,5 +238,13 @@
     "spentTime": "Витрачений час (хвилини)",
     "minutesHint": "90 = 1:30 год",
     "commentsPlaceholder": "Додаткові коментарі..."
+  },
+  "auth": {
+    "redirecting": "Перенаправлення...",
+    "checkingStatus": "Перевірка статусу авторизації..."
+  },
+  "logout": {
+    "signingOut": "Вихід з системи...",
+    "signingOutAndRedirecting": "Вихід з системи та перенаправлення на сторінку входу."
   }
 } 

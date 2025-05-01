@@ -225,16 +225,25 @@ export function WeeklyCalendar() {
     async function fetchReports() {
       try {
         setIsLoading(true);
+        console.log('Fetching reports from API...');
         const response = await fetch('/api/reports');
         
         if (!response.ok) {
-          throw new Error('Failed to fetch reports');
+          console.error('API response not OK:', response.status, response.statusText);
+          throw new Error(`Failed to fetch reports: ${response.status} ${response.statusText}`);
         }
         
         const data = await response.json();
+        console.log('Raw API response:', data);
         
         // Transform the reports to match the format expected by the component
-        const formattedReports = data.reports?.map((report: any) => {
+        // Проверяем, есть ли свойство reports в ответе
+        const reportsData = data.reports || [];
+        console.log('Reports data array:', reportsData);
+        const formattedReports = reportsData.map((item: any) => {
+          // Получаем объект отчета из данных API
+          const report = item.report;
+          
           // Format date from ISO to DD.MM.YYYY
           const dateObj = new Date(report.date);
           const formattedDate = dateObj.toLocaleDateString('uk-UA', {
@@ -253,11 +262,18 @@ export function WeeklyCalendar() {
             media: report.media || '',
             jobType: report.jobType || '',
             comments: report.comments || '',
-            hours: report.hours / 60, // Convert minutes back to hours for display
+            hours: report.hours || 0,
           };
         });
         
-        setAllReports(formattedReports);
+        console.log('Fetched reports:', formattedReports);
+        if (formattedReports.length > 0) {
+          // Полностью заменяем тестовые данные реальными отчетами из API
+          setAllReports(formattedReports);
+          console.log('Updated allReports with API data');
+        } else {
+          console.warn('No reports found in the API response, keeping example data');
+        }
       } catch (error) {
         console.error('Error fetching reports:', error);
         // Keep the example data if there's an error
@@ -279,13 +295,34 @@ export function WeeklyCalendar() {
         month: "2-digit",
         year: "numeric",
       })
-      .replace(/\./g, ".")
+      .replace(/\//g, ".")
 
-    return allReports.filter((report) => {
-      const [day, month, year] = report.date.split(".")
-      const reportDate = `${day}.${month}.${year}`
-      return reportDate === selectedDateStr
-    })
+    console.log(`Filtering reports for selected date: ${selectedDateStr}`);
+    
+    // Ensure allReports is an array before filtering
+    if (!Array.isArray(allReports)) {
+      console.warn('allReports is not an array:', allReports);
+      return [];
+    }
+
+    const filtered = allReports.filter((report) => {
+      if (!report || !report.date) return false;
+      
+      // Преобразуем формат даты отчета для сравнения
+      let reportDate;
+      if (report.date.includes('.')) {
+        reportDate = report.date;
+      } else {
+        const [day, month, year] = report.date.split(".")
+        reportDate = `${day}.${month}.${year}`
+      }
+      
+      const match = reportDate === selectedDateStr;
+      return match;
+    });
+    
+    console.log(`Found ${filtered.length} reports for ${selectedDateStr}:`, filtered);
+    return filtered;
   }
 
   // Проверка наличия записей на конкретный день
@@ -296,12 +333,28 @@ export function WeeklyCalendar() {
         month: "2-digit",
         year: "numeric",
       })
-      .replace(/\./g, ".")
+      .replace(/\//g, ".")
 
-    return allReports.some((report) => {
-      const [day, month, year] = report.date.split(".")
-      const reportDate = `${day}.${month}.${year}`
-      return reportDate === dateStr
+    console.log(`Checking records for date: ${dateStr}, allReports:`, allReports);
+    
+    // Check if allReports is defined and is an array before calling .some()
+    return Array.isArray(allReports) && allReports.some((report) => {
+      if (!report || !report.date) return false;
+      
+      // Преобразуем формат даты отчета для сравнения
+      let reportDate;
+      if (report.date.includes('.')) {
+        reportDate = report.date;
+      } else {
+        const [day, month, year] = report.date.split(".")
+        reportDate = `${day}.${month}.${year}`
+      }
+      
+      const match = reportDate === dateStr;
+      if (match) {
+        console.log(`Found report for ${dateStr}:`, report);
+      }
+      return match;
     })
   }
 
@@ -788,7 +841,7 @@ export function WeeklyCalendar() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {stats.averageHours > 0 ? `${stats.averageHours.toFixed(1)} {t('calendar.hours')}` : "—"}
+                  {stats.averageHours > 0 ? `${stats.averageHours.toFixed(1)} ${t('calendar.hours')}` : "—"}
                 </div>
               </CardContent>
             </Card>

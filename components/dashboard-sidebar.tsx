@@ -68,7 +68,7 @@ export function DashboardSidebar({ isAdmin = false }: DashboardSidebarProps) {
           ) : isLoaded && user ? (
             <p className="text-sm font-medium mt-1">{t('calendar.loading')}</p>
           ) : (
-            <p className="text-sm font-medium mt-1">Завантаження...</p>
+            <p className="text-sm font-medium mt-1">{t('calendar.loading')}</p>
           )}
         </div>
         <nav className="flex-1 p-4">

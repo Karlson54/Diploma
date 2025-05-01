@@ -69,7 +69,8 @@ export async function GET(request: Request) {
       })
     );
     
-    return NextResponse.json(enrichedReports);
+    // Возвращаем данные в объекте с ключом reports
+    return NextResponse.json({ reports: enrichedReports });
   } catch (error) {
     console.error('Error fetching reports:', error);
     return NextResponse.json({ error: 'Failed to fetch reports' }, { status: 500 });

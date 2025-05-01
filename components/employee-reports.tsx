@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { DateRange } from "react-day-picker"
 import ExcelJS from 'exceljs'
 import { ReportExportModal } from "@/components/report-export-modal"
+import { useTranslation } from "react-i18next"
 
 interface ReportTask {
   company: string;
@@ -54,6 +55,7 @@ interface ApiReport {
 }
 
 export function EmployeeReports() {
+  const { t } = useTranslation()
   // Initialize with definite from and to dates
   const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   const today = new Date();
@@ -363,31 +365,31 @@ export function EmployeeReports() {
   const totalHours = reports.reduce((sum, report) => sum + report.totalHours, 0)
 
   if (loading) {
-    return <div>Загрузка отчетов...</div>;
+    return <div>{t('admin.reports.loadingReports')}</div>;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Мої звіти</h1>
-          <p className="text-gray-500">Перегляд та експорт ваших звітів робочого часу</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t('calendar.menu.myReports')}</h1>
+          <p className="text-gray-500">{t('admin.reports.description')}</p>
         </div>
         <Button onClick={downloadAllReports} className="gap-2">
           <FileSpreadsheet className="h-4 w-4" />
-          Експорт всіх в Excel
+          <span>{t('admin.reports.exportAllToExcel')}</span>
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Фільтри звітів</CardTitle>
-          <CardDescription>Оберіть період для відображення звітів</CardDescription>
+          <CardTitle>{t('admin.reports.filters.title')}</CardTitle>
+          <CardDescription>{t('admin.reports.filters.description')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="col-span-1 md:col-span-2">
-              <label className="text-sm font-medium mb-2 block">Період</label>
+              <label className="text-sm font-medium mb-2 block">{t('admin.reports.filters.period')}</label>
               <DatePickerWithRange date={dateRange} setDate={setDateRange} />
             </div>
           </div>
@@ -397,17 +399,17 @@ export function EmployeeReports() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Загальна кількість годин</CardTitle>
-            <CardDescription>За обраний період</CardDescription>
+            <CardTitle className="text-base">{t('admin.reports.summary.totalHoursTitle')}</CardTitle>
+            <CardDescription>{t('admin.reports.summary.period')}</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalHours} годин</div>
+            <div className="text-2xl font-bold">{totalHours} {t('calendar.hours')}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Кількість звітів</CardTitle>
-            <CardDescription>За обраний період</CardDescription>
+            <CardTitle className="text-base">{t('admin.reports.summary.reportsCountTitle')}</CardTitle>
+            <CardDescription>{t('admin.reports.summary.period')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{reports.length}</div>
@@ -415,12 +417,12 @@ export function EmployeeReports() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Середній час на день</CardTitle>
-            <CardDescription>За обраний період</CardDescription>
+            <CardTitle className="text-base">{t('admin.reports.summary.avgTimePerDay')}</CardTitle>
+            <CardDescription>{t('admin.reports.summary.period')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {reports.length ? (totalHours / reports.length).toFixed(1) : "0"} годин
+              {reports.length ? (totalHours / reports.length).toFixed(1) : "0"} {t('calendar.hours')}
             </div>
           </CardContent>
         </Card>
@@ -428,29 +430,29 @@ export function EmployeeReports() {
 
       <Tabs defaultValue="summary">
         <TabsList>
-          <TabsTrigger value="summary">Зведена інформація</TabsTrigger>
-          <TabsTrigger value="detailed">Детальний звіт</TabsTrigger>
+          <TabsTrigger value="summary">{t('admin.reports.summary.summaryTitle')}</TabsTrigger>
+          <TabsTrigger value="detailed">{t('admin.reports.detailed.title')}</TabsTrigger>
         </TabsList>
         <TabsContent value="summary" className="mt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Зведена інформація</CardTitle>
-              <CardDescription>Загальна інформація по звітах</CardDescription>
+              <CardTitle>{t('admin.reports.summary.summaryTitle')}</CardTitle>
+              <CardDescription>{t('admin.reports.summary.summaryDescription')}</CardDescription>
             </CardHeader>
             <CardContent>
               <Table className="min-w-full table-fixed">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Дата</TableHead>
-                    <TableHead>Години</TableHead>
-                    <TableHead>Компанії</TableHead>
-                    <TableHead>Дії</TableHead>
+                    <TableHead>{t('calendar.date')}</TableHead>
+                    <TableHead>{t('calendar.hours')}</TableHead>
+                    <TableHead>{t('calendar.companies')}</TableHead>
+                    <TableHead>{t('calendar.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {reports.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center">Немає звітів за обраний період</TableCell>
+                      <TableCell colSpan={4} className="text-center">{t('admin.reports.summary.noReportsAvailable')}</TableCell>
                     </TableRow>
                   ) : (
                     reports.map((report) => (
@@ -462,7 +464,7 @@ export function EmployeeReports() {
                           <div className="flex gap-2">
                             <Button variant="ghost" size="icon" onClick={() => downloadReport(report.id)}>
                               <Download className="h-4 w-4" />
-                              <span className="sr-only">Завантажити</span>
+                              <span className="sr-only">{t('admin.reports.downloadDialog.download')}</span>
                             </Button>
                           </div>
                         </TableCell>
@@ -477,13 +479,13 @@ export function EmployeeReports() {
         <TabsContent value="detailed" className="mt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Детальний звіт</CardTitle>
-              <CardDescription>Детальна інформація про витрачений час</CardDescription>
+              <CardTitle>{t('admin.reports.detailed.title')}</CardTitle>
+              <CardDescription>{t('admin.reports.detailed.description')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
                 <div className="border rounded-lg p-4">
-                  <h3 className="font-medium mb-2">Розподіл часу по компаніях</h3>
+                  <h3 className="font-medium mb-2">{t('admin.reports.detailed.timeDistribution')}</h3>
                   <div className="space-y-3">
                     <div>
                       <div className="flex justify-between text-sm mb-1">
@@ -518,10 +520,10 @@ export function EmployeeReports() {
                 <Table className="min-w-full table-fixed">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Дата</TableHead>
-                      <TableHead>Компанія</TableHead>
-                      <TableHead>Опис роботи</TableHead>
-                      <TableHead>Години</TableHead>
+                      <TableHead>{t('calendar.date')}</TableHead>
+                      <TableHead>{t('admin.reports.detailed.company')}</TableHead>
+                      <TableHead>{t('admin.reports.detailed.task')}</TableHead>
+                      <TableHead>{t('calendar.hours')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
