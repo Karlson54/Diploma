@@ -56,20 +56,21 @@
         "noReportsToExport": "Немає звітів для експорту"
       },
       "tableHeaders": {
-        "name": "Name", 
-        "agency": "Agency",
-        "date": "Date",
-        "market": "Market",
-        "contractingAgency": "Contracting Agency / Unit",
-        "client": "Client",
-        "projectBrand": "Project / brand",
-        "media": "Media",
-        "jobType": "Job type",
-        "hours": "Hours",
-        "comments": "Comments",
+        "name": "Ім'я", 
+        "agency": "Агентство",
+        "date": "Дата",
+        "market": "Ринок",
+        "contractingAgency": "Підрядне агентство / Юніт",
+        "client": "Клієнт",
+        "projectBrand": "Проєкт / бренд",
+        "media": "Медіа",
+        "jobType": "Тип роботи",
+        "hours": "Години",
+        "comments": "Коментарі",
         "employee": "Співробітник",
         "companies": "Компанії",
-        "actions": "Дії"
+        "actions": "Дії",
+        "company": "Компанія"
       },
       "errors": {
         "excelCreationError": "Виникла помилка при створенні Excel файлу",

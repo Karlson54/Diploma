@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import ExcelJS from 'exceljs'
+import { useTranslation } from "react-i18next"
 
 interface ReportData {
   date: string
@@ -29,6 +30,7 @@ interface ReportExportModalProps {
 }
 
 export function ReportExportModal({ isOpen, onClose, reportData }: ReportExportModalProps) {
+  const { t } = useTranslation()
   const [selectedColumns, setSelectedColumns] = useState({
     date: true,
     market: true,
@@ -99,7 +101,7 @@ export function ReportExportModal({ isOpen, onClose, reportData }: ReportExportM
     try {
       // Validate that we have data to export
       if (reportData.length === 0) {
-        alert('Немає даних для експорту')
+        alert(t('admin.reports.downloadDialog.noDataToExport'))
         return
       }
 
@@ -194,11 +196,11 @@ export function ReportExportModal({ isOpen, onClose, reportData }: ReportExportM
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl">
         <DialogHeader>
-          <DialogTitle>Завантажити звіт</DialogTitle>
+          <DialogTitle>{t('admin.reports.downloadDialog.title')}</DialogTitle>
         </DialogHeader>
         <div className="py-4 overflow-x-auto">
           <p className="text-sm text-gray-500 mb-4">
-            Оберіть стовпці для включення в Excel звіт
+            {t('admin.reports.downloadDialog.description')}
           </p>
           
           <div className="flex flex-row flex-wrap gap-4 mb-6">
@@ -292,7 +294,7 @@ export function ReportExportModal({ isOpen, onClose, reportData }: ReportExportM
             </div>
           </div>
           
-          <h3 className="text-sm font-medium mb-2">Попередній перегляд таблиці</h3>
+          <h3 className="text-sm font-medium mb-2">{t('admin.reports.downloadDialog.tablePreview')}</h3>
           <div className="border rounded-md overflow-auto" style={{ maxHeight: "400px" }}>
             <Table>
               <TableHeader>
@@ -342,10 +344,10 @@ export function ReportExportModal({ isOpen, onClose, reportData }: ReportExportM
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Скасувати
+            {t('admin.reports.downloadDialog.cancel')}
           </Button>
           <Button onClick={downloadReport}>
-            Завантажити
+            {t('admin.reports.downloadDialog.download')}
           </Button>
         </DialogFooter>
       </DialogContent>

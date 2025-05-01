@@ -69,7 +69,8 @@
         "comments": "Comments",
         "employee": "Employee",
         "companies": "Companies",
-        "actions": "Actions"
+        "actions": "Actions",
+        "company": "Company"
       },
       "errors": {
         "excelCreationError": "An error occurred while creating the Excel file",

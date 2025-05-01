@@ -243,17 +243,17 @@ export function EmployeeReports() {
     
     // Додаємо заголовки
     worksheet.columns = [
-      { header: 'Агентство', key: 'agency', width: 15 },
-      { header: 'Ім\'я', key: 'fullName', width: 20 },
-      { header: 'Дата', key: 'date', width: 15 },
-      { header: 'Ринок', key: 'market', width: 15 },
-      { header: 'Компанія', key: 'company', width: 20 },
-      { header: 'Клієнт', key: 'client', width: 20 },
-      { header: 'Проект/Бренд', key: 'project', width: 20 },
-      { header: 'Медіа', key: 'media', width: 15 },
-      { header: 'Тип роботи', key: 'jobType', width: 20 },
-      { header: 'Години', key: 'hours', width: 10 },
-      { header: 'Коментарі', key: 'comments', width: 25 }
+      { header: 'Agency', key: 'agency', width: 15 },
+      { header: 'Name', key: 'fullName', width: 20 },
+      { header: 'Date', key: 'date', width: 15 },
+      { header: 'Market', key: 'market', width: 15 },
+      { header: 'Company', key: 'company', width: 20 },
+      { header: 'Client', key: 'client', width: 20 },
+      { header: 'Project / brand', key: 'project', width: 20 },
+      { header: 'Media', key: 'media', width: 15 },
+      { header: 'Job type', key: 'jobType', width: 20 },
+      { header: 'Hours', key: 'hours', width: 10 },
+      { header: 'Comments', key: 'comments', width: 25 }
     ];
     
     // Стилізуємо заголовки
@@ -553,7 +553,7 @@ export function EmployeeReports() {
                 <div className="flex justify-end">
                   <Button onClick={downloadAllReports} className="gap-2">
                     <FileSpreadsheet className="h-4 w-4" />
-                    Експорт в Excel
+                    {t('admin.reports.detailed.exportToExcel')}
                   </Button>
                 </div>
               </div>
