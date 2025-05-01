@@ -10,6 +10,7 @@ import { useMobile } from "@/hooks/use-mobile"
 import { useClerk, useUser } from "@clerk/nextjs"
 import { useCurrentEmployee } from "@/hooks/use-current-employee"
 import { LanguageSwitcher } from "./language-switcher"
+import { useTranslation } from "react-i18next"
 
 export function SimpleSidebar() {
   const isMobile = useMobile()
@@ -20,6 +21,7 @@ export function SimpleSidebar() {
   const { user, isLoaded } = useUser()
   const { employee, isLoading: isEmployeeLoading } = useCurrentEmployee()
   const isAdmin = isLoaded && user?.publicMetadata?.role === "admin"
+  const { t } = useTranslation()
 
   useEffect(() => {
     if (isLoaded && user) {
@@ -69,17 +71,17 @@ export function SimpleSidebar() {
             ) : isLoaded && user ? (
               `${user.firstName} ${user.lastName}`
             ) : (
-              "Завантаження..."
+              t('calendar.loading')
             )}
             <span className="block text-xs text-gray-500">
-              {isLoaded && user ? (user.publicMetadata?.role === "admin" ? "Адміністратор" : user.emailAddresses[0]?.emailAddress) : ""}
+              {isLoaded && user ? (user.publicMetadata?.role === "admin" ? t('calendar.adminRole') : user.emailAddresses[0]?.emailAddress) : ""}
             </span>
           </p>
         </div>
         <nav className="flex-1 p-4">
           {isAdmin ? (
             <>
-              <p className="text-xs uppercase font-semibold text-gray-500 mb-2">Функції користувача</p>
+              <p className="text-xs uppercase font-semibold text-gray-500 mb-2">{t('calendar.userFunctions')}</p>
               <ul className="space-y-1 mb-6">
                 <li>
                   <Link
@@ -92,7 +94,7 @@ export function SimpleSidebar() {
                     )}
                   >
                     <Calendar className="h-5 w-5" />
-                    <span>Облік часу</span>
+                    <span>{t('calendar.menu.calendar')}</span>
                   </Link>
                 </li>
                 <li>
@@ -106,14 +108,14 @@ export function SimpleSidebar() {
                     )}
                   >
                     <FileText className="h-5 w-5" />
-                    <span>Мої звіти</span>
+                    <span>{t('calendar.menu.myReports')}</span>
                   </Link>
                 </li>
               </ul>
 
               <div className="h-px bg-gray-200 my-4"></div>
 
-              <p className="text-xs uppercase font-semibold text-gray-500 mb-2">Функції адміністратора</p>
+              <p className="text-xs uppercase font-semibold text-gray-500 mb-2">{t('calendar.adminFunctions')}</p>
               <ul className="space-y-1">
                 <li>
                   <Link
@@ -126,7 +128,7 @@ export function SimpleSidebar() {
                     )}
                   >
                     <BarChart3 className="h-5 w-5" />
-                    <span>Дашборд</span>
+                    <span>{t('calendar.menu.dashboard')}</span>
                   </Link>
                 </li>
                 <li>
@@ -140,7 +142,7 @@ export function SimpleSidebar() {
                     )}
                   >
                     <FileSpreadsheet className="h-5 w-5" />
-                    <span>Звіти</span>
+                    <span>{t('calendar.menu.reports')}</span>
                   </Link>
                 </li>
                 <li>
@@ -154,7 +156,7 @@ export function SimpleSidebar() {
                     )}
                   >
                     <Building className="h-5 w-5" />
-                    <span>Компанії</span>
+                    <span>{t('calendar.menu.companies')}</span>
                   </Link>
                 </li>
                 <li>
@@ -168,7 +170,7 @@ export function SimpleSidebar() {
                     )}
                   >
                     <Users className="h-5 w-5" />
-                    <span>Співробітники</span>
+                    <span>{t('calendar.menu.employees')}</span>
                   </Link>
                 </li>
               </ul>
@@ -186,7 +188,7 @@ export function SimpleSidebar() {
                   )}
                 >
                   <Calendar className="h-5 w-5" />
-                  <span>Облік часу</span>
+                  <span>{t('calendar.menu.calendar')}</span>
                 </Link>
               </li>
               <li>
@@ -200,7 +202,7 @@ export function SimpleSidebar() {
                   )}
                 >
                   <FileText className="h-5 w-5" />
-                  <span>Мої звіти</span>
+                  <span>{t('calendar.menu.myReports')}</span>
                 </Link>
               </li>
             </ul>
@@ -214,7 +216,7 @@ export function SimpleSidebar() {
                 onClick={handleLogout}
               >
                 <LogOut className="h-5 w-5" />
-                <span>Вийти</span>
+                <span>{t('calendar.menu.logout')}</span>
               </Button>
               <LanguageSwitcher />
             </div>
