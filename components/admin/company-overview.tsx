@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { useTranslation } from "react-i18next"
 
 interface Company {
   id: number;
@@ -21,6 +22,7 @@ interface Company {
 }
 
 export function CompanyOverview() {
+  const { t, i18n } = useTranslation()
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -53,7 +55,9 @@ export function CompanyOverview() {
 
   // Format currency in UAH
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('uk-UA', { 
+    // Use the user's current language for formatting
+    const locale = i18n.language === 'uk' ? 'uk-UA' : 'en-US';
+    return new Intl.NumberFormat(locale, { 
       style: 'currency', 
       currency: 'UAH',
       maximumFractionDigits: 0
@@ -61,30 +65,30 @@ export function CompanyOverview() {
   };
 
   if (loading) {
-    return <div>Loading company data...</div>;
+    return <div>{t('admin.companyOverview.loading')}</div>;
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Огляд компаній</CardTitle>
-        <CardDescription>Клієнтські компанії та їх активні проєкти</CardDescription>
+        <CardTitle>{t('admin.companyOverview.title')}</CardTitle>
+        <CardDescription>{t('admin.companyOverview.description')}</CardDescription>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Назва</TableHead>
-              <TableHead>Контактна особа</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Активні проєкти</TableHead>
-              <TableHead>Загальний дохід</TableHead>
+              <TableHead>{t('admin.companyOverview.name')}</TableHead>
+              <TableHead>{t('admin.companyOverview.contact')}</TableHead>
+              <TableHead>{t('admin.companyOverview.email')}</TableHead>
+              <TableHead>{t('admin.companyOverview.activeProjects')}</TableHead>
+              <TableHead>{t('admin.companyOverview.totalRevenue')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {companies.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center">Немає доступних компаній</TableCell>
+                <TableCell colSpan={5} className="text-center">{t('admin.companyOverview.noCompanies')}</TableCell>
               </TableRow>
             ) : (
               companies.map((company) => (
@@ -102,7 +106,7 @@ export function CompanyOverview() {
       </CardContent>
       <CardFooter>
         <Link href="/admin/companies">
-          <Button variant="outline">Управління компаніями</Button>
+          <Button variant="outline">{t('admin.companyOverview.manageCompanies')}</Button>
         </Link>
       </CardFooter>
     </Card>

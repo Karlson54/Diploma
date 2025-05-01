@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command"
 import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useTranslation } from "react-i18next"
 
 interface DayEntryFormProps {
   date: Date
@@ -41,6 +42,9 @@ export function DayEntryForm({
   onClose,
   onSave,
 }: DayEntryFormProps) {
+  // i18n
+  const { t } = useTranslation()
+
   // Список клієнтів
   const clients = [
     { id: "1", name: "All clients" },
@@ -346,11 +350,11 @@ export function DayEntryForm({
             {fields.market &&
               renderField(
                 "market",
-                "Market",
+                t('calendar.market'),
                 <div className="relative w-full" data-market-dropdown>
                   <Input
                     className="h-8 text-sm"
-                    placeholder="Оберіть ринок"
+                    placeholder={t('calendar.selectMarket')}
                     value={marketInput}
                     onChange={(e) => {
                       setMarketInput(e.target.value);
@@ -364,7 +368,7 @@ export function DayEntryForm({
                     }
                   >
                     <Command>
-                      <CommandEmpty>Ринок не знайдено.</CommandEmpty>
+                      <CommandEmpty>{t('calendar.marketNotFound')}</CommandEmpty>
                       <CommandGroup>
                         <CommandList className="max-h-[200px] overflow-y-auto">
                           {markets
@@ -402,11 +406,11 @@ export function DayEntryForm({
             {fields.contractingAgency &&
               renderField(
                 "contractingAgency",
-                "Contracting Agency/Unit",
+                t('calendar.agency'),
                 <div className="relative w-full" data-agency-dropdown>
                   <Input
                     className="h-8 text-sm"
-                    placeholder="Оберіть агентство"
+                    placeholder={t('calendar.selectAgency')}
                     value={agencyInput}
                     onChange={(e) => {
                       setAgencyInput(e.target.value)
@@ -420,7 +424,7 @@ export function DayEntryForm({
                     }
                   >
                     <Command>
-                      <CommandEmpty>Агентство не знайдено.</CommandEmpty>
+                      <CommandEmpty>{t('calendar.agencyNotFound')}</CommandEmpty>
                       <CommandGroup>
                         <CommandList className="max-h-[200px] overflow-y-auto">
                           {agencies
@@ -458,11 +462,11 @@ export function DayEntryForm({
             {fields.client &&
               renderField(
                 "client",
-                "Client",
+                t('calendar.client'),
                 <div className="relative w-full" data-client-dropdown>
                   <Input
                     className="h-8 text-sm"
-                    placeholder="Оберіть клієнта"
+                    placeholder={t('calendar.selectClient')}
                     value={clientInput}
                     onChange={(e) => {
                       setClientInput(e.target.value)
@@ -476,7 +480,7 @@ export function DayEntryForm({
                     }
                   >
                     <Command>
-                      <CommandEmpty>Клієнт не знайдено.</CommandEmpty>
+                      <CommandEmpty>{t('calendar.clientNotFound')}</CommandEmpty>
                       <CommandGroup>
                         <CommandList className="max-h-[200px] overflow-y-auto">
                           {clients
@@ -517,11 +521,11 @@ export function DayEntryForm({
             {fields.media &&
               renderField(
                 "media",
-                "Media",
+                t('calendar.media'),
                 <div className="relative w-full" data-media-dropdown>
                   <Input
                     className="h-8 text-sm"
-                    placeholder="Оберіть тип медіа"
+                    placeholder={t('calendar.selectMedia')}
                     value={mediaInput}
                     onChange={(e) => {
                       setMediaInput(e.target.value)
@@ -535,7 +539,7 @@ export function DayEntryForm({
                     }
                   >
                     <Command>
-                      <CommandEmpty>Тип медіа не знайдено.</CommandEmpty>
+                      <CommandEmpty>{t('calendar.mediaNotFound')}</CommandEmpty>
                       <CommandGroup>
                         <CommandList className="max-h-[200px] overflow-y-auto">
                           {mediaTypes
@@ -573,11 +577,11 @@ export function DayEntryForm({
             {fields.jobType &&
               renderField(
                 "jobType",
-                "Job Type",
+                t('calendar.jobType'),
                 <div className="relative w-full" data-jobtype-dropdown>
                   <Input
                     className="h-8 text-sm"
-                    placeholder="Оберіть тип роботи"
+                    placeholder={t('calendar.selectJobType')}
                     value={jobTypeInput}
                     onChange={(e) => {
                       setJobTypeInput(e.target.value)
@@ -591,7 +595,7 @@ export function DayEntryForm({
                     }
                   >
                     <Command>
-                      <CommandEmpty>Тип роботи не знайдено.</CommandEmpty>
+                      <CommandEmpty>{t('calendar.jobTypeNotFound')}</CommandEmpty>
                       <CommandGroup>
                         <CommandList className="max-h-[200px] overflow-y-auto">
                           {jobTypes
@@ -629,14 +633,14 @@ export function DayEntryForm({
             {fields.hours &&
               renderField(
                 "hours",
-                "Витрачений час (хвилини)",
+                t('calendar.spentTime'),
                 <Input
                   id="hours"
                   type="number"
                   min="1"
                   step="1"
                   className="h-8 text-sm"
-                  placeholder="90 = 1:30 год"
+                  placeholder={t('calendar.minutesHint')}
                   value={formData.hours}
                   onChange={(e) => setFormData({ ...formData, hours: e.target.value })}
                   required
@@ -649,7 +653,7 @@ export function DayEntryForm({
             {fields.projectBrand &&
               renderField(
                 "projectBrand",
-                "Project/Brand",
+                t('calendar.projectBrand'),
                 <Input
                   id="projectBrand"
                   className="h-16 text-sm"
@@ -662,10 +666,10 @@ export function DayEntryForm({
             {fields.comments &&
               renderField(
                 "comments",
-                "Comments",
+                t('calendar.comments'),
                 <Textarea
                   id="comments"
-                  placeholder="Додаткові коментарі..."
+                  placeholder={t('calendar.commentsPlaceholder')}
                   className="min-h-[64px] text-sm"
                   value={formData.comments}
                   onChange={(e) => setFormData({ ...formData, comments: e.target.value })}

@@ -15,8 +15,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import { useTranslation } from "react-i18next"
 
 export function WeeklyCalendar() {
+  const { t, i18n } = useTranslation()
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [showEntryForm, setShowEntryForm] = useState(false)
   const [editingReport, setEditingReport] = useState<any>(null)
@@ -232,7 +234,7 @@ export function WeeklyCalendar() {
         const data = await response.json();
         
         // Transform the reports to match the format expected by the component
-        const formattedReports = data.reports.map((report: any) => {
+        const formattedReports = data.reports?.map((report: any) => {
           // Format date from ISO to DD.MM.YYYY
           const dateObj = new Date(report.date);
           const formattedDate = dateObj.toLocaleDateString('uk-UA', {
@@ -563,16 +565,15 @@ export function WeeklyCalendar() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Календар робочого часу</h1>
-        <p className="text-gray-500">Оберіть день для внесення або перегляду записів</p>
+        <h1 className="text-2xl font-bold tracking-tight">{t('calendar.title')}</h1>
+        <p className="text-gray-500">{t('calendar.description')}</p>
       </div>
 
       <Card>
         <CardHeader className="pb-0">
           <div className="flex justify-between items-center">
             <CardTitle>
-              Тиждень {weekDays[0].toLocaleDateString("uk-UA", { day: "numeric", month: "long" })} -{" "}
-              {weekDays[6].toLocaleDateString("uk-UA", { day: "numeric", month: "long" })}
+              {t('calendar.week', { from: weekDays[0].toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : 'en-US', { day: 'numeric', month: 'long' }), to: weekDays[6].toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : 'en-US', { day: 'numeric', month: 'long' }) })}
             </CardTitle>
             <div className="flex gap-2">
               <Button variant="outline" size="icon" onClick={goToPreviousWeek}>
@@ -610,7 +611,7 @@ export function WeeklyCalendar() {
               >
                 <span className="text-xs font-medium">{formatDayOfWeek(day)}</span>
                 <span className="text-lg font-bold">{day.getDate()}</span>
-                <span className="text-xs">{day.toLocaleDateString("uk-UA", { month: "short" })}</span>
+                <span className="text-xs">{day.toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : 'en-US', { month: 'short' })}</span>
               </Button>
             ))}
           </div>
@@ -620,11 +621,11 @@ export function WeeklyCalendar() {
       {selectedDate && (
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-bold">
-            Записи за {selectedDate.toLocaleDateString("uk-UA", { day: "numeric", month: "long", year: "numeric" })}
+            {t('calendar.entriesForDate', { date: selectedDate.toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' }) })}
           </h2>
           <Button onClick={handleAddNewEntry} className="gap-2">
             <Plus className="h-4 w-4" />
-            Додати запис
+            {t('calendar.addEntry')}
           </Button>
         </div>
       )}
@@ -633,9 +634,9 @@ export function WeeklyCalendar() {
         <Card>
           <CardHeader>
             <CardTitle>
-              {editingReport ? "Редагування запису" : "Запис робочого часу"} на {formatDate(selectedDate)}
+              {editingReport ? t('calendar.editEntry') : t('calendar.newEntry')} {t('calendar.onDate', { date: formatDate(selectedDate) })}
             </CardTitle>
-            <CardDescription>Вкажіть компанію, опис роботи та витрачений час</CardDescription>
+            <CardDescription>{t('calendar.specifyDetails')}</CardDescription>
           </CardHeader>
           <CardContent>
             <DayEntryForm
@@ -758,20 +759,20 @@ export function WeeklyCalendar() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">Загальна кількість годин</CardTitle>
+                <CardTitle className="text-base">{t('calendar.totalHours')}</CardTitle>
                 <CardDescription>
-                  За {selectedDate.toLocaleDateString("uk-UA", { day: "numeric", month: "long" })}
+                  {t('calendar.forDate', { date: selectedDate.toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : 'en-US', { day: 'numeric', month: 'long' }) })}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.totalHours.toFixed(1)} годин</div>
+                <div className="text-2xl font-bold">{stats.totalHours.toFixed(1)} {t('calendar.hours')}</div>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">Кількість записів</CardTitle>
+                <CardTitle className="text-base">{t('calendar.entriesCount')}</CardTitle>
                 <CardDescription>
-                  За {selectedDate.toLocaleDateString("uk-UA", { day: "numeric", month: "long" })}
+                  {t('calendar.forDate', { date: selectedDate.toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : 'en-US', { day: 'numeric', month: 'long' }) })}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -780,14 +781,14 @@ export function WeeklyCalendar() {
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">Середній час на запис</CardTitle>
+                <CardTitle className="text-base">{t('calendar.avgTimePerEntry')}</CardTitle>
                 <CardDescription>
-                  За {selectedDate.toLocaleDateString("uk-UA", { day: "numeric", month: "long" })}
+                  {t('calendar.forDate', { date: selectedDate.toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : 'en-US', { day: 'numeric', month: 'long' }) })}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {stats.averageHours > 0 ? `${stats.averageHours.toFixed(1)} годин` : "—"}
+                  {stats.averageHours > 0 ? `${stats.averageHours.toFixed(1)} {t('calendar.hours')}` : "—"}
                 </div>
               </CardContent>
             </Card>
@@ -796,10 +797,9 @@ export function WeeklyCalendar() {
           {filteredReports.length > 0 ? (
             <Card>
               <CardHeader>
-                <CardTitle>Зведена інформація</CardTitle>
+                <CardTitle>{t('calendar.summaryInfo')}</CardTitle>
                 <CardDescription>
-                  Звіти за{" "}
-                  {selectedDate.toLocaleDateString("uk-UA", { day: "numeric", month: "long", year: "numeric" })}
+                  {t('calendar.reportsForDate', { date: selectedDate.toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' }) })}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -807,15 +807,15 @@ export function WeeklyCalendar() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Market</TableHead>
-                        <TableHead>Agency/Unit</TableHead>
-                        <TableHead>Client</TableHead>
-                        <TableHead>Project/Brand</TableHead>
-                        <TableHead>Media</TableHead>
-                        <TableHead>Job Type</TableHead>
-                        <TableHead>Comments</TableHead>
-                        <TableHead>Години</TableHead>
-                        <TableHead>Дії</TableHead>
+                        <TableHead>{t('calendar.market')}</TableHead>
+                        <TableHead>{t('calendar.agency')}</TableHead>
+                        <TableHead>{t('calendar.client')}</TableHead>
+                        <TableHead>{t('calendar.projectBrand')}</TableHead>
+                        <TableHead>{t('calendar.media')}</TableHead>
+                        <TableHead>{t('calendar.jobType')}</TableHead>
+                        <TableHead>{t('calendar.comments')}</TableHead>
+                        <TableHead>{t('calendar.hours')}</TableHead>
+                        <TableHead>{t('calendar.actions')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -835,15 +835,15 @@ export function WeeklyCalendar() {
                             <div className="flex gap-2">
                               <Button variant="ghost" size="icon" onClick={() => handleEditReport(report)}>
                                 <Pencil className="h-4 w-4" />
-                                <span className="sr-only">Редагувати</span>
+                                <span className="sr-only">{t('calendar.edit')}</span>
                               </Button>
                               <Button variant="ghost" size="icon" onClick={() => handleDeleteReport(report.id)}>
                                 <Trash className="h-4 w-4" />
-                                <span className="sr-only">Видалити</span>
+                                <span className="sr-only">{t('calendar.delete')}</span>
                               </Button>
                               <Button variant="ghost" size="icon" onClick={() => handleCopyReport(report.id)}>
                                 <Copy className="h-4 w-4" />
-                                <span className="sr-only">Копіювати</span>
+                                <span className="sr-only">{t('calendar.copy')}</span>
                               </Button>
                             </div>
                           </TableCell>
@@ -857,14 +857,13 @@ export function WeeklyCalendar() {
           ) : (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-8">
-                <p className="text-lg font-medium mb-2">Немає записів за цю дату</p>
+                <p className="text-lg font-medium mb-2">{t('calendar.noEntriesForDate')}</p>
                 <p className="text-gray-500 mb-4">
-                  За {selectedDate.toLocaleDateString("uk-UA", { day: "numeric", month: "long", year: "numeric" })} ще
-                  не було додано жодного запису
+                  {t('calendar.noEntriesForDateDesc', { date: selectedDate.toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' }) })}
                 </p>
                 <Button onClick={handleAddNewEntry} className="gap-2">
                   <Plus className="h-4 w-4" />
-                  Додати перший запис
+                  {t('calendar.addFirstEntry')}
                 </Button>
               </CardContent>
             </Card>
@@ -876,12 +875,12 @@ export function WeeklyCalendar() {
       <Dialog open={showCopyDialog} onOpenChange={setShowCopyDialog}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Копіювати запис</DialogTitle>
-            <DialogDescription>Оберіть дату, на яку потрібно скопіювати запис</DialogDescription>
+            <DialogTitle>{t('calendar.copyEntry')}</DialogTitle>
+            <DialogDescription>{t('calendar.selectDateToCopy')}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="copy-dates">Оберіть дати для копіювання</Label>
+              <Label htmlFor="copy-dates">{t('calendar.selectDatesToCopy')}</Label>
               <div className="border rounded-md p-2">
                 <div className="text-center mb-2">
                   <div className="flex justify-between items-center mb-2">
@@ -898,7 +897,7 @@ export function WeeklyCalendar() {
                 <div className="grid grid-cols-7 gap-1 text-center mb-1">
                   {weekDayNames.map((day, i) => (
                     <div key={i} className="text-xs font-medium py-1">
-                      {day}
+                      {t(`calendar.weekdayShort.${i}`)}
                     </div>
                   ))}
                 </div>
@@ -918,17 +917,17 @@ export function WeeklyCalendar() {
               </div>
               <p className="text-sm text-muted-foreground">
                 {copyDates?.length > 0
-                  ? `Обрано ${copyDates.length} ${copyDates.length === 1 ? "дату" : copyDates.length < 5 ? "дати" : "дат"}`
-                  : "Оберіть дати для копіювання запису"}
+                  ? t('calendar.selectedDates', { count: copyDates.length })
+                  : t('calendar.selectDatesToCopyHint')}
               </p>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCopyDialog(false)}>
-              Скасувати
+              {t('calendar.cancel')}
             </Button>
             <Button onClick={executeCopy} disabled={!copyDates.length}>
-              Копіювати
+              {t('calendar.copy')}
             </Button>
           </DialogFooter>
         </DialogContent>

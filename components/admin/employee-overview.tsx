@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Download } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 interface Employee {
   id: number;
@@ -16,6 +17,7 @@ interface Employee {
 }
 
 export function EmployeeOverview() {
+  const { t } = useTranslation()
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateRanges, setDateRanges] = useState<Record<number, { start: string, end: string }>>({});
@@ -78,28 +80,28 @@ export function EmployeeOverview() {
   };
 
   if (loading) {
-    return <div>Loading employee data...</div>;
+    return <div>{t('admin.employees.overview.loading')}</div>;
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Огляд співробітників</CardTitle>
-        <CardDescription>Управління та моніторинг активності співробітників</CardDescription>
+        <CardTitle>{t('admin.employees.overview.title')}</CardTitle>
+        <CardDescription>{t('admin.employees.overview.description')}</CardDescription>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Співробітник</TableHead>
-              <TableHead>Період звіту</TableHead>
-              <TableHead>Дії</TableHead>
+              <TableHead>{t('admin.employees.overview.employee')}</TableHead>
+              <TableHead>{t('admin.employees.overview.reportPeriod')}</TableHead>
+              <TableHead>{t('admin.employees.overview.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {employees.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-center">Немає доступних співробітників</TableCell>
+                <TableCell colSpan={3} className="text-center">{t('admin.employees.overview.noEmployees')}</TableCell>
               </TableRow>
             ) : (
               employees.map((employee) => (
@@ -134,7 +136,7 @@ export function EmployeeOverview() {
                       )}
                     >
                       <Download className="h-4 w-4" />
-                      <span>Excel</span>
+                      <span>{t('admin.employees.overview.excel')}</span>
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -147,9 +149,9 @@ export function EmployeeOverview() {
   )
 }
 
-// Функція для завантаження звіту співробітника в Excel форматі
+// Function to download an employee report in Excel format
 function downloadEmployeeReport(employeeId: number, startDate: string, endDate: string) {
-  // В реальному додатку тут був би код для генерації та завантаження Excel файлу
-  console.log(`Завантаження звіту для співробітника ID: ${employeeId} за період ${startDate} - ${endDate}`)
-  alert(`Звіт для співробітника ID: ${employeeId} за період ${startDate} - ${endDate} завантажується...`)
+  // In a real app this would be code to generate and download an Excel file
+  console.log(`Downloading report for employee ID: ${employeeId} for the period ${startDate} - ${endDate}`)
+  alert(`Report for employee ID: ${employeeId} for the period ${startDate} - ${endDate} is downloading...`)
 }

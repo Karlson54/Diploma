@@ -17,6 +17,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
+import { useTranslation } from "react-i18next"
 
 interface Company {
   id: number;
@@ -32,6 +33,7 @@ interface Company {
 interface EditingCompany extends Company {}
 
 export function CompanyManagement() {
+  const { t } = useTranslation()
   const [companies, setCompanies] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
   const [isDeleting, setIsDeleting] = useState<number | null>(null)
@@ -153,7 +155,7 @@ export function CompanyManagement() {
       ));
       
       // Show success message
-      setUpdateMessage(result.message || 'Company updated successfully');
+      setUpdateMessage(result.message || t('admin.companies.edit.successMessage'));
       
       // Close the dialog after a short delay
       setTimeout(() => {
@@ -169,7 +171,7 @@ export function CompanyManagement() {
   }
 
   const handleDeleteCompany = async (id: number) => {
-    if (confirm("Ви впевнені, що хочете видалити цю компанію?")) {
+    if (confirm(t('admin.companies.deleteConfirm'))) {
       try {
         setIsDeleting(id);
         
@@ -194,7 +196,7 @@ export function CompanyManagement() {
         setCompanies(companies.filter((company) => company.id !== id));
         
         // Show success message
-        alert(result.message || "Компанію успішно видалено");
+        alert(result.message || t('admin.companies.deleteSuccess'));
       } catch (error) {
         console.error("Error deleting company:", error);
         alert("Failed to delete company. Please try again.");
@@ -205,32 +207,32 @@ export function CompanyManagement() {
   }
 
   if (loading) {
-    return <div>Loading companies...</div>;
+    return <div>{t('admin.companies.loading')}</div>;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Управління компаніями</h1>
-          <p className="text-gray-500">Додавання та редагування клієнтських компаній</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t('admin.companies.title')}</h1>
+          <p className="text-gray-500">{t('admin.companies.description')}</p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
             <Button className="gap-2">
               <Plus className="h-4 w-4" />
-              Додати компанію
+              {t('admin.companies.addCompany')}
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[525px]">
             <DialogHeader>
-              <DialogTitle>Додати нову компанію</DialogTitle>
-              <DialogDescription>Введіть інформацію про нову клієнтську компанію</DialogDescription>
+              <DialogTitle>{t('admin.companies.add.title')}</DialogTitle>
+              <DialogDescription>{t('admin.companies.add.description')}</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Назва компанії</Label>
+                  <Label htmlFor="name">{t('admin.companies.add.name')}</Label>
                   <Input
                     id="name"
                     value={newCompany.name}
@@ -238,7 +240,7 @@ export function CompanyManagement() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="contact">Контактна особа</Label>
+                  <Label htmlFor="contact">{t('admin.companies.add.contact')}</Label>
                   <Input
                     id="contact"
                     value={newCompany.contact}
@@ -248,7 +250,7 @@ export function CompanyManagement() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">{t('admin.companies.add.email')}</Label>
                   <Input
                     id="email"
                     type="email"
@@ -257,7 +259,7 @@ export function CompanyManagement() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Телефон</Label>
+                  <Label htmlFor="phone">{t('admin.companies.add.phone')}</Label>
                   <Input
                     id="phone"
                     value={newCompany.phone}
@@ -266,7 +268,7 @@ export function CompanyManagement() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="address">Адреса</Label>
+                <Label htmlFor="address">{t('admin.companies.add.address')}</Label>
                 <Input
                   id="address"
                   value={newCompany.address || ''}
@@ -274,7 +276,7 @@ export function CompanyManagement() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="notes">Примітки</Label>
+                <Label htmlFor="notes">{t('admin.companies.add.notes')}</Label>
                 <Textarea
                   id="notes"
                   value={newCompany.notes || ''}
@@ -284,9 +286,9 @@ export function CompanyManagement() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                Скасувати
+                {t('admin.companies.add.cancel')}
               </Button>
-              <Button onClick={handleAddCompany}>Додати</Button>
+              <Button onClick={handleAddCompany}>{t('admin.companies.add.add')}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -294,25 +296,25 @@ export function CompanyManagement() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Клієнтські компанії</CardTitle>
-          <CardDescription>Список компаній, з якими працює агентство</CardDescription>
+          <CardTitle>{t('admin.companies.clientCompanies')}</CardTitle>
+          <CardDescription>{t('admin.companies.clientCompaniesDesc')}</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Назва</TableHead>
-                <TableHead>Контактна особа</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Телефон</TableHead>
-                <TableHead>Активні проєкти</TableHead>
-                <TableHead>Дії</TableHead>
+                <TableHead>{t('admin.companies.tableHeaders.name')}</TableHead>
+                <TableHead>{t('admin.companies.tableHeaders.contact')}</TableHead>
+                <TableHead>{t('admin.companies.tableHeaders.email')}</TableHead>
+                <TableHead>{t('admin.companies.tableHeaders.phone')}</TableHead>
+                <TableHead>{t('admin.companies.tableHeaders.projects')}</TableHead>
+                <TableHead>{t('admin.companies.tableHeaders.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {companies.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center">Немає доступних компаній</TableCell>
+                  <TableCell colSpan={6} className="text-center">{t('admin.companies.noCompanies')}</TableCell>
                 </TableRow>
               ) : (
                 companies.map((company) => (
@@ -328,19 +330,19 @@ export function CompanyManagement() {
                           <DialogTrigger asChild>
                             <Button variant="ghost" size="icon" onClick={() => setEditingCompany(company)}>
                               <Pencil className="h-4 w-4" />
-                              <span className="sr-only">Редагувати</span>
+                              <span className="sr-only">{t('admin.companies.tableHeaders.edit')}</span>
                             </Button>
                           </DialogTrigger>
                           {editingCompany && editingCompany.id === company.id && (
                             <DialogContent className="sm:max-w-[525px]">
                               <DialogHeader>
-                                <DialogTitle>Редагувати компанію</DialogTitle>
-                                <DialogDescription>Змініть інформацію про компанію</DialogDescription>
+                                <DialogTitle>{t('admin.companies.edit.title')}</DialogTitle>
+                                <DialogDescription>{t('admin.companies.edit.description')}</DialogDescription>
                               </DialogHeader>
                               <div className="grid gap-4 py-4">
                                 <div className="grid grid-cols-2 gap-4">
                                   <div className="space-y-2">
-                                    <Label htmlFor="edit-name">Назва компанії</Label>
+                                    <Label htmlFor="edit-name">{t('admin.companies.add.name')}</Label>
                                     <Input
                                       id="edit-name"
                                       value={editingCompany.name}
@@ -348,7 +350,7 @@ export function CompanyManagement() {
                                     />
                                   </div>
                                   <div className="space-y-2">
-                                    <Label htmlFor="edit-contact">Контактна особа</Label>
+                                    <Label htmlFor="edit-contact">{t('admin.companies.add.contact')}</Label>
                                     <Input
                                       id="edit-contact"
                                       value={editingCompany.contact}
@@ -358,7 +360,7 @@ export function CompanyManagement() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                   <div className="space-y-2">
-                                    <Label htmlFor="edit-email">Email</Label>
+                                    <Label htmlFor="edit-email">{t('admin.companies.add.email')}</Label>
                                     <Input
                                       id="edit-email"
                                       type="email"
@@ -367,7 +369,7 @@ export function CompanyManagement() {
                                     />
                                   </div>
                                   <div className="space-y-2">
-                                    <Label htmlFor="edit-phone">Телефон</Label>
+                                    <Label htmlFor="edit-phone">{t('admin.companies.add.phone')}</Label>
                                     <Input
                                       id="edit-phone"
                                       value={editingCompany.phone}
@@ -376,7 +378,7 @@ export function CompanyManagement() {
                                   </div>
                                 </div>
                                 <div className="space-y-2">
-                                  <Label htmlFor="edit-address">Адреса</Label>
+                                  <Label htmlFor="edit-address">{t('admin.companies.add.address')}</Label>
                                   <Input
                                     id="edit-address"
                                     value={editingCompany.address || ''}
@@ -384,7 +386,7 @@ export function CompanyManagement() {
                                   />
                                 </div>
                                 <div className="space-y-2">
-                                  <Label htmlFor="edit-notes">Примітки</Label>
+                                  <Label htmlFor="edit-notes">{t('admin.companies.add.notes')}</Label>
                                   <Textarea
                                     id="edit-notes"
                                     value={editingCompany.notes || ''}
@@ -394,7 +396,7 @@ export function CompanyManagement() {
                               </div>
                               <DialogFooter>
                                 <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                                  Скасувати
+                                  {t('admin.companies.edit.cancel')}
                                 </Button>
                                 <Button 
                                   onClick={handleEditCompany} 
@@ -403,10 +405,10 @@ export function CompanyManagement() {
                                   {isUpdating === editingCompany?.id ? (
                                     <span className="flex items-center gap-2">
                                       <span className="animate-spin h-4 w-4 border-2 border-white rounded-full border-t-transparent" />
-                                      Оновлення...
+                                      {t('admin.companies.edit.updating')}
                                     </span>
                                   ) : (
-                                    'Зберегти'
+                                    t('admin.companies.edit.save')
                                   )}
                                 </Button>
                               </DialogFooter>
@@ -429,7 +431,7 @@ export function CompanyManagement() {
                           ) : (
                             <Trash className="h-4 w-4" />
                           )}
-                          <span className="sr-only">Видалити</span>
+                          <span className="sr-only">{t('admin.companies.tableHeaders.delete')}</span>
                         </Button>
                       </div>
                     </TableCell>

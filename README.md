@@ -151,3 +151,47 @@ The application uses Clerk for authentication and maintains a relationship betwe
    - `DELETE /api/reports?id={reportId}` - Deletes a report (only if it belongs to the current user)
 
 This security model ensures that users can only access and modify their own data while administrators maintain oversight capabilities for the entire system.
+
+## Internationalization (i18n)
+
+This project uses **i18next** with the **HTTP backend** (`i18next-http-backend`) and **react-i18next** for loading and using translations.
+
+1. Translation files
+   - Place your JSON translation files under `public/locales/{lng}/translation.json`. For example:
+     - `public/locales/en/translation.json`
+       ```json
+       {
+         "welcome": "Welcome",
+         "dashboard": "Dashboard"
+       }
+       ```
+     - `public/locales/de/translation.json`
+       ```json
+       {
+         "welcome": "Willkommen",
+         "dashboard": "Instrumententafel"
+       }
+       ```
+
+2. Adding new keys
+   - Open the appropriate `translation.json` for your language and add new key/value pairs.
+
+3. Using translations in React
+   - In any client component, import and use the `useTranslation` hook:
+     ```tsx
+     import { useTranslation } from 'react-i18next';
+
+     export default function MyComponent() {
+       const { t, i18n } = useTranslation();
+       return <h1>{t('welcome')}</h1>;
+     }
+     ```
+
+4. Changing languages at runtime
+   - You can switch languages programmatically:
+     ```ts
+     i18n.changeLanguage('de');
+     ```
+
+5. Debugging
+   - During development (`NODE_ENV=development`), i18next will log events to the console to help diagnose issues.

@@ -1,0 +1,233 @@
+{
+  "admin": {
+    "reports": {
+      "title": "Звіти співробітників",
+      "description": "Перегляд та експорт звітів про робочий час",
+      "exportAllToExcel": "Експорт всіх в Excel",
+      "filters": {
+        "title": "Фільтри звітів",
+        "description": "Оберіть параметри для відображення звітів",
+        "employee": "Співробітник",
+        "selectEmployee": "Оберіть співробітника",
+        "allEmployees": "Всі співробітники",
+        "period": "Період",
+        "downloadReport": "Завантажити звіт",
+        "noReportsToDownload": "Немає звітів для завантаження за обраними фільтрами"
+      },
+      "summary": {
+        "title": "Зведення",
+        "detailed": "Детальний звіт",
+        "summaryTitle": "Зведення звітів",
+        "summaryDescription": "Загальна інформація по звітах співробітників",
+        "noReportsAvailable": "Немає доступних звітів за обраний період"
+      },
+      "detailed": {
+        "title": "Детальний звіт",
+        "description": "Детальна інформація про витрачений час",
+        "selectEmployeeMessage": "Оберіть співробітника у фільтрах вище, щоб побачити детальний звіт за проєктами та завданнями",
+        "timeDistribution": "Розподіл часу за проєктами",
+        "rebranding": "Ребрендинг Acme Inc",
+        "marketingCampaign": "Маркетингова кампанія",
+        "websiteDevelopment": "Розробка веб-сайту",
+        "otherTasks": "Інші завдання",
+        "date": "Дата",
+        "project": "Проєкт",
+        "task": "Завдання",
+        "hours": "Години",
+        "comment": "Коментар",
+        "exportToExcel": "Експорт в Excel",
+        "selectEmployeeTitle": "Оберіть співробітника",
+        "selectEmployeeHint": "Для перегляду детального звіту оберіть конкретного співробітника у фільтрах вище"
+      },
+      "downloadDialog": {
+        "title": "Завантажити звіт",
+        "description": "Оберіть стовпці для включення в Excel звіт",
+        "tablePreview": "Попередній перегляд таблиці",
+        "reports": "звітів",
+        "download": "Завантажити",
+        "cancel": "Скасувати"
+      },
+      "tableHeaders": {
+        "name": "Name", 
+        "agency": "Agency",
+        "date": "Date",
+        "market": "Market",
+        "contractingAgency": "Contracting Agency / Unit",
+        "client": "Client",
+        "projectBrand": "Project / brand",
+        "media": "Media",
+        "jobType": "Job type",
+        "hours": "Hours",
+        "comments": "Comments",
+        "employee": "Співробітник",
+        "companies": "Компанії",
+        "actions": "Дії"
+      },
+      "errors": {
+        "excelCreationError": "Виникла помилка при створенні Excel файлу",
+        "downloadError": "Помилка при завантаженні звіту",
+        "reportNotFound": "Звіт з ID {reportId} не знайдено"
+      }
+    },
+    "companies": {
+      "title": "Управління компаніями",
+      "description": "Додавання та редагування клієнтських компаній",
+      "addCompany": "Додати компанію",
+      "clientCompanies": "Клієнтські компанії",
+      "clientCompaniesDesc": "Список компаній, з якими працює агентство",
+      "noCompanies": "Немає доступних компаній",
+      "loading": "Завантаження компаній...",
+      "deleteConfirm": "Ви впевнені, що хочете видалити цю компанію?",
+      "deleteSuccess": "Компанію успішно видалено",
+      "add": {
+        "title": "Додати нову компанію",
+        "description": "Введіть інформацію про нову клієнтську компанію",
+        "name": "Назва компанії",
+        "contact": "Контактна особа",
+        "email": "Email",
+        "phone": "Телефон",
+        "address": "Адреса",
+        "notes": "Примітки",
+        "cancel": "Скасувати",
+        "add": "Додати"
+      },
+      "edit": {
+        "title": "Редагувати компанію",
+        "description": "Змініть інформацію про компанію",
+        "save": "Зберегти",
+        "cancel": "Скасувати",
+        "updating": "Оновлення...",
+        "successMessage": "Компанію успішно оновлено"
+      },
+      "tableHeaders": {
+        "name": "Назва",
+        "contact": "Контактна особа",
+        "email": "Email",
+        "phone": "Телефон",
+        "projects": "Активні проєкти",
+        "actions": "Дії",
+        "edit": "Редагувати",
+        "delete": "Видалити"
+      }
+    },
+    "dashboard": {
+      "title": "Панель адміністратора",
+      "description": "Управління співробітниками, компаніями та звітами",
+      "stats": {
+        "employees": "Всього співробітників",
+        "activeAccounts": "Активні акаунти",
+        "companies": "Клієнтські компанії",
+        "totalInDatabase": "Всього в базі"
+      },
+      "tabs": {
+        "employees": "Співробітники",
+        "companies": "Компанії",
+        "reports": "Останні звіти"
+      },
+      "loading": "Завантаження статистики..."
+    },
+    "employees": {
+      "overview": {
+        "title": "Огляд співробітників",
+        "description": "Управління та моніторинг активності співробітників",
+        "employee": "Співробітник",
+        "reportPeriod": "Період звіту",
+        "actions": "Дії",
+        "noEmployees": "Немає доступних співробітників",
+        "loading": "Завантаження даних співробітників...",
+        "excel": "Excel",
+        "downloadMessage": "Звіт для співробітника ID: {employeeId} за період {startDate} - {endDate} завантажується..."
+      }
+    },
+    "companyOverview": {
+      "title": "Огляд компаній",
+      "description": "Клієнтські компанії та їх активні проєкти",
+      "name": "Назва",
+      "contact": "Контактна особа",
+      "email": "Email",
+      "activeProjects": "Активні проєкти",
+      "totalRevenue": "Загальний дохід",
+      "noCompanies": "Немає доступних компаній",
+      "loading": "Завантаження даних компаній...",
+      "manageCompanies": "Управління компаніями"
+    },
+    "recentReports": {
+      "title": "Останні звіти",
+      "description": "Нещодавно додані записи обліку часу",
+      "employee": "Співробітник",
+      "date": "Дата",
+      "hours": "Години",
+      "companies": "Компанії",
+      "actions": "Дії",
+      "noReports": "Немає доступних звітів",
+      "loading": "Завантаження останніх звітів...",
+      "download": "Завантажити",
+      "downloadMessage": "Звіт ID: {reportId} завантажується у форматі Excel...",
+      "allReports": "Всі звіти"
+    }
+  },
+  "calendar": {
+    "title": "Календар робочого часу",
+    "description": "Оберіть день для внесення або перегляду записів",
+    "week": "Тиждень {{from}} - {{to}}",
+    "entriesForDate": "Записи за {{date}}",
+    "addEntry": "Додати запис",
+    "editEntry": "Редагування запису",
+    "newEntry": "Запис робочого часу",
+    "onDate": "на {{date}}",
+    "specifyDetails": "Вкажіть компанію, опис роботи та витрачений час",
+    "totalHours": "Загальна кількість годин",
+    "forDate": "За {{date}}",
+    "hours": "годин",
+    "entriesCount": "Кількість записів",
+    "avgTimePerEntry": "Середній час на запис",
+    "summaryInfo": "Зведена інформація",
+    "reportsForDate": "Звіти за {{date}}",
+    "market": "Ринок",
+    "agency": "Агентство/Юніт",
+    "client": "Клієнт",
+    "projectBrand": "Проєкт/Бренд",
+    "media": "Медіа",
+    "jobType": "Тип роботи",
+    "comments": "Коментарі",
+    "actions": "Дії",
+    "edit": "Редагувати",
+    "delete": "Видалити",
+    "copy": "Копіювати",
+    "noEntriesForDate": "Немає записів за цю дату",
+    "noEntriesForDateDesc": "За {{date}} ще не було додано жодного запису",
+    "addFirstEntry": "Додати перший запис",
+    "copyEntry": "Копіювати запис",
+    "selectDateToCopy": "Оберіть дату, на яку потрібно скопіювати запис",
+    "selectDatesToCopy": "Оберіть дати для копіювання",
+    "weekdayShort": {"0": "Нд", "1": "Пн", "2": "Вт", "3": "Ср", "4": "Чт", "5": "Пт", "6": "Сб"},
+    "selectedDates": "Обрано {{count}} дат(у/и)",
+    "selectDatesToCopyHint": "Оберіть дати для копіювання запису",
+    "cancel": "Скасувати",
+    "userFunctions": "Функції користувача",
+    "adminFunctions": "Функції адміністратора",
+    "menu": {
+      "calendar": "Календар",
+      "myReports": "Мої звіти",
+      "dashboard": "Дашборд",
+      "reports": "Звіти",
+      "companies": "Компанії",
+      "employees": "Співробітники",
+      "logout": "Вийти"
+    },
+    "loading": "Завантаження...",
+    "selectMarket": "Оберіть ринок",
+    "marketNotFound": "Ринок не знайдено.",
+    "selectAgency": "Оберіть агентство",
+    "agencyNotFound": "Агентство не знайдено.",
+    "selectClient": "Оберіть клієнта",
+    "clientNotFound": "Клієнт не знайдено.",
+    "selectMedia": "Оберіть тип медіа",
+    "mediaNotFound": "Тип медіа не знайдено.",
+    "selectJobType": "Оберіть тип роботи",
+    "jobTypeNotFound": "Тип роботи не знайдено.",
+    "spentTime": "Витрачений час (хвилини)",
+    "minutesHint": "90 = 1:30 год",
+    "commentsPlaceholder": "Додаткові коментарі..."
+  }
+} 

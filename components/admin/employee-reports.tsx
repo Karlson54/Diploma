@@ -19,6 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import ExcelJS from 'exceljs'
+import { useTranslation } from "react-i18next"
 
 interface Employee {
   id: number;
@@ -52,6 +53,7 @@ interface Report {
 }
 
 export function EmployeeReports() {
+  const { t } = useTranslation()
   const [selectedEmployee, setSelectedEmployee] = useState("all")
   const [dateRange, setDateRange] = useState({
     from: new Date(new Date().setDate(1)), // First day of current month
@@ -210,21 +212,21 @@ export function EmployeeReports() {
     try {
       // Create a new workbook and worksheet
       const workbook = new ExcelJS.Workbook()
-      const worksheet = workbook.addWorksheet('Звіти')
+      const worksheet = workbook.addWorksheet(t('admin.reports.summary.title'))
       
       // Define columns based on selected columns
       const columns = []
-      if (selectedColumns.company) columns.push({ header: 'Agency', key: 'company', width: 20 })
-      if (selectedColumns.fullName) columns.push({ header: 'Name', key: 'fullName', width: 20 })
-      if (selectedColumns.date) columns.push({ header: 'Date', key: 'date', width: 15 })
-      if (selectedColumns.market) columns.push({ header: 'Market', key: 'market', width: 15 })
-      if (selectedColumns.contractingAgency) columns.push({ header: 'Contracting Agency / Unit', key: 'contractingAgency', width: 20 })
-      if (selectedColumns.client) columns.push({ header: 'Client', key: 'client', width: 20 })
-      if (selectedColumns.projectBrand) columns.push({ header: 'Project / brand', key: 'projectBrand', width: 20 })
-      if (selectedColumns.media) columns.push({ header: 'Media', key: 'media', width: 15 })
-      if (selectedColumns.jobType) columns.push({ header: 'Job type', key: 'jobType', width: 20 })
-      if (selectedColumns.hours) columns.push({ header: 'Hours', key: 'hours', width: 10 })
-      if (selectedColumns.comments) columns.push({ header: 'Comments', key: 'comments', width: 25 })
+      if (selectedColumns.company) columns.push({ header: t('admin.reports.tableHeaders.agency'), key: 'company', width: 20 })
+      if (selectedColumns.fullName) columns.push({ header: t('admin.reports.tableHeaders.name'), key: 'fullName', width: 20 })
+      if (selectedColumns.date) columns.push({ header: t('admin.reports.tableHeaders.date'), key: 'date', width: 15 })
+      if (selectedColumns.market) columns.push({ header: t('admin.reports.tableHeaders.market'), key: 'market', width: 15 })
+      if (selectedColumns.contractingAgency) columns.push({ header: t('admin.reports.tableHeaders.contractingAgency'), key: 'contractingAgency', width: 20 })
+      if (selectedColumns.client) columns.push({ header: t('admin.reports.tableHeaders.client'), key: 'client', width: 20 })
+      if (selectedColumns.projectBrand) columns.push({ header: t('admin.reports.tableHeaders.projectBrand'), key: 'projectBrand', width: 20 })
+      if (selectedColumns.media) columns.push({ header: t('admin.reports.tableHeaders.media'), key: 'media', width: 15 })
+      if (selectedColumns.jobType) columns.push({ header: t('admin.reports.tableHeaders.jobType'), key: 'jobType', width: 20 })
+      if (selectedColumns.hours) columns.push({ header: t('admin.reports.tableHeaders.hours'), key: 'hours', width: 10 })
+      if (selectedColumns.comments) columns.push({ header: t('admin.reports.tableHeaders.comments'), key: 'comments', width: 25 })
       
       worksheet.columns = columns
       
@@ -280,8 +282,8 @@ export function EmployeeReports() {
       // Clean up
       URL.revokeObjectURL(url)
     } catch (error) {
-      console.error('Помилка при створенні Excel файлу:', error)
-      alert('Виникла помилка при створенні Excel файлу')
+      console.error(t('admin.reports.errors.excelCreationError'), error)
+      alert(t('admin.reports.errors.excelCreationError'))
     }
   }
 
@@ -315,8 +317,8 @@ export function EmployeeReports() {
       
       setShowDownloadDialog(false);
     } catch (error) {
-      console.error('Помилка при завантаженні звіту:', error);
-      alert('Виникла помилка при створенні Excel файлу');
+      console.error(t('admin.reports.errors.downloadError'), error);
+      alert(t('admin.reports.errors.excelCreationError'));
     }
   }
 
@@ -325,7 +327,7 @@ export function EmployeeReports() {
     try {
       const reportsToExport = filteredReports
       if (reportsToExport.length === 0) {
-        alert('Немає звітів для експорту')
+        alert(t('admin.reports.filters.noReportsToDownload'))
         return
       }
       
@@ -338,11 +340,11 @@ export function EmployeeReports() {
       
       await createAndDownloadExcel(
         reportsToExport,
-        `Звіти_${employeeInfo}_${fromDate}_${toDate}.xlsx`
+        `Reports_${employeeInfo}_${fromDate}_${toDate}.xlsx`
       )
     } catch (error) {
-      console.error('Помилка при завантаженні всіх звітів:', error)
-      alert('Виникла помилка при створенні Excel файлу')
+      console.error(t('admin.reports.errors.downloadError'), error)
+      alert(t('admin.reports.errors.excelCreationError'))
     }
   }
 
@@ -351,7 +353,7 @@ export function EmployeeReports() {
     try {
       const report = reports.find(r => r.id === reportId)
       if (!report) {
-        alert(`Звіт з ID ${reportId} не знайдено`)
+        alert(t('admin.reports.errors.reportNotFound', { reportId }))
         return
       }
       
@@ -364,8 +366,8 @@ export function EmployeeReports() {
       setPreviewReports(otherReports);
       setShowDownloadDialog(true)
     } catch (error) {
-      console.error(`Помилка при завантаженні звіту ID: ${reportId}:`, error)
-      alert('Виникла помилка при створенні Excel файлу')
+      console.error(t('admin.reports.errors.downloadError', { reportId }), error)
+      alert(t('admin.reports.errors.excelCreationError'))
     }
   }
 
@@ -377,30 +379,30 @@ export function EmployeeReports() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Звіти співробітників</h1>
-          <p className="text-gray-500">Перегляд та експорт звітів про робочий час</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t('admin.reports.title')}</h1>
+          <p className="text-gray-500">{t('admin.reports.description')}</p>
         </div>
         <Button onClick={downloadAllReports} className="gap-2">
           <FileSpreadsheet className="h-4 w-4" />
-          Експорт всіх в Excel
+          {t('admin.reports.exportAllToExcel')}
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Фільтри звітів</CardTitle>
-          <CardDescription>Оберіть параметри для відображення звітів</CardDescription>
+          <CardTitle>{t('admin.reports.filters.title')}</CardTitle>
+          <CardDescription>{t('admin.reports.filters.description')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="text-sm font-medium mb-2 block">Співробітник</label>
+              <label className="text-sm font-medium mb-2 block">{t('admin.reports.filters.employee')}</label>
               <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Оберіть співробітника" />
+                  <SelectValue placeholder={t('admin.reports.filters.selectEmployee')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Всі співробітники</SelectItem>
+                  <SelectItem value="all">{t('admin.reports.filters.allEmployees')}</SelectItem>
                   {employees.map((employee) => (
                     <SelectItem key={employee.id} value={employee.id.toString()}>
                       {employee.name}
@@ -410,7 +412,7 @@ export function EmployeeReports() {
               </Select>
             </div>
             <div className="col-span-1 md:col-span-2">
-              <label className="text-sm font-medium mb-2 block">Період</label>
+              <label className="text-sm font-medium mb-2 block">{t('admin.reports.filters.period')}</label>
               <div className="flex gap-2">
                 <div className="flex-grow">
                   <DatePickerWithRange 
@@ -458,11 +460,11 @@ export function EmployeeReports() {
                     setPreviewReports(otherReports);
                     setShowDownloadDialog(true);
                   } else {
-                    alert('Немає звітів для завантаження за обраними фільтрами');
+                    alert(t('admin.reports.filters.noReportsToDownload'));
                   }
                 }}>
                   <Download className="h-4 w-4" />
-                  <span>Завантажити звіт</span>
+                  <span>{t('admin.reports.filters.downloadReport')}</span>
                 </Button>
               </div>
             </div>
@@ -475,37 +477,37 @@ export function EmployeeReports() {
 
       <Tabs defaultValue="summary">
         <TabsList>
-          <TabsTrigger value="summary">Зведення</TabsTrigger>
-          <TabsTrigger value="detailed">Детальний звіт</TabsTrigger>
+          <TabsTrigger value="summary">{t('admin.reports.summary.title')}</TabsTrigger>
+          <TabsTrigger value="detailed">{t('admin.reports.summary.detailed')}</TabsTrigger>
         </TabsList>
         <TabsContent value="summary" className="mt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Зведення звітів</CardTitle>
-              <CardDescription>Загальна інформація по звітах співробітників</CardDescription>
+              <CardTitle>{t('admin.reports.summary.summaryTitle')}</CardTitle>
+              <CardDescription>{t('admin.reports.summary.summaryDescription')}</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Agency</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Market</TableHead>
-                    <TableHead>Contracting Agency / Unit</TableHead>
-                    <TableHead>Client</TableHead>
-                    <TableHead>Project / brand</TableHead>
-                    <TableHead>Media</TableHead>
-                    <TableHead>Job type</TableHead>
-                    <TableHead>Hours</TableHead>
-                    <TableHead>Comments</TableHead>
+                    <TableHead>{t('admin.reports.tableHeaders.name')}</TableHead>
+                    <TableHead>{t('admin.reports.tableHeaders.agency')}</TableHead>
+                    <TableHead>{t('admin.reports.tableHeaders.date')}</TableHead>
+                    <TableHead>{t('admin.reports.tableHeaders.market')}</TableHead>
+                    <TableHead>{t('admin.reports.tableHeaders.contractingAgency')}</TableHead>
+                    <TableHead>{t('admin.reports.tableHeaders.client')}</TableHead>
+                    <TableHead>{t('admin.reports.tableHeaders.projectBrand')}</TableHead>
+                    <TableHead>{t('admin.reports.tableHeaders.media')}</TableHead>
+                    <TableHead>{t('admin.reports.tableHeaders.jobType')}</TableHead>
+                    <TableHead>{t('admin.reports.tableHeaders.hours')}</TableHead>
+                    <TableHead>{t('admin.reports.tableHeaders.comments')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredReports.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={12} className="text-center">
-                        Немає доступних звітів за обраний період
+                        {t('admin.reports.summary.noReportsAvailable')}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -533,21 +535,21 @@ export function EmployeeReports() {
         <TabsContent value="detailed" className="mt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Детальний звіт</CardTitle>
-              <CardDescription>Детальна інформація про витрачений час</CardDescription>
+              <CardTitle>{t('admin.reports.detailed.title')}</CardTitle>
+              <CardDescription>{t('admin.reports.detailed.description')}</CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground mb-4">
-                Оберіть співробітника у фільтрах вище, щоб побачити детальний звіт за проєктами та завданнями.
+                {t('admin.reports.detailed.selectEmployeeMessage')}
               </p>
               {selectedEmployee !== "all" ? (
                 <div className="space-y-6">
                   <div className="border rounded-lg p-4">
-                    <h3 className="font-medium mb-2">Розподіл часу за проєктами</h3>
+                    <h3 className="font-medium mb-2">{t('admin.reports.detailed.timeDistribution')}</h3>
                     <div className="space-y-3">
                       <div>
                         <div className="flex justify-between text-sm mb-1">
-                          <span>Ребрендинг Acme Inc</span>
+                          <span>{t('admin.reports.detailed.rebranding')}</span>
                           <span>24ч (30%)</span>
                         </div>
                         <div className="w-full bg-gray-100 rounded-full h-2">
@@ -556,7 +558,7 @@ export function EmployeeReports() {
                       </div>
                       <div>
                         <div className="flex justify-between text-sm mb-1">
-                          <span>Маркетингова кампанія</span>
+                          <span>{t('admin.reports.detailed.marketingCampaign')}</span>
                           <span>18ч (22%)</span>
                         </div>
                         <div className="w-full bg-gray-100 rounded-full h-2">
@@ -565,7 +567,7 @@ export function EmployeeReports() {
                       </div>
                       <div>
                         <div className="flex justify-between text-sm mb-1">
-                          <span>Розробка веб-сайту</span>
+                          <span>{t('admin.reports.detailed.websiteDevelopment')}</span>
                           <span>32ч (40%)</span>
                         </div>
                         <div className="w-full bg-gray-100 rounded-full h-2">
@@ -574,7 +576,7 @@ export function EmployeeReports() {
                       </div>
                       <div>
                         <div className="flex justify-between text-sm mb-1">
-                          <span>Інші завдання</span>
+                          <span>{t('admin.reports.detailed.otherTasks')}</span>
                           <span>6ч (8%)</span>
                         </div>
                         <div className="w-full bg-gray-100 rounded-full h-2">
@@ -587,18 +589,18 @@ export function EmployeeReports() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Дата</TableHead>
-                        <TableHead>Проєкт</TableHead>
-                        <TableHead>Завдання</TableHead>
-                        <TableHead>Години</TableHead>
-                        <TableHead>Коментар</TableHead>
+                        <TableHead>{t('admin.reports.detailed.date')}</TableHead>
+                        <TableHead>{t('admin.reports.detailed.project')}</TableHead>
+                        <TableHead>{t('admin.reports.detailed.task')}</TableHead>
+                        <TableHead>{t('admin.reports.detailed.hours')}</TableHead>
+                        <TableHead>{t('admin.reports.detailed.comment')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredReports.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={5} className="text-center">
-                            Немає доступних звітів за обраний період
+                            {t('admin.reports.summary.noReportsAvailable')}
                           </TableCell>
                         </TableRow>
                       ) : (
@@ -618,16 +620,16 @@ export function EmployeeReports() {
                   <div className="flex justify-end">
                     <Button onClick={() => downloadReport(Number.parseInt(selectedEmployee))} className="gap-2">
                       <FileSpreadsheet className="h-4 w-4" />
-                      Експорт в Excel
+                      {t('admin.reports.detailed.exportToExcel')}
                     </Button>
                   </div>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <FileSpreadsheet className="h-16 w-16 text-gray-300 mb-4" />
-                  <h3 className="text-lg font-medium mb-1">Оберіть співробітника</h3>
+                  <h3 className="text-lg font-medium mb-1">{t('admin.reports.detailed.selectEmployeeTitle')}</h3>
                   <p className="text-muted-foreground">
-                    Для перегляду детального звіту оберіть конкретного співробітника у фільтрах вище
+                    {t('admin.reports.detailed.selectEmployeeHint')}
                   </p>
                 </div>
               )}
@@ -636,13 +638,13 @@ export function EmployeeReports() {
         </TabsContent>
       </Tabs>
 
-      {/* Діалог для вибору стовпців та попереднього перегляду */}
+      {/* Dialog for column selection and preview */}
       <Dialog open={showDownloadDialog} onOpenChange={setShowDownloadDialog}>
         <DialogContent className="sm:max-w-4xl max-h-screen flex flex-col">
           <DialogHeader>
-            <DialogTitle>Завантажити звіт</DialogTitle>
+            <DialogTitle>{t('admin.reports.downloadDialog.title')}</DialogTitle>
             <DialogDescription>
-              Оберіть стовпці для включення в Excel звіт
+              {t('admin.reports.downloadDialog.description')}
             </DialogDescription>
           </DialogHeader>
           
@@ -656,7 +658,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="company-checkbox" className="text-sm font-medium">
-                Agency
+                {t('admin.reports.tableHeaders.agency')}
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -668,7 +670,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="fullName-checkbox" className="text-sm font-medium">
-                Name
+                {t('admin.reports.tableHeaders.name')}
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -680,7 +682,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="date-checkbox" className="text-sm font-medium">
-                Date
+                {t('admin.reports.tableHeaders.date')}
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -692,7 +694,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="market-checkbox" className="text-sm font-medium">
-                Market
+                {t('admin.reports.tableHeaders.market')}
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -704,7 +706,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="contractingAgency-checkbox" className="text-sm font-medium">
-                Contracting Agency / Unit
+                {t('admin.reports.tableHeaders.contractingAgency')}
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -716,7 +718,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="client-checkbox" className="text-sm font-medium">
-                Client
+                {t('admin.reports.tableHeaders.client')}
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -728,7 +730,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="projectBrand-checkbox" className="text-sm font-medium">
-                Project / brand
+                {t('admin.reports.tableHeaders.projectBrand')}
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -740,7 +742,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="media-checkbox" className="text-sm font-medium">
-                Media
+                {t('admin.reports.tableHeaders.media')}
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -752,7 +754,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="jobType-checkbox" className="text-sm font-medium">
-                Job type
+                {t('admin.reports.tableHeaders.jobType')}
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -764,7 +766,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="hours-checkbox" className="text-sm font-medium">
-                Hours
+                {t('admin.reports.tableHeaders.hours')}
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -776,64 +778,57 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="comments-checkbox" className="text-sm font-medium">
-                Comments
+                {t('admin.reports.tableHeaders.comments')}
               </label>
             </div>
           </div>
           
           <div className="overflow-y-auto" style={{ maxHeight: "350px" }}>
-            <h3 className="font-medium mb-2">Попередній перегляд таблиці ({previewReports.length + (selectedReport ? 1 : 0)} звітів)</h3>
+            <h3 className="font-medium mb-2">{t('admin.reports.downloadDialog.tablePreview')} ({previewReports.length + (selectedReport ? 1 : 0)} {t('admin.reports.downloadDialog.reports')})</h3>
             {selectedReport && (
               <Table className="min-w-full">
                 <TableHeader>
                   <TableRow>
-                    {selectedColumns.company && <TableHead>Agency</TableHead>}
-                    {selectedColumns.fullName && <TableHead>Name</TableHead>}
-                    {selectedColumns.date && <TableHead>Date</TableHead>}
-                    {selectedColumns.market && <TableHead>Market</TableHead>}
-                    {selectedColumns.contractingAgency && <TableHead>Contracting Agency / Unit</TableHead>}
-                    {selectedColumns.client && <TableHead>Client</TableHead>}
-                    {selectedColumns.projectBrand && <TableHead>Project / brand</TableHead>}
-                    {selectedColumns.media && <TableHead>Media</TableHead>}
-                    {selectedColumns.jobType && <TableHead>Job type</TableHead>}
-                    {selectedColumns.hours && <TableHead>Hours</TableHead>}
-                    {selectedColumns.comments && <TableHead>Comments</TableHead>}
+                    {selectedColumns.company && <TableHead>{t('admin.reports.tableHeaders.agency')}</TableHead>}
+                    {selectedColumns.fullName && <TableHead>{t('admin.reports.tableHeaders.name')}</TableHead>}
+                    {selectedColumns.date && <TableHead>{t('admin.reports.tableHeaders.date')}</TableHead>}
+                    {selectedColumns.market && <TableHead>{t('admin.reports.tableHeaders.market')}</TableHead>}
+                    {selectedColumns.contractingAgency && <TableHead>{t('admin.reports.tableHeaders.contractingAgency')}</TableHead>}
+                    {selectedColumns.client && <TableHead>{t('admin.reports.tableHeaders.client')}</TableHead>}
+                    {selectedColumns.projectBrand && <TableHead>{t('admin.reports.tableHeaders.projectBrand')}</TableHead>}
+                    {selectedColumns.media && <TableHead>{t('admin.reports.tableHeaders.media')}</TableHead>}
+                    {selectedColumns.jobType && <TableHead>{t('admin.reports.tableHeaders.jobType')}</TableHead>}
+                    {selectedColumns.hours && <TableHead>{t('admin.reports.tableHeaders.hours')}</TableHead>}
+                    {selectedColumns.comments && <TableHead>{t('admin.reports.tableHeaders.comments')}</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {/* Выбранный отчет */}
                   <TableRow>
                     {selectedColumns.company && <TableCell>{selectedReport.company}</TableCell>}
                     {selectedColumns.fullName && <TableCell>{selectedReport.employee}</TableCell>}
                     {selectedColumns.date && <TableCell>{selectedReport.date}</TableCell>}
-                    {selectedColumns.market && <TableCell>{selectedReport.market || "—"}</TableCell>}
-                    {selectedColumns.contractingAgency && (
-                      <TableCell>{selectedReport.contractingAgency || "—"}</TableCell>
-                    )}
-                    {selectedColumns.client && <TableCell>{selectedReport.client || "—"}</TableCell>}
-                    {selectedColumns.projectBrand && <TableCell>{selectedReport.projectBrand || "—"}</TableCell>}
-                    {selectedColumns.media && <TableCell>{selectedReport.media || "—"}</TableCell>}
-                    {selectedColumns.jobType && <TableCell>{selectedReport.jobType || "—"}</TableCell>}
+                    {selectedColumns.market && <TableCell>{selectedReport.market}</TableCell>}
+                    {selectedColumns.contractingAgency && <TableCell>{selectedReport.contractingAgency}</TableCell>}
+                    {selectedColumns.client && <TableCell>{selectedReport.client}</TableCell>}
+                    {selectedColumns.projectBrand && <TableCell>{selectedReport.projectBrand}</TableCell>}
+                    {selectedColumns.media && <TableCell>{selectedReport.media}</TableCell>}
+                    {selectedColumns.jobType && <TableCell>{selectedReport.jobType}</TableCell>}
                     {selectedColumns.hours && <TableCell>{selectedReport.hours}</TableCell>}
-                    {selectedColumns.comments && <TableCell>{selectedReport.comments || "—"}</TableCell>}
+                    {selectedColumns.comments && <TableCell>{selectedReport.comments}</TableCell>}
                   </TableRow>
-
-                  {/* Дополнительные отчеты для примера */}
                   {previewReports.map(report => (
                     <TableRow key={`preview-${report.id}`}>
                       {selectedColumns.company && <TableCell>{report.company}</TableCell>}
                       {selectedColumns.fullName && <TableCell>{report.employee}</TableCell>}
                       {selectedColumns.date && <TableCell>{report.date}</TableCell>}
-                      {selectedColumns.market && <TableCell>{report.market || "—"}</TableCell>}
-                      {selectedColumns.contractingAgency && (
-                        <TableCell>{report.contractingAgency || "—"}</TableCell>
-                      )}
-                      {selectedColumns.client && <TableCell>{report.client || "—"}</TableCell>}
-                      {selectedColumns.projectBrand && <TableCell>{report.projectBrand || "—"}</TableCell>}
-                      {selectedColumns.media && <TableCell>{report.media || "—"}</TableCell>}
-                      {selectedColumns.jobType && <TableCell>{report.jobType || "—"}</TableCell>}
+                      {selectedColumns.market && <TableCell>{report.market}</TableCell>}
+                      {selectedColumns.contractingAgency && <TableCell>{report.contractingAgency}</TableCell>}
+                      {selectedColumns.client && <TableCell>{report.client}</TableCell>}
+                      {selectedColumns.projectBrand && <TableCell>{report.projectBrand}</TableCell>}
+                      {selectedColumns.media && <TableCell>{report.media}</TableCell>}
+                      {selectedColumns.jobType && <TableCell>{report.jobType}</TableCell>}
                       {selectedColumns.hours && <TableCell>{report.hours}</TableCell>}
-                      {selectedColumns.comments && <TableCell>{report.comments || "—"}</TableCell>}
+                      {selectedColumns.comments && <TableCell>{report.comments}</TableCell>}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -841,12 +836,12 @@ export function EmployeeReports() {
             )}
           </div>
           
-          <DialogFooter className="mt-4 pt-2 border-t">
+          <DialogFooter className="flex justify-end space-x-2 pt-4 border-t">
             <Button variant="outline" onClick={() => setShowDownloadDialog(false)}>
-              Скасувати
+              {t('admin.reports.downloadDialog.cancel')}
             </Button>
             <Button onClick={handleDownloadWithColumns}>
-              Завантажити
+              {t('admin.reports.downloadDialog.download')}
             </Button>
           </DialogFooter>
         </DialogContent>

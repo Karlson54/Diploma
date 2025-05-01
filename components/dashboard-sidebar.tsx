@@ -10,6 +10,8 @@ import { useMobile } from "@/hooks/use-mobile"
 import { setAuthenticated } from "@/lib/auth"
 import { useUser } from "@clerk/nextjs"
 import { useCurrentEmployee } from "@/hooks/use-current-employee"
+import { LanguageSwitcher } from "@/components/language-switcher"
+import { useTranslation } from "react-i18next"
 
 interface DashboardSidebarProps {
   isAdmin?: boolean
@@ -22,6 +24,7 @@ export function DashboardSidebar({ isAdmin = false }: DashboardSidebarProps) {
   const pathname = usePathname()
   const { user, isLoaded } = useUser()
   const { employee, isLoading: isEmployeeLoading } = useCurrentEmployee()
+  const { t } = useTranslation()
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen)
@@ -57,13 +60,13 @@ export function DashboardSidebar({ isAdmin = false }: DashboardSidebarProps) {
               className="h-full"
             />
           </div>
-          <p className="text-sm text-gray-500 mt-2">{isAdmin ? "Панель адміністратора" : "Облік робочого часу"}</p>
+          <p className="text-sm text-gray-500 mt-2">{isAdmin ? t('admin.dashboard.title') : t('calendar.title')}</p>
           {!isEmployeeLoading && employee ? (
             <p className="text-sm font-medium mt-1">
               {formattedName?.firstName} {formattedName?.lastName}
             </p>
           ) : isLoaded && user ? (
-            <p className="text-sm font-medium mt-1">{`${user.firstName || ''} ${user.lastName || ''}`}</p>
+            <p className="text-sm font-medium mt-1">{t('calendar.loading')}</p>
           ) : (
             <p className="text-sm font-medium mt-1">Завантаження...</p>
           )}
@@ -71,7 +74,7 @@ export function DashboardSidebar({ isAdmin = false }: DashboardSidebarProps) {
         <nav className="flex-1 p-4">
           {isAdmin ? (
             <>
-              <p className="text-xs uppercase font-semibold text-gray-500 mb-2">Функції користувача</p>
+              <p className="text-xs uppercase font-semibold text-gray-500 mb-2">{t('calendar.userFunctions')}</p>
               <ul className="space-y-1 mb-6">
                 <li>
                   <Link
@@ -84,7 +87,7 @@ export function DashboardSidebar({ isAdmin = false }: DashboardSidebarProps) {
                     )}
                   >
                     <Calendar className="h-5 w-5" />
-                    <span>Календар</span>
+                    <span>{t('calendar.menu.calendar')}</span>
                   </Link>
                 </li>
                 <li>
@@ -98,14 +101,14 @@ export function DashboardSidebar({ isAdmin = false }: DashboardSidebarProps) {
                     )}
                   >
                     <FileText className="h-5 w-5" />
-                    <span>Мої звіти</span>
+                    <span>{t('calendar.menu.myReports')}</span>
                   </Link>
                 </li>
               </ul>
 
               <div className="h-px bg-gray-200 my-4"></div>
 
-              <p className="text-xs uppercase font-semibold text-gray-500 mb-2">Функції адміністратора</p>
+              <p className="text-xs uppercase font-semibold text-gray-500 mb-2">{t('calendar.adminFunctions')}</p>
               <ul className="space-y-1">
                 <li>
                   <Link
@@ -118,7 +121,7 @@ export function DashboardSidebar({ isAdmin = false }: DashboardSidebarProps) {
                     )}
                   >
                     <BarChart3 className="h-5 w-5" />
-                    <span>Дашборд</span>
+                    <span>{t('calendar.menu.dashboard')}</span>
                   </Link>
                 </li>
                 <li>
@@ -132,7 +135,7 @@ export function DashboardSidebar({ isAdmin = false }: DashboardSidebarProps) {
                     )}
                   >
                     <FileSpreadsheet className="h-5 w-5" />
-                    <span>Звіти</span>
+                    <span>{t('calendar.menu.reports')}</span>
                   </Link>
                 </li>
                 <li>
@@ -146,7 +149,7 @@ export function DashboardSidebar({ isAdmin = false }: DashboardSidebarProps) {
                     )}
                   >
                     <Building className="h-5 w-5" />
-                    <span>Компанії</span>
+                    <span>{t('calendar.menu.companies')}</span>
                   </Link>
                 </li>
                 <li>
@@ -160,18 +163,21 @@ export function DashboardSidebar({ isAdmin = false }: DashboardSidebarProps) {
                     )}
                   >
                     <Users className="h-5 w-5" />
-                    <span>Співробітники</span>
+                    <span>{t('calendar.menu.employees')}</span>
                   </Link>
                 </li>
                 <li className="mt-6 pt-6 border-t">
-                  <Button
-                    variant="ghost"
-                    className="w-full flex items-center justify-start gap-3 rounded-md px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-                    onClick={handleLogout}
-                  >
-                    <LogOut className="h-5 w-5" />
-                    <span>Вийти</span>
-                  </Button>
+                  <div className="flex justify-between items-center">
+                    <Button
+                      variant="ghost"
+                      className="flex items-center justify-start gap-3 rounded-md px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                      onClick={handleLogout}
+                    >
+                      <LogOut className="h-5 w-5" />
+                      <span>{t('calendar.menu.logout')}</span>
+                    </Button>
+                    <LanguageSwitcher />
+                  </div>
                 </li>
               </ul>
             </>
@@ -188,7 +194,7 @@ export function DashboardSidebar({ isAdmin = false }: DashboardSidebarProps) {
                   )}
                 >
                   <BarChart3 className="h-5 w-5" />
-                  <span>Дашборд</span>
+                  <span>{t('calendar.menu.dashboard')}</span>
                 </Link>
               </li>
               <li>
@@ -216,18 +222,21 @@ export function DashboardSidebar({ isAdmin = false }: DashboardSidebarProps) {
                   )}
                 >
                   <FileText className="h-5 w-5" />
-                  <span>Звіти</span>
+                  <span>{t('calendar.menu.reports')}</span>
                 </Link>
               </li>
               <li className="mt-6 pt-6 border-t">
-                <Button
-                  variant="ghost"
-                  className="w-full flex items-center justify-start gap-3 rounded-md px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-                  onClick={handleLogout}
-                >
-                  <LogOut className="h-5 w-5" />
-                  <span>Вийти</span>
-                </Button>
+                <div className="flex justify-between items-center">
+                  <Button
+                    variant="ghost"
+                    className="flex items-center justify-start gap-3 rounded-md px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="h-5 w-5" />
+                    <span>{t('calendar.menu.logout')}</span>
+                  </Button>
+                  <LanguageSwitcher />
+                </div>
               </li>
             </ul>
           )}
