@@ -5,9 +5,77 @@ import { auth } from '@clerk/nextjs/server';
 // Get user's reports
 export async function GET(request: Request) {
   try {
-    // Get all reports with employee data
+    // Get all reports with employee data and related company information
     const reports = await reportQueries.getAllWithEmployee();
-    return NextResponse.json(reports);
+    
+    console.log("Raw reports from database:", reports.slice(0, 1));
+    
+    // For each report, ensure we have all the data needed for export
+    const enrichedReports = await Promise.all(
+      reports.map(async (report) => {
+        // Get additional details for each report if needed
+        const detailedReport = await reportQueries.getByIdWithDetails(report.report.id);
+        
+        console.log("Detailed report from database:", detailedReport);
+        
+        // Make sure we have complete employee data
+        let employeeData = report.employee;
+        if (employeeData && !employeeData.name) {
+          const employee = await employeeQueries.getById(employeeData.id);
+          if (employee) {
+            employeeData = {
+              id: employeeData.id,
+              name: employee.name || '-',
+              agency: employeeData.agency || '-'
+            };
+          }
+        }
+        
+        // Check if we have agency data
+        if (employeeData && (!employeeData.agency || employeeData.agency === 'null')) {
+          const employee = await employeeQueries.getById(employeeData.id);
+          if (employee && employee.agency) {
+            employeeData.agency = employee.agency;
+          } else {
+            employeeData.agency = '-';
+          }
+        }
+        
+        // Ensure we have market data
+        let market = report.report.market || '-';
+        if (!market || market === 'null') {
+          // Try to get market from detailed report
+          if (detailedReport?.report.market) {
+            market = detailedReport.report.market;
+          }
+        }
+        
+        // Return the report with enhanced data
+        const enhancedReport = {
+          ...report,
+          employee: employeeData,
+          report: {
+            ...report.report,
+            // Убедимся, что у нас есть все необходимые данные из БД
+            projectBrand: report.report.projectBrand || detailedReport?.report.projectBrand || '-',
+            market: market,
+            media: report.report.media || '-',
+            comments: report.report.comments || '-',
+            client: report.report.client || '-',
+            contractingAgency: report.report.contractingAgency || '-',
+            jobType: report.report.jobType || '-',
+          },
+          // Add any companies associated with the report
+          companies: detailedReport?.companies || []
+        };
+        
+        console.log("Enhanced report:", enhancedReport);
+        
+        return enhancedReport;
+      })
+    );
+    
+    return NextResponse.json(enrichedReports);
   } catch (error) {
     console.error('Error fetching reports:', error);
     return NextResponse.json({ error: 'Failed to fetch reports' }, { status: 500 });

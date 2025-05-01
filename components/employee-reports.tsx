@@ -23,6 +23,12 @@ interface Report {
   totalHours: number;
   companies: string;
   tasks: ReportTask[];
+  employeeName?: string;
+  projectBrand?: string;
+  market?: string;
+  agency?: string;
+  media?: string;
+  comments?: string;
 }
 
 // Define interface for API response
@@ -34,12 +40,17 @@ interface ApiReport {
     client?: string;
     contractingAgency?: string;
     jobType?: string;
+    projectBrand?: string;
+    market?: string;
+    comments?: string;
+    media?: string;
   };
   employee: {
     id: number;
     name: string;
     agency: string;
   };
+  companies?: any[]; // Add companies array from enhanced API response
 }
 
 export function EmployeeReports() {
@@ -84,6 +95,21 @@ export function EmployeeReports() {
             report.report.contractingAgency
           ].filter(Boolean).join(", ");
           
+          // Extract employee name with fallback
+          const employeeName = report.employee?.name || '-';
+          
+          // Directly extract fields from report
+          const agency = report.employee?.agency || '-';
+          const market = report.report.market || '-';
+          const media = report.report.media || '-';
+          const comments = report.report.comments || '-';
+          const projectBrand = report.report.projectBrand || '-';
+          
+          // Log to debug the data extraction
+          console.log('Extracted data from API:', {
+            agency, market, media, comments, projectBrand, employeeName
+          });
+          
           // Create task based on actual report data
           const tasks: ReportTask[] = [];
           if (report.report.client) {
@@ -94,12 +120,32 @@ export function EmployeeReports() {
             });
           }
           
+          // Add company information if available
+          if (report.companies && Array.isArray(report.companies) && report.companies.length > 0) {
+            // Add additional tasks from associated companies
+            report.companies.forEach(company => {
+              if (company && company.name && !tasks.some(t => t.company === company.name)) {
+                tasks.push({
+                  company: company.name,
+                  description: report.report.jobType || `Work with ${company.name}`,
+                  hours: report.report.hours / report.companies!.length // Distribute hours
+                });
+              }
+            });
+          }
+          
           return {
             id: report.report.id,
             date: formattedDate,
             totalHours: report.report.hours,
             companies,
-            tasks
+            tasks,
+            employeeName,
+            projectBrand,
+            market,
+            agency,
+            media,
+            comments
           };
         });
         
@@ -126,21 +172,55 @@ export function EmployeeReports() {
     fetchReports();
   }, [dateRange]);
 
+  console.log("Report data to export:", reports);
+
   // Підготувати дані для експорту
   const prepareExportData = (reportsToExport: Report[] = reports) => {
+    // Проверка данных для отладки
+    console.log("Preparing export data from:", reportsToExport);
+    
     return reportsToExport.map(report => {
       const task = report.tasks[0] || {};
-      return {
-        date: report.date,
-        market: 'Європа',
-        agency: 'MediaCom',
-        client: report.companies.split(', ')[0] || '',
-        project: 'N/A',
-        media: 'Radio',
-        jobType: task.description || '',
-        comments: 'Автоматичний експорт',
+      
+      // Split companies string to extract client and contracting agency
+      const companiesParts = report.companies.split(', ');
+      const client = companiesParts[0] || '';
+      const contractingAgency = companiesParts[1] || '';
+      
+      // Данные для отладки
+      console.log("Raw report data:", report);
+      
+      const exportRow = {
+        // Используем данные непосредственно из отчета/БД
+        date: report.date || '-',
+        // Пытаемся получить рынок из отчета, если нет - используем дефолтное значение
+        market: report.market || '-',
+        // Агентство сотрудника из отчета
+        agency: report.agency || '-',
+        // Полное имя сотрудника
+        fullName: report.employeeName || '-',
+        // Компания-подрядчик (Contracting Agency / Unit)
+        company: contractingAgency || '-',
+        // Клиент
+        client: client || '-',
+        // Проект из описания задачи
+        project: task.description || '-',
+        // Бренд проекта
+        projectBrand: report.projectBrand || task.company || '-',
+        // Тип медиа из отчета
+        media: report.media || '-',
+        // Тип работы из задачи
+        jobType: task.description || '-',
+        // Комментарии из отчета
+        comments: report.comments || '-',
+        // Часы из отчета
         hours: report.totalHours
       };
+      
+      // Для отладки
+      console.log("Prepared export row:", exportRow);
+      
+      return exportRow;
     });
   }
 
@@ -151,15 +231,17 @@ export function EmployeeReports() {
     
     // Додаємо заголовки
     worksheet.columns = [
+      { header: 'Агентство', key: 'agency', width: 15 },
+      { header: 'Ім\'я', key: 'fullName', width: 20 },
       { header: 'Дата', key: 'date', width: 15 },
       { header: 'Ринок', key: 'market', width: 15 },
-      { header: 'Агентство', key: 'agency', width: 20 },
+      { header: 'Компанія', key: 'company', width: 20 },
       { header: 'Клієнт', key: 'client', width: 20 },
       { header: 'Проект/Бренд', key: 'project', width: 20 },
       { header: 'Медіа', key: 'media', width: 15 },
       { header: 'Тип роботи', key: 'jobType', width: 20 },
-      { header: 'Коментарі', key: 'comments', width: 25 },
-      { header: 'Години', key: 'hours', width: 10 }
+      { header: 'Години', key: 'hours', width: 10 },
+      { header: 'Коментарі', key: 'comments', width: 25 }
     ];
     
     // Стилізуємо заголовки
@@ -172,18 +254,28 @@ export function EmployeeReports() {
     
     // Додаємо дані зі звітів
     reportsToExport.forEach(report => {
+      // Use the same data preparation logic as in prepareExportData
       const task = report.tasks[0] || {};
       
+      // Split companies string to extract client and contracting agency
+      const companiesParts = report.companies.split(', ');
+      const client = companiesParts[0] || '';
+      const contractingAgency = companiesParts[1] || '';
+      
+      console.log("Excel export - report data:", report, "contractingAgency:", contractingAgency);
+      
       worksheet.addRow({
-        date: report.date,
-        market: 'Європа', // Припускаємо, що це за замовчуванням
-        agency: 'MediaCom', // Припускаємо, що це за замовчуванням
-        client: report.companies.split(', ')[0] || '',
-        project: 'N/A',
-        media: 'Radio', // Припускаємо, що це за замовчуванням
-        jobType: task.description || '',
-        comments: 'Автоматичний експорт', // Припускаємо, що це за замовчуванням
-        hours: report.totalHours
+        agency: report.agency || '-',
+        fullName: report.employeeName || '-',
+        date: report.date || '-',
+        market: report.market || '-',
+        company: contractingAgency || '-',
+        client: client || '-',
+        project: report.projectBrand || task.company || '-',
+        media: report.media || '-',
+        jobType: task.description || '-',
+        hours: report.totalHours,
+        comments: report.comments || '-'
       });
     });
     
@@ -229,9 +321,37 @@ export function EmployeeReports() {
         return;
       }
       
-      // Підготувати дані для модального вікна
-      const exportData = prepareExportData();
-      setExportData(exportData);
+      // Подготовка данных для экспорта с использованием данных из базы
+      const processedReports = reports.map(report => {
+        const task = report.tasks[0] || {};
+        
+        // Split companies string to extract client and contracting agency
+        const companiesParts = report.companies.split(', ');
+        const client = companiesParts[0] || '';
+        const contractingAgency = companiesParts[1] || '';
+        
+        console.log("Download all reports - report data:", report, "contractingAgency:", contractingAgency);
+        
+        return {
+          date: report.date || '-',
+          market: report.market || '-',
+          agency: report.agency || '-',
+          fullName: report.employeeName || '-',
+          company: contractingAgency || '-',
+          client: client || '-',
+          project: task.description || '-',
+          projectBrand: report.projectBrand || task.company || '-',
+          media: report.media || '-',
+          jobType: task.description || '-',
+          comments: report.comments || '-',
+          hours: report.totalHours
+        };
+      });
+      
+      console.log("Final export data:", processedReports);
+      
+      // Подготовленные данные в модальное окно
+      setExportData(processedReports);
       setShowExportModal(true);
     } catch (error) {
       console.error('Помилка при завантаженні всіх звітів:', error);
