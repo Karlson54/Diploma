@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import "./globals.css"
 import { ClerkProvider } from "@clerk/nextjs"
 import { AuthProvider } from "@/lib/AuthContext"
+import I18nProvider from "@/lib/I18nProvider"
 
 export const metadata: Metadata = {
   title: "v0 App",
@@ -25,9 +26,11 @@ export default function RootLayout({
     >
       <html lang="en">
         <body>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
+          <I18nProvider>
+            <AuthProvider>
+              {children}
+            </AuthProvider>
+          </I18nProvider>
         </body>
       </html>
     </ClerkProvider>
