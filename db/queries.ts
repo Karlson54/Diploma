@@ -16,6 +16,11 @@ export const employeeQueries = {
     return db.select().from(employees).where(eq(employees.id, id)).get();
   },
   
+  // Get employee by Clerk ID
+  getByClerkId: async (clerkId: string) => {
+    return db.select().from(employees).where(eq(employees.clerkId, clerkId)).get();
+  },
+  
   // Add a new employee
   add: async (data: Omit<typeof employees.$inferInsert, 'id'>) => {
     return db.insert(employees).values(data).returning().get();

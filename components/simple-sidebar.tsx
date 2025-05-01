@@ -5,9 +5,10 @@ import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import { Calendar, Menu, X, FileText, LogOut, BarChart3, Users, Building, FileSpreadsheet } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import { cn, formatEmployeeName } from "@/lib/utils"
 import { useMobile } from "@/hooks/use-mobile"
 import { useClerk, useUser } from "@clerk/nextjs"
+import { useCurrentEmployee } from "@/hooks/use-current-employee"
 
 export function SimpleSidebar() {
   const isMobile = useMobile()
@@ -16,6 +17,7 @@ export function SimpleSidebar() {
   const pathname = usePathname()
   const { signOut } = useClerk()
   const { user, isLoaded } = useUser()
+  const { employee, isLoading: isEmployeeLoading } = useCurrentEmployee()
   const isAdmin = isLoaded && user?.publicMetadata?.role === "admin"
 
   useEffect(() => {
@@ -32,6 +34,9 @@ export function SimpleSidebar() {
   const handleLogout = async () => {
     await signOut({ redirectUrl: '/login' })
   }
+
+  // Format the employee name for display
+  const formattedName = employee ? formatEmployeeName(employee.name) : null;
 
   return (
     <>
@@ -56,7 +61,15 @@ export function SimpleSidebar() {
             />
           </div>
           <p className="text-sm font-medium mt-2">
-            {isLoaded && user ? `${user.firstName} ${user.lastName}` : "Завантаження..."}
+            {!isEmployeeLoading && employee ? (
+              <>
+                {formattedName?.firstName} {formattedName?.lastName}
+              </>
+            ) : isLoaded && user ? (
+              `${user.firstName} ${user.lastName}`
+            ) : (
+              "Завантаження..."
+            )}
             <span className="block text-xs text-gray-500">
               {isLoaded && user ? (user.publicMetadata?.role === "admin" ? "Адміністратор" : user.emailAddresses[0]?.emailAddress) : ""}
             </span>

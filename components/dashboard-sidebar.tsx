@@ -5,9 +5,11 @@ import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import { BarChart3, Clock, Users, FileText, Menu, X, Building, FileSpreadsheet, LogOut, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import { cn, formatEmployeeName } from "@/lib/utils"
 import { useMobile } from "@/hooks/use-mobile"
 import { setAuthenticated } from "@/lib/auth"
+import { useUser } from "@clerk/nextjs"
+import { useCurrentEmployee } from "@/hooks/use-current-employee"
 
 interface DashboardSidebarProps {
   isAdmin?: boolean
@@ -18,6 +20,8 @@ export function DashboardSidebar({ isAdmin = false }: DashboardSidebarProps) {
   const [isOpen, setIsOpen] = useState(!isMobile)
   const router = useRouter()
   const pathname = usePathname()
+  const { user, isLoaded } = useUser()
+  const { employee, isLoading: isEmployeeLoading } = useCurrentEmployee()
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen)
@@ -27,6 +31,9 @@ export function DashboardSidebar({ isAdmin = false }: DashboardSidebarProps) {
     setAuthenticated(false)
     router.push("/login")
   }
+
+  // Format the employee name for display
+  const formattedName = employee ? formatEmployeeName(employee.name) : null;
 
   return (
     <>
@@ -51,6 +58,15 @@ export function DashboardSidebar({ isAdmin = false }: DashboardSidebarProps) {
             />
           </div>
           <p className="text-sm text-gray-500 mt-2">{isAdmin ? "Панель адміністратора" : "Облік робочого часу"}</p>
+          {!isEmployeeLoading && employee ? (
+            <p className="text-sm font-medium mt-1">
+              {formattedName?.firstName} {formattedName?.lastName}
+            </p>
+          ) : isLoaded && user ? (
+            <p className="text-sm font-medium mt-1">{`${user.firstName || ''} ${user.lastName || ''}`}</p>
+          ) : (
+            <p className="text-sm font-medium mt-1">Завантаження...</p>
+          )}
         </div>
         <nav className="flex-1 p-4">
           {isAdmin ? (
