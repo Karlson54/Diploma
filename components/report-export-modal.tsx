@@ -179,7 +179,7 @@ export function ReportExportModal({ isOpen, onClose, reportData }: ReportExportM
         <DialogHeader>
           <DialogTitle>Завантажити звіт</DialogTitle>
         </DialogHeader>
-        <div className="py-4">
+        <div className="py-4 overflow-x-auto">
           <p className="text-sm text-gray-500 mb-4">
             Оберіть стовпці для включення в Excel звіт
           </p>
@@ -277,7 +277,7 @@ export function ReportExportModal({ isOpen, onClose, reportData }: ReportExportM
           
           <h3 className="text-sm font-medium mb-2">Попередній перегляд таблиці</h3>
           <div className="border rounded-md overflow-auto" style={{ maxHeight: "400px" }}>
-            <Table className="min-w-full table-fixed">
+            <Table>
               <TableHeader>
                 <TableRow>
                   {selectedColumns.agency && <TableHead>Agency</TableHead>}
