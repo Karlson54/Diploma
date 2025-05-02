@@ -424,8 +424,54 @@ export function WeeklyCalendar() {
       }
     })
 
-    // Добавляем новые отчеты в список
-    setAllReports([...allReports, ...newReports])
+    // Сохраняем новые отчеты в базу данных
+    const saveReportsToDB = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Сохраняем каждый новый отчет в базу данных
+        for (const newReport of newReports) {
+          // Получаем компании для ассоциации с отчетом
+          const companiesToAssociate = [];
+          if (newReport.client) companiesToAssociate.push(newReport.client);
+          if (newReport.contractingAgency && newReport.contractingAgency !== newReport.client) {
+            companiesToAssociate.push(newReport.contractingAgency);
+          }
+          
+          // Преобразуем дату в формат YYYY-MM-DD для БД
+          const [day, month, year] = newReport.date.split('.');
+          const dateForDB = `${year}-${month}-${day}`;
+          
+          const response = await fetch('/api/reports', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              ...newReport,
+              date: dateForDB,
+              companies: companiesToAssociate,
+            }),
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Failed to save copied report: ${response.statusText}`);
+          }
+        }
+        
+        // После успешного сохранения обновляем локальное состояние
+        setAllReports([...allReports, ...newReports]);
+        
+      } catch (error) {
+        console.error('Error saving copied reports:', error);
+        alert('Не удалось сохранить скопированные записи. Пожалуйста, попробуйте снова.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    // Запустить сохранение в базу данных
+    saveReportsToDB();
 
     // Закрываем диалог
     setShowCopyDialog(false)
