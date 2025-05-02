@@ -17,6 +17,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Pencil, Plus, Search, Trash, AlertCircle } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 interface Employee {
   id: number;
@@ -45,12 +46,13 @@ export function EmployeesList() {
   const [editingEmployee, setEditingEmployee] = useState<EditingEmployee | null>(null)
   const [isUpdating, setIsUpdating] = useState<number | null>(null)
   const [updateMessage, setUpdateMessage] = useState<string | null>(null)
+  const { t } = useTranslation()
   const [newEmployee, setNewEmployee] = useState({
     name: "",
     email: "",
     position: "",
     department: "",
-    status: "Активний",
+    status: t('admin.employees.status.active'),
     password: "",
     agency: "",
   })
@@ -159,7 +161,7 @@ export function EmployeesList() {
         email: "",
         position: "",
         department: "",
-        status: "Активний",
+        status: t('admin.employees.status.active'),
         password: "",
         agency: "",
       });
@@ -251,32 +253,32 @@ export function EmployeesList() {
   }
 
   if (loading) {
-    return <div>Loading employees...</div>;
+    return <div>{t('admin.employees.loading')}</div>;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Співробітники</h1>
-          <p className="text-gray-500">Управління співробітниками компанії</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t('admin.employees.title')}</h1>
+          <p className="text-gray-500">{t('admin.employees.description')}</p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
             <Button className="gap-2">
               <Plus className="h-4 w-4" />
-              Додати співробітника
+              {t('admin.employees.addEmployee')}
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[525px]">
             <DialogHeader>
-              <DialogTitle>Додати нового співробітника</DialogTitle>
-              <DialogDescription>Введіть інформацію про нового співробітника</DialogDescription>
+              <DialogTitle>{t('admin.employees.add.title')}</DialogTitle>
+              <DialogDescription>{t('admin.employees.add.description')}</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">ПІБ</Label>
+                  <Label htmlFor="name">{t('admin.employees.add.name')}</Label>
                   <Input
                     id="name"
                     value={newEmployee.name}
@@ -284,7 +286,7 @@ export function EmployeesList() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">{t('admin.employees.add.email')}</Label>
                   <Input
                     id="email"
                     type="email"
@@ -295,7 +297,7 @@ export function EmployeesList() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="password">Пароль</Label>
+                  <Label htmlFor="password">{t('admin.employees.add.password')}</Label>
                   <Input
                     id="password"
                     type="password"
@@ -304,44 +306,44 @@ export function EmployeesList() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="position">Посада</Label>
+                  <Label htmlFor="position">{t('admin.employees.add.position')}</Label>
                   <Select
                     value={newEmployee.position}
                     onValueChange={(value) => setNewEmployee({ ...newEmployee, position: value })}
                   >
                     <SelectTrigger id="position">
-                      <SelectValue placeholder="Оберіть посаду" />
+                      <SelectValue placeholder={t('admin.employees.add.selectPosition')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Бухгалтер">Бухгалтер</SelectItem>
-                      <SelectItem value="Головний бухгалтер">Головний бухгалтер</SelectItem>
+                      <SelectItem value="Бухгалтер">{t('admin.employees.positions.accountant')}</SelectItem>
+                      <SelectItem value="Головний бухгалтер">{t('admin.employees.positions.chiefAccountant')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="department">Відділ</Label>
+                  <Label htmlFor="department">{t('admin.employees.add.department')}</Label>
                   <Select
                     value={newEmployee.department}
                     onValueChange={(value) => setNewEmployee({ ...newEmployee, department: value })}
                   >
                     <SelectTrigger id="department">
-                      <SelectValue placeholder="Оберіть відділ" />
+                      <SelectValue placeholder={t('admin.employees.add.selectDepartment')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Бухгалтерія">Бухгалтерія</SelectItem>
+                      <SelectItem value="Бухгалтерія">{t('admin.employees.departments.accounting')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="agency">Агенція</Label>
+                  <Label htmlFor="agency">{t('admin.employees.add.agency')}</Label>
                   <Select
                     value={newEmployee.agency}
                     onValueChange={(value) => setNewEmployee({ ...newEmployee, agency: value })}
                   >
                     <SelectTrigger id="agency">
-                      <SelectValue placeholder="Оберіть агенцію" />
+                      <SelectValue placeholder={t('admin.employees.add.selectAgency')} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="GroupM">GroupM</SelectItem>
@@ -355,9 +357,9 @@ export function EmployeesList() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                Скасувати
+                {t('admin.employees.add.cancel')}
               </Button>
-              <Button onClick={handleAddEmployee}>Додати</Button>
+              <Button onClick={handleAddEmployee}>{t('admin.employees.add.add')}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -367,9 +369,9 @@ export function EmployeesList() {
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Видалити співробітника</DialogTitle>
+            <DialogTitle>{t('admin.employees.delete.title')}</DialogTitle>
             <DialogDescription>
-              Ви впевнені, що хочете видалити цього співробітника? Ця дія не може бути скасована.
+              {t('admin.employees.delete.confirmation')}
             </DialogDescription>
           </DialogHeader>
           <div className="flex items-center justify-center py-4">
@@ -379,13 +381,13 @@ export function EmployeesList() {
           </div>
           <DialogFooter className="flex space-x-2 sm:justify-center">
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              Скасувати
+              {t('admin.employees.delete.cancel')}
             </Button>
             <Button 
               variant="destructive" 
               onClick={() => employeeToDelete && handleDeleteEmployee(employeeToDelete)}
             >
-              Видалити
+              {t('admin.employees.delete.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -395,14 +397,14 @@ export function EmployeesList() {
         <CardHeader className="pb-3">
           <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
             <div>
-              <CardTitle>Список співробітників</CardTitle>
-              <CardDescription>Всього співробітників: {employees.length}</CardDescription>
+              <CardTitle>{t('admin.employees.list.title')}</CardTitle>
+              <CardDescription>{t('admin.employees.list.description', { count: employees.length })}</CardDescription>
             </div>
             <div className="relative w-full md:w-64">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
               <Input
                 type="search"
-                placeholder="Пошук співробітників..."
+                placeholder={t('admin.employees.list.searchPlaceholder')}
                 className="pl-8"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -414,13 +416,13 @@ export function EmployeesList() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Співробітник</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Посада</TableHead>
-                <TableHead>Відділ</TableHead>
-                <TableHead>Агенція</TableHead>
-                <TableHead>Статус</TableHead>
-                <TableHead className="text-right">Дії</TableHead>
+                <TableHead>{t('admin.employees.tableHeaders.employee')}</TableHead>
+                <TableHead>{t('admin.employees.tableHeaders.email')}</TableHead>
+                <TableHead>{t('admin.employees.tableHeaders.position')}</TableHead>
+                <TableHead>{t('admin.employees.tableHeaders.department')}</TableHead>
+                <TableHead>{t('admin.employees.tableHeaders.agency')}</TableHead>
+                <TableHead>{t('admin.employees.tableHeaders.status')}</TableHead>
+                <TableHead className="text-right">{t('admin.employees.tableHeaders.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -441,7 +443,7 @@ export function EmployeesList() {
                         }`} />
                         {employee.isAdmin && (
                           <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
-                            Адміністратор
+                            {t('admin.employees.roles.admin')}
                           </span>
                         )}
                       </div>
@@ -457,13 +459,13 @@ export function EmployeesList() {
                           {editingEmployee && editingEmployee.id === employee.id && (
                             <DialogContent className="sm:max-w-[525px]">
                               <DialogHeader>
-                                <DialogTitle>Редагувати співробітника</DialogTitle>
-                                <DialogDescription>Змініть інформацію про співробітника</DialogDescription>
+                                <DialogTitle>{t('admin.employees.edit.title')}</DialogTitle>
+                                <DialogDescription>{t('admin.employees.edit.description')}</DialogDescription>
                               </DialogHeader>
                               <div className="grid gap-4 py-4">
                                 <div className="grid grid-cols-2 gap-4">
                                   <div className="space-y-2">
-                                    <Label htmlFor="edit-name">ПІБ</Label>
+                                    <Label htmlFor="edit-name">{t('admin.employees.edit.name')}</Label>
                                     <Input
                                       id="edit-name"
                                       value={editingEmployee.name}
@@ -471,7 +473,7 @@ export function EmployeesList() {
                                     />
                                   </div>
                                   <div className="space-y-2">
-                                    <Label htmlFor="edit-email">Email</Label>
+                                    <Label htmlFor="edit-email">{t('admin.employees.edit.email')}</Label>
                                     <Input
                                       id="edit-email"
                                       type="email"
@@ -482,56 +484,56 @@ export function EmployeesList() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                   <div className="space-y-2">
-                                    <Label htmlFor="edit-position">Посада</Label>
+                                    <Label htmlFor="edit-position">{t('admin.employees.edit.position')}</Label>
                                     <Select
                                       value={editingEmployee.position}
                                       onValueChange={(value) => setEditingEmployee({ ...editingEmployee, position: value })}
                                     >
                                       <SelectTrigger id="edit-position">
-                                        <SelectValue placeholder="Оберіть посаду" />
+                                        <SelectValue placeholder={t('admin.employees.edit.selectPosition')} />
                                       </SelectTrigger>
                                       <SelectContent>
-                                        <SelectItem value="Бухгалтер">Бухгалтер</SelectItem>
-                                        <SelectItem value="Головний бухгалтер">Головний бухгалтер</SelectItem>
+                                        <SelectItem value="Бухгалтер">{t('admin.employees.positions.accountant')}</SelectItem>
+                                        <SelectItem value="Головний бухгалтер">{t('admin.employees.positions.chiefAccountant')}</SelectItem>
                                       </SelectContent>
                                     </Select>
                                   </div>
                                   <div className="space-y-2">
-                                    <Label htmlFor="edit-department">Відділ</Label>
+                                    <Label htmlFor="edit-department">{t('admin.employees.edit.department')}</Label>
                                     <Select
                                       value={editingEmployee.department}
                                       onValueChange={(value) => setEditingEmployee({ ...editingEmployee, department: value })}
                                     >
                                       <SelectTrigger id="edit-department">
-                                        <SelectValue placeholder="Оберіть відділ" />
+                                        <SelectValue placeholder={t('admin.employees.edit.selectDepartment')} />
                                       </SelectTrigger>
                                       <SelectContent>
-                                        <SelectItem value="Бухгалтерія">Бухгалтерія</SelectItem>
+                                        <SelectItem value="Бухгалтерія">{t('admin.employees.departments.accounting')}</SelectItem>
                                       </SelectContent>
                                     </Select>
                                   </div>
                                 </div>
                                 <div className="space-y-2 mt-2">
-                                  <Label htmlFor="edit-password">Пароль</Label>
+                                  <Label htmlFor="edit-password">{t('admin.employees.edit.password')}</Label>
                                   <Input
                                     id="edit-password"
                                     type="password"
-                                    placeholder="Введіть новий пароль"
+                                    placeholder={t('admin.employees.edit.passwordPlaceholder')}
                                     value={editingEmployee.password || ''}
                                     onChange={(e) => setEditingEmployee({ ...editingEmployee, password: e.target.value })}
                                   />
                                   <p className="text-sm text-gray-500">
-                                    Залиште порожнім, якщо не хочете змінювати пароль
+                                    {t('admin.employees.edit.passwordNote')}
                                   </p>
                                 </div>
                                 <div className="space-y-2 mt-2">
-                                  <Label htmlFor="edit-agency">Агенція</Label>
+                                  <Label htmlFor="edit-agency">{t('admin.employees.edit.agency')}</Label>
                                   <Select
                                     value={editingEmployee.agency || ''}
                                     onValueChange={(value) => setEditingEmployee({ ...editingEmployee, agency: value })}
                                   >
                                     <SelectTrigger id="edit-agency">
-                                      <SelectValue placeholder="Оберіть агенцію" />
+                                      <SelectValue placeholder={t('admin.employees.edit.selectAgency')} />
                                     </SelectTrigger>
                                     <SelectContent>
                                       <SelectItem value="GroupM">GroupM</SelectItem>
@@ -554,17 +556,17 @@ export function EmployeesList() {
                                       })}
                                     />
                                     <Label htmlFor="edit-admin-role" className="font-medium">
-                                      Права адміністратора
+                                      {t('admin.employees.edit.adminRole')}
                                     </Label>
                                   </div>
                                   <p className="text-sm text-gray-500">
-                                    Надає повний доступ до адміністративної панелі та управління користувачами
+                                    {t('admin.employees.edit.adminRoleDescription')}
                                   </p>
                                 </div>
                               </div>
                               <DialogFooter>
                                 <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                                  Скасувати
+                                  {t('admin.employees.edit.cancel')}
                                 </Button>
                                 <Button 
                                   onClick={handleEditEmployee}
@@ -573,10 +575,10 @@ export function EmployeesList() {
                                   {isUpdating === editingEmployee?.id ? (
                                     <span className="flex items-center gap-2">
                                       <span className="animate-spin h-4 w-4 border-2 border-white rounded-full border-t-transparent" />
-                                      Оновлення...
+                                      {t('admin.employees.edit.updating')}
                                     </span>
                                   ) : (
-                                    'Зберегти'
+                                    t('admin.employees.edit.save')
                                   )}
                                 </Button>
                               </DialogFooter>
@@ -588,7 +590,11 @@ export function EmployeesList() {
                             </DialogContent>
                           )}
                         </Dialog>
-                        <Button variant="ghost" size="icon" onClick={() => confirmDelete(employee.id)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => confirmDelete(employee.id)}
+                        >
                           <Trash className="h-4 w-4" />
                         </Button>
                       </div>
@@ -597,8 +603,8 @@ export function EmployeesList() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                    {searchTerm ? "Співробітників не знайдено" : "Немає співробітників"}
+                  <TableCell colSpan={7} className="h-24 text-center">
+                    {t('admin.employees.list.noEmployees')}
                   </TableCell>
                 </TableRow>
               )}

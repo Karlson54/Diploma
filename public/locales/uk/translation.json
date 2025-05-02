@@ -146,6 +146,79 @@
         "loading": "Завантаження даних співробітників...",
         "excel": "Excel",
         "downloadMessage": "Звіт для співробітника ID: {employeeId} за період {startDate} - {endDate} завантажується..."
+      },
+      "title": "Співробітники",
+      "description": "Управління співробітниками компанії",
+      "loading": "Завантаження співробітників...",
+      "addEmployee": "Додати співробітника",
+      "status": {
+        "active": "Активний"
+      },
+      "roles": {
+        "admin": "Адміністратор"
+      },
+      "positions": {
+        "accountant": "Бухгалтер",
+        "chiefAccountant": "Головний бухгалтер"
+      },
+      "departments": {
+        "accounting": "Бухгалтерія"
+      },
+      "add": {
+        "title": "Додати нового співробітника",
+        "description": "Введіть інформацію про нового співробітника",
+        "name": "ПІБ",
+        "email": "Email",
+        "password": "Пароль",
+        "position": "Посада",
+        "selectPosition": "Оберіть посаду",
+        "department": "Відділ",
+        "selectDepartment": "Оберіть відділ",
+        "agency": "Агенція",
+        "selectAgency": "Оберіть агенцію",
+        "cancel": "Скасувати",
+        "add": "Додати"
+      },
+      "edit": {
+        "title": "Редагувати співробітника",
+        "description": "Змініть інформацію про співробітника",
+        "name": "ПІБ",
+        "email": "Email",
+        "position": "Посада",
+        "selectPosition": "Оберіть посаду",
+        "department": "Відділ",
+        "selectDepartment": "Оберіть відділ",
+        "password": "Пароль",
+        "passwordPlaceholder": "Введіть новий пароль",
+        "passwordNote": "Залиште порожнім, якщо не хочете змінювати пароль",
+        "agency": "Агенція",
+        "selectAgency": "Оберіть агенцію",
+        "adminRole": "Права адміністратора",
+        "adminRoleDescription": "Надає повний доступ до адміністративної панелі та управління користувачами",
+        "cancel": "Скасувати",
+        "save": "Зберегти",
+        "updating": "Оновлення..."
+      },
+      "delete": {
+        "title": "Видалити співробітника",
+        "confirmation": "Ви впевнені, що хочете видалити цього співробітника? Ця дія не може бути скасована.",
+        "cancel": "Скасувати",
+        "delete": "Видалити"
+      },
+      "list": {
+        "title": "Список співробітників",
+        "description": "Всього співробітників: {{count}}",
+        "searchPlaceholder": "Пошук співробітників...",
+        "noEmployees": "Немає співробітників"
+      },
+      "tableHeaders": {
+        "employee": "Співробітник",
+        "email": "Email",
+        "position": "Посада",
+        "department": "Відділ",
+        "agency": "Агенція",
+        "status": "Статус",
+        "actions": "Дії"
       }
     },
     "companyOverview": {

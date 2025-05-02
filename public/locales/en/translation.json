@@ -146,6 +146,79 @@
         "loading": "Loading employee data...",
         "excel": "Excel",
         "downloadMessage": "Report for employee ID: {employeeId} for the period {startDate} - {endDate} is downloading..."
+      },
+      "title": "Employees",
+      "description": "Company employees management",
+      "loading": "Loading employees...",
+      "addEmployee": "Add Employee",
+      "status": {
+        "active": "Active"
+      },
+      "roles": {
+        "admin": "Administrator"
+      },
+      "positions": {
+        "accountant": "Accountant",
+        "chiefAccountant": "Chief Accountant"
+      },
+      "departments": {
+        "accounting": "Accounting"
+      },
+      "add": {
+        "title": "Add New Employee",
+        "description": "Enter information about the new employee",
+        "name": "Full Name",
+        "email": "Email",
+        "password": "Password",
+        "position": "Position",
+        "selectPosition": "Select position",
+        "department": "Department",
+        "selectDepartment": "Select department",
+        "agency": "Agency",
+        "selectAgency": "Select agency",
+        "cancel": "Cancel",
+        "add": "Add"
+      },
+      "edit": {
+        "title": "Edit Employee",
+        "description": "Change employee information",
+        "name": "Full Name",
+        "email": "Email",
+        "position": "Position",
+        "selectPosition": "Select position",
+        "department": "Department",
+        "selectDepartment": "Select department",
+        "password": "Password",
+        "passwordPlaceholder": "Enter new password",
+        "passwordNote": "Leave empty if you don't want to change the password",
+        "agency": "Agency",
+        "selectAgency": "Select agency",
+        "adminRole": "Administrator Rights",
+        "adminRoleDescription": "Provides full access to the admin panel and user management",
+        "cancel": "Cancel",
+        "save": "Save",
+        "updating": "Updating..."
+      },
+      "delete": {
+        "title": "Delete Employee",
+        "confirmation": "Are you sure you want to delete this employee? This action cannot be undone.",
+        "cancel": "Cancel",
+        "delete": "Delete"
+      },
+      "list": {
+        "title": "Employees List",
+        "description": "Total employees: {{count}}",
+        "searchPlaceholder": "Search employees...",
+        "noEmployees": "No employees found"
+      },
+      "tableHeaders": {
+        "employee": "Employee",
+        "email": "Email",
+        "position": "Position",
+        "department": "Department",
+        "agency": "Agency",
+        "status": "Status",
+        "actions": "Actions"
       }
     },
     "companyOverview": {

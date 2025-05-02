@@ -3,9 +3,11 @@
 import { EmployeesList } from "@/components/admin/employees-list"
 import { DashboardSidebar } from "@/components/dashboard-sidebar"
 import { useAdminProtection } from "@/lib/auth"
+import { useTranslation } from "react-i18next"
 
 export default function EmployeesPage() {
   const isAdmin = useAdminProtection()
+  const { t } = useTranslation()
 
   if (!isAdmin) {
     return null
