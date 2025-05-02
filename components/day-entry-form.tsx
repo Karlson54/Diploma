@@ -1008,9 +1008,9 @@ export function DayEntryForm({
 
       <div className="flex justify-end gap-2 pt-2">
         <Button variant="outline" type="button" onClick={onClose}>
-          Cancel
+          {t('calendar.cancel')}
         </Button>
-        <Button type="submit">Save</Button>
+        <Button type="submit">{t('calendar.save')}</Button>
       </div>
     </form>
   )

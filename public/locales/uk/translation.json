@@ -287,6 +287,7 @@
     "selectedDates": "Обрано {{count}} дат(у/и)",
     "selectDatesToCopyHint": "Оберіть дати для копіювання запису",
     "cancel": "Скасувати",
+    "save": "Зберегти",
     "userFunctions": "Функції користувача",
     "adminFunctions": "Функції адміністратора",
     "menu": {
