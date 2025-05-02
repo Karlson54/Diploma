@@ -3,7 +3,7 @@
     "reports": {
       "title": "Employee Reports",
       "description": "View and export time reports",
-      "exportAllToExcel": "Export All to Excel",
+      "exportAllToExcel": "Export All Records to Excel",
       "loadingReports": "Loading reports...",
       "filters": {
         "title": "Report Filters",

@@ -325,22 +325,19 @@ export function EmployeeReports() {
   // Функция для скачивания всех отчетов в Excel формате
   const downloadAllReports = async () => {
     try {
-      const reportsToExport = filteredReports
+      // Use all reports instead of filtered reports
+      const reportsToExport = reports
       if (reportsToExport.length === 0) {
         alert(t('admin.reports.filters.noReportsToDownload'))
         return
       }
       
-      const employeeInfo = selectedEmployee === 'all' 
-        ? 'All_Employees' 
-        : employees.find(e => e.id.toString() === selectedEmployee)?.name.replace(/\s+/g, '_') || 'Employee'
-      
-      const fromDate = dateRange.from.toLocaleDateString().replace(/\./g, '-')
-      const toDate = dateRange.to.toLocaleDateString().replace(/\./g, '-')
+      // Use "All_Records" in the file name instead of employee info
+      const fromDate = new Date().toLocaleDateString().replace(/\./g, '-')
       
       await createAndDownloadExcel(
         reportsToExport,
-        `Reports_${employeeInfo}_${fromDate}_${toDate}.xlsx`
+        `All_Reports_${fromDate}.xlsx`
       )
     } catch (error) {
       console.error(t('admin.reports.errors.downloadError'), error)

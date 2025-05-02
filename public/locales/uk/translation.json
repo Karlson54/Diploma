@@ -3,7 +3,7 @@
     "reports": {
       "title": "Звіти співробітників",
       "description": "Перегляд та експорт звітів про робочий час",
-      "exportAllToExcel": "Експорт всіх в Excel",
+      "exportAllToExcel": "Експорт всіх записів в Excel",
       "loadingReports": "Завантаження звітів...",
       "filters": {
         "title": "Фільтри звітів",
