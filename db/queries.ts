@@ -265,20 +265,41 @@ export const reportQueries = {
   
   // Delete a report and its company associations
   delete: async (id: number) => {
-    return db.transaction(async (tx) => {
-      // Delete report-to-company associations first
-      await tx
-        .delete(reportsToCompanies)
-        .where(eq(reportsToCompanies.reportId, id));
-      
-      // Delete the report
-      const deletedReport = await tx
-        .delete(reports)
-        .where(eq(reports.id, id))
-        .returning()
-        .get();
-      
-      return deletedReport;
-    });
+    try {
+      console.log(`Starting transaction to delete report ID: ${id}`);
+      return db.transaction(async (tx) => {
+        try {
+          // Delete report-to-company associations first
+          console.log(`Deleting company associations for report ID: ${id}`);
+          const deletedAssociations = await tx
+            .delete(reportsToCompanies)
+            .where(eq(reportsToCompanies.reportId, id))
+            .returning();
+          
+          console.log(`Deleted ${deletedAssociations.length} company associations`);
+          
+          // Delete the report
+          console.log(`Deleting report ID: ${id}`);
+          const deletedReport = await tx
+            .delete(reports)
+            .where(eq(reports.id, id))
+            .returning()
+            .get();
+          
+          if (!deletedReport) {
+            throw new Error(`Report with ID: ${id} not found in database`);
+          }
+          
+          console.log(`Successfully deleted report ID: ${id}`);
+          return deletedReport;
+        } catch (error) {
+          console.error(`Error in delete transaction for report ID: ${id}`, error);
+          throw error; // Re-throw to trigger transaction rollback
+        }
+      });
+    } catch (error) {
+      console.error(`Transaction failed for deleting report ID: ${id}`, error);
+      throw error;
+    }
   }
 }; 

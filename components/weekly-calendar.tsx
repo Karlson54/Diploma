@@ -546,19 +546,28 @@ export function WeeklyCalendar() {
       // Delete the report from the API
       const deleteReport = async () => {
         try {
+          console.log(`Attempting to delete report with ID: ${reportId}`);
           const response = await fetch(`/api/reports?id=${reportId}`, {
             method: 'DELETE',
           });
           
+          const data = await response.json();
+          
           if (!response.ok) {
-            throw new Error('Failed to delete report');
+            console.error('Error response from server:', data);
+            throw new Error(data.error || 'Failed to delete report');
           }
+          
+          console.log('Report successfully deleted', data);
           
           // Update local state after successful deletion
           setAllReports(allReports.filter((report) => report.id !== reportId));
+          
+          // Recalculate stats
+          calculateStats();
         } catch (error) {
           console.error('Error deleting report:', error);
-          alert('Failed to delete the report. Please try again.');
+          alert(`Failed to delete the report: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
       };
       

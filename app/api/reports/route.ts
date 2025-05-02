@@ -242,16 +242,20 @@ export async function DELETE(request: Request) {
   try {
     // Get the current user's ID
     const { userId } = await auth();
+    console.log(`Delete request initiated by user ID: ${userId}`);
     
     if (!userId) {
+      console.log('Unauthorized deletion attempt - no user ID');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
     // Get the report ID from the URL
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
+    console.log(`Attempting to delete report with ID: ${id}`);
     
     if (!id) {
+      console.log('Report ID missing from request');
       return NextResponse.json({ error: 'Report ID is required' }, { status: 400 });
     }
     
@@ -260,22 +264,35 @@ export async function DELETE(request: Request) {
     const currentEmployee = employees.find(emp => emp.clerkId === userId);
     
     if (!currentEmployee) {
+      console.log(`Employee record not found for user ID: ${userId}`);
       return NextResponse.json({ error: 'Employee record not found' }, { status: 404 });
     }
     
+    console.log(`Employee found: ${currentEmployee.id} (${currentEmployee.name})`);
+    
     // Verify the report belongs to this user
     const report = await reportQueries.getByIdWithDetails(parseInt(id, 10));
-    if (!report || report.report.employeeId !== currentEmployee.id) {
-      return NextResponse.json({ error: 'Report not found or access denied' }, { status: 403 });
+    
+    if (!report) {
+      console.log(`Report with ID ${id} not found`);
+      return NextResponse.json({ error: 'Report not found' }, { status: 404 });
+    }
+    
+    if (report.report.employeeId !== currentEmployee.id) {
+      console.log(`Access denied: Report belongs to employee ${report.report.employeeId}, but current employee is ${currentEmployee.id}`);
+      return NextResponse.json({ error: 'Access denied - you can only delete your own reports' }, { status: 403 });
     }
     
     // Delete the report
-    await reportQueries.delete(parseInt(id, 10));
+    const deletedReport = await reportQueries.delete(parseInt(id, 10));
+    console.log(`Report ${id} successfully deleted`);
     
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, deletedReport });
   } catch (error) {
     console.error("API Error:", error);
-    return NextResponse.json({ error: "Failed to delete report" }, { status: 500 });
+    // More detailed error response
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: `Failed to delete report: ${errorMessage}` }, { status: 500 });
   }
 }
 
