@@ -178,11 +178,11 @@ export function DayEntryForm({
 
   // Приклад списку ринків
   const markets = [
-    { id: "1", name: "Україна" },
-    { id: "2", name: "Європа" },
-    { id: "3", name: "США" },
-    { id: "4", name: "Азія" },
-    { id: "5", name: "Глобальний" },
+    { id: "1", name: t('markets.ukraine') },
+    { id: "2", name: t('markets.europe') },
+    { id: "3", name: t('markets.usa') },
+    { id: "4", name: t('markets.asia') },
+    { id: "5", name: t('markets.global') },
   ]
 
   // Список агентств

@@ -314,6 +314,13 @@
     "minutesHint": "90 = 1:30 h",
     "commentsPlaceholder": "Additional comments..."
   },
+  "markets": {
+    "ukraine": "Ukraine",
+    "europe": "Europe",
+    "usa": "USA",
+    "asia": "Asia",
+    "global": "Global"
+  },
   "dateRangePicker": {
     "placeholder": "Select period"
   },

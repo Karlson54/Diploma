@@ -47,11 +47,11 @@ export function WeeklyCalendar() {
 
   // Приклад списку ринків
   const markets = [
-    { id: "1", name: "Україна" },
-    { id: "2", name: "Європа" },
-    { id: "3", name: "США" },
-    { id: "4", name: "Азія" },
-    { id: "5", name: "Глобальний" },
+    { id: "1", name: t('markets.ukraine') },
+    { id: "2", name: t('markets.europe') },
+    { id: "3", name: t('markets.usa') },
+    { id: "4", name: t('markets.asia') },
+    { id: "5", name: t('markets.global') },
   ]
 
   // Список агентств
@@ -161,7 +161,7 @@ export function WeeklyCalendar() {
     {
       id: 1,
       date: "16.04.2025",
-      market: "Україна",
+      market: t('markets.ukraine'),
       contractingAgency: "Agency One",
       client: "Acme Inc",
       projectBrand: "Ребрендинг 2025",
@@ -173,7 +173,7 @@ export function WeeklyCalendar() {
     {
       id: 2,
       date: "15.04.2025",
-      market: "Європа",
+      market: t('markets.europe'),
       contractingAgency: "Creative Solutions",
       client: "Globex Corp",
       projectBrand: "Маркетингова кампанія Q2",
@@ -185,7 +185,7 @@ export function WeeklyCalendar() {
     {
       id: 3,
       date: "14.04.2025",
-      market: "Україна",
+      market: t('markets.ukraine'),
       contractingAgency: "Media Group",
       client: "Tech Solutions",
       projectBrand: "Запуск нового продукту",
@@ -197,7 +197,7 @@ export function WeeklyCalendar() {
     {
       id: 4,
       date: "16.04.2025",
-      market: "Глобальний",
+      market: t('markets.global'),
       contractingAgency: "Digital Marketing Ltd",
       client: "Stark Industries",
       projectBrand: "Промо-кампанія",
@@ -209,7 +209,7 @@ export function WeeklyCalendar() {
     {
       id: 5,
       date: "16.04.2025",
-      market: "Україна",
+      market: t('markets.ukraine'),
       contractingAgency: "Brand Partners",
       client: "Wayne Enterprises",
       projectBrand: "Корпоративний сайт",

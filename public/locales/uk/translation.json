@@ -314,6 +314,13 @@
     "minutesHint": "90 = 1:30 год",
     "commentsPlaceholder": "Додаткові коментарі..."
   },
+  "markets": {
+    "ukraine": "Україна",
+    "europe": "Європа",
+    "usa": "США",
+    "asia": "Азія",
+    "global": "Глобальний"
+  },
   "dateRangePicker": {
     "placeholder": "Виберіть період"
   },
