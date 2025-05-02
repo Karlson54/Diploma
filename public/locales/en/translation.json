@@ -5,6 +5,10 @@
       "description": "View and export time reports",
       "exportAllToExcel": "Export All Records to Excel",
       "loadingReports": "Loading reports...",
+      "tabs": {
+        "summary": "Summary",
+        "detailed": "Detailed Report"
+      },
       "filters": {
         "title": "Report Filters",
         "description": "Select parameters to display reports",

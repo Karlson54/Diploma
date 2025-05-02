@@ -3,24 +3,12 @@
 import { EmployeeReports } from "@/components/admin/employee-reports"
 import { DashboardSidebar } from "@/components/dashboard-sidebar"
 import { useAdminProtection } from "@/lib/auth"
-import { useEffect } from "react"
 import i18n from "@/lib/i18n"
+import { useTranslation } from "react-i18next"
 
 export default function ReportsPage() {
   const isAdmin = useAdminProtection()
-
-  // Force English language for this page only
-  useEffect(() => {
-    const currentLang = i18n.language
-    i18n.changeLanguage("en")
-    
-    // Restore original language when component unmounts
-    return () => {
-      if (currentLang !== "en") {
-        i18n.changeLanguage(currentLang)
-      }
-    }
-  }, [])
+  const { t } = useTranslation()
 
   if (!isAdmin) {
     return null

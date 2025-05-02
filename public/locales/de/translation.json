@@ -1,1 +1,10 @@
-{} 
+{
+  "admin": {
+    "reports": {
+      "tabs": {
+        "summary": "Zusammenfassung",
+        "detailed": "Detaillierter Bericht"
+      }
+    }
+  }
+} 

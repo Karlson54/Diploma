@@ -474,8 +474,8 @@ export function EmployeeReports() {
 
       <Tabs defaultValue="summary">
         <TabsList>
-          <TabsTrigger value="summary">Summary</TabsTrigger>
-          <TabsTrigger value="detailed">Detailed Report</TabsTrigger>
+          <TabsTrigger value="summary">{t('admin.reports.tabs.summary')}</TabsTrigger>
+          <TabsTrigger value="detailed">{t('admin.reports.tabs.detailed')}</TabsTrigger>
         </TabsList>
         <TabsContent value="summary" className="mt-4">
           <Card>
@@ -532,8 +532,8 @@ export function EmployeeReports() {
         <TabsContent value="detailed" className="mt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Detailed Report</CardTitle>
-              <CardDescription>Detailed information about time spent</CardDescription>
+              <CardTitle>{t('admin.reports.detailed.title')}</CardTitle>
+              <CardDescription>{t('admin.reports.detailed.description')}</CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground mb-4">
@@ -542,11 +542,11 @@ export function EmployeeReports() {
               {selectedEmployee !== "all" ? (
                 <div className="space-y-6">
                   <div className="border rounded-lg p-4">
-                    <h3 className="font-medium mb-2">Time distribution by projects</h3>
+                    <h3 className="font-medium mb-2">{t('admin.reports.detailed.timeDistribution')}</h3>
                     <div className="space-y-3">
                       <div>
                         <div className="flex justify-between text-sm mb-1">
-                          <span>Rebranding</span>
+                          <span>{t('admin.reports.detailed.rebranding')}</span>
                           <span>24h (30%)</span>
                         </div>
                         <div className="w-full bg-gray-100 rounded-full h-2">
@@ -555,7 +555,7 @@ export function EmployeeReports() {
                       </div>
                       <div>
                         <div className="flex justify-between text-sm mb-1">
-                          <span>Marketing Campaign</span>
+                          <span>{t('admin.reports.detailed.marketingCampaign')}</span>
                           <span>18h (22%)</span>
                         </div>
                         <div className="w-full bg-gray-100 rounded-full h-2">
@@ -564,7 +564,7 @@ export function EmployeeReports() {
                       </div>
                       <div>
                         <div className="flex justify-between text-sm mb-1">
-                          <span>Website Development</span>
+                          <span>{t('admin.reports.detailed.websiteDevelopment')}</span>
                           <span>32h (40%)</span>
                         </div>
                         <div className="w-full bg-gray-100 rounded-full h-2">
@@ -573,7 +573,7 @@ export function EmployeeReports() {
                       </div>
                       <div>
                         <div className="flex justify-between text-sm mb-1">
-                          <span>Other Tasks</span>
+                          <span>{t('admin.reports.detailed.otherTasks')}</span>
                           <span>6h (8%)</span>
                         </div>
                         <div className="w-full bg-gray-100 rounded-full h-2">
@@ -586,11 +586,11 @@ export function EmployeeReports() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Project</TableHead>
-                        <TableHead>Task</TableHead>
-                        <TableHead>Hours</TableHead>
-                        <TableHead>Comment</TableHead>
+                        <TableHead>{t('admin.reports.detailed.date')}</TableHead>
+                        <TableHead>{t('admin.reports.detailed.project')}</TableHead>
+                        <TableHead>{t('admin.reports.detailed.task')}</TableHead>
+                        <TableHead>{t('admin.reports.detailed.hours')}</TableHead>
+                        <TableHead>{t('admin.reports.detailed.comment')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -639,9 +639,9 @@ export function EmployeeReports() {
       <Dialog open={showDownloadDialog} onOpenChange={setShowDownloadDialog}>
         <DialogContent className="sm:max-w-4xl max-h-screen flex flex-col">
           <DialogHeader>
-            <DialogTitle>Download Report</DialogTitle>
+            <DialogTitle>{t('admin.reports.downloadDialog.title')}</DialogTitle>
             <DialogDescription>
-              Select columns to include in the Excel report
+              {t('admin.reports.downloadDialog.description')}
             </DialogDescription>
           </DialogHeader>
           
@@ -655,7 +655,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="company-checkbox" className="text-sm font-medium">
-                Agency
+                {t('admin.reports.tableHeaders.agency')}
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -667,7 +667,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="fullName-checkbox" className="text-sm font-medium">
-                Name
+                {t('admin.reports.tableHeaders.name')}
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -679,7 +679,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="date-checkbox" className="text-sm font-medium">
-                Date
+                {t('admin.reports.tableHeaders.date')}
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -691,7 +691,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="market-checkbox" className="text-sm font-medium">
-                Market
+                {t('admin.reports.tableHeaders.market')}
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -703,7 +703,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="contractingAgency-checkbox" className="text-sm font-medium">
-                Contracting Agency / Unit
+                {t('admin.reports.tableHeaders.contractingAgency')}
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -715,7 +715,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="client-checkbox" className="text-sm font-medium">
-                Client
+                {t('admin.reports.tableHeaders.client')}
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -727,7 +727,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="projectBrand-checkbox" className="text-sm font-medium">
-                Project / brand
+                {t('admin.reports.tableHeaders.projectBrand')}
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -739,7 +739,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="media-checkbox" className="text-sm font-medium">
-                Media
+                {t('admin.reports.tableHeaders.media')}
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -751,7 +751,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="jobType-checkbox" className="text-sm font-medium">
-                Job type
+                {t('admin.reports.tableHeaders.jobType')}
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -763,7 +763,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="hours-checkbox" className="text-sm font-medium">
-                Hours
+                {t('admin.reports.tableHeaders.hours')}
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -775,28 +775,30 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="comments-checkbox" className="text-sm font-medium">
-                Comments
+                {t('admin.reports.tableHeaders.comments')}
               </label>
             </div>
           </div>
           
           <div className="overflow-y-auto" style={{ maxHeight: "350px" }}>
-            <h3 className="font-medium mb-2">Table Preview ({previewReports.length + (selectedReport ? 1 : 0)} reports)</h3>
+            <h3 className="font-medium mb-2">
+              {t('admin.reports.downloadDialog.tablePreview')} ({previewReports.length + (selectedReport ? 1 : 0)} {t('admin.reports.downloadDialog.reports')})
+            </h3>
             {selectedReport && (
               <Table className="min-w-full">
                 <TableHeader>
                   <TableRow>
-                    {selectedColumns.company && <TableHead>Agency</TableHead>}
-                    {selectedColumns.fullName && <TableHead>Name</TableHead>}
-                    {selectedColumns.date && <TableHead>Date</TableHead>}
-                    {selectedColumns.market && <TableHead>Market</TableHead>}
-                    {selectedColumns.contractingAgency && <TableHead>Contracting Agency / Unit</TableHead>}
-                    {selectedColumns.client && <TableHead>Client</TableHead>}
-                    {selectedColumns.projectBrand && <TableHead>Project / brand</TableHead>}
-                    {selectedColumns.media && <TableHead>Media</TableHead>}
-                    {selectedColumns.jobType && <TableHead>Job type</TableHead>}
-                    {selectedColumns.hours && <TableHead>Hours</TableHead>}
-                    {selectedColumns.comments && <TableHead>Comments</TableHead>}
+                    {selectedColumns.company && <TableHead>{t('admin.reports.tableHeaders.agency')}</TableHead>}
+                    {selectedColumns.fullName && <TableHead>{t('admin.reports.tableHeaders.name')}</TableHead>}
+                    {selectedColumns.date && <TableHead>{t('admin.reports.tableHeaders.date')}</TableHead>}
+                    {selectedColumns.market && <TableHead>{t('admin.reports.tableHeaders.market')}</TableHead>}
+                    {selectedColumns.contractingAgency && <TableHead>{t('admin.reports.tableHeaders.contractingAgency')}</TableHead>}
+                    {selectedColumns.client && <TableHead>{t('admin.reports.tableHeaders.client')}</TableHead>}
+                    {selectedColumns.projectBrand && <TableHead>{t('admin.reports.tableHeaders.projectBrand')}</TableHead>}
+                    {selectedColumns.media && <TableHead>{t('admin.reports.tableHeaders.media')}</TableHead>}
+                    {selectedColumns.jobType && <TableHead>{t('admin.reports.tableHeaders.jobType')}</TableHead>}
+                    {selectedColumns.hours && <TableHead>{t('admin.reports.tableHeaders.hours')}</TableHead>}
+                    {selectedColumns.comments && <TableHead>{t('admin.reports.tableHeaders.comments')}</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -835,10 +837,10 @@ export function EmployeeReports() {
           
           <DialogFooter className="flex justify-end space-x-2 pt-4 border-t">
             <Button variant="outline" onClick={() => setShowDownloadDialog(false)}>
-              Cancel
+              {t('admin.reports.downloadDialog.cancel')}
             </Button>
             <Button onClick={handleDownloadWithColumns}>
-              Download
+              {t('admin.reports.downloadDialog.download')}
             </Button>
           </DialogFooter>
         </DialogContent>
