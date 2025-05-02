@@ -8,15 +8,20 @@ import { useRouter } from 'next/navigation'
 export default function SignUpPage() {
   const [isRegistrationEnabled, setIsRegistrationEnabled] = useState<boolean | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [statusMessage, setStatusMessage] = useState('')
   const router = useRouter()
 
   useEffect(() => {
     const checkRegistrationStatus = async () => {
       try {
-        // Use a dedicated public endpoint instead of the admin endpoint
-        const response = await fetch('/api/auth/registration-status', {
+        // Force refresh with cache-busting query parameter
+        const response = await fetch(`/api/auth/registration-status?t=${Date.now()}`, {
           method: 'GET',
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+          }
         })
         
         if (!response.ok) {
@@ -25,19 +30,39 @@ export default function SignUpPage() {
         
         const data = await response.json()
         
-        // If registration is allowed (no employees), enable the registration form
+        // Store registration status and message
         setIsRegistrationEnabled(data.registrationAllowed)
-        setIsLoading(false)
+        setStatusMessage(data.message || '')
+        
+        // If registration is not allowed, redirect to login after a delay
+        if (!data.registrationAllowed) {
+          setTimeout(() => {
+            router.push('/login')
+          }, 3000)
+        }
       } catch (error) {
         console.error('Error checking registration status:', error)
-        // If there's an error, default to allowing registration to prevent lockout
-        setIsRegistrationEnabled(true)
+        // If there's an error, default to NOT allowing registration for security
+        setIsRegistrationEnabled(false)
+        setStatusMessage('Регистрация недоступна из-за ошибки проверки')
+        
+        // Also redirect to login after delay
+        setTimeout(() => {
+          router.push('/login')
+        }, 3000)
+      } finally {
         setIsLoading(false)
       }
     }
     
     checkRegistrationStatus()
-  }, [])
+    
+    // Set up periodic checks to ensure status is current
+    const intervalId = setInterval(checkRegistrationStatus, 5000)
+    
+    // Clean up interval when component unmounts
+    return () => clearInterval(intervalId)
+  }, [router])
 
   // If loading, show a loading message
   if (isLoading) {
@@ -61,13 +86,16 @@ export default function SignUpPage() {
           <div className="text-center">
             <h2 className="text-xl font-semibold">Реєстрація недоступна</h2>
             <p className="mt-2 text-sm text-gray-600">
-              Нові користувачі можуть бути додані тільки адміністратором системи.
+              {statusMessage || 'Нові користувачі можуть бути додані тільки адміністратором системи.'}
+            </p>
+            <p className="mt-2 text-sm text-gray-600">
+              Перенаправлення на сторінку входу...
             </p>
             <button 
               onClick={() => router.push('/login')}
               className="mt-4 w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-              Перейти до входу
+              Перейти до входу зараз
             </button>
           </div>
         </div>
@@ -91,6 +119,9 @@ export default function SignUpPage() {
         <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">Реєстрація</h2>
         <p className="mt-2 text-center text-sm text-gray-600">
           Система обліку робочого часу - Реєстрація адміністратора
+        </p>
+        <p className="mt-2 text-center text-sm text-green-600 font-medium">
+          {statusMessage}
         </p>
 
         <div className="mt-8">

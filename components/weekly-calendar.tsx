@@ -228,7 +228,7 @@ export function WeeklyCalendar() {
       try {
         setIsLoading(true);
         console.log('Fetching reports from API...');
-        const response = await fetch('/api/reports');
+        const response = await fetch('/api/reports?currentUserOnly=true');
         
         if (!response.ok) {
           console.error('API response not OK:', response.status, response.statusText);

@@ -16,6 +16,8 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [needsVerification, setNeedsVerification] = useState(false)
+  const [registrationAllowed, setRegistrationAllowed] = useState(false)
+  const [registrationStatusLoading, setRegistrationStatusLoading] = useState(true)
 
   // Перенаправление если пользователь уже авторизован
   useEffect(() => {
@@ -23,6 +25,29 @@ export default function LoginPage() {
       redirectToDashboard();
     }
   }, [isLoading, isAuthenticated, redirectToDashboard]);
+
+  // Проверяем, разрешена ли регистрация
+  useEffect(() => {
+    async function checkRegistrationStatus() {
+      try {
+        const response = await fetch('/api/auth/registration-status');
+        if (response.ok) {
+          const data = await response.json();
+          setRegistrationAllowed(data.registrationAllowed);
+        } else {
+          console.error('Ошибка при проверке статуса регистрации');
+          setRegistrationAllowed(false);
+        }
+      } catch (error) {
+        console.error('Ошибка при проверке статуса регистрации:', error);
+        setRegistrationAllowed(false);
+      } finally {
+        setRegistrationStatusLoading(false);
+      }
+    }
+
+    checkRegistrationStatus();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -159,12 +184,22 @@ export default function LoginPage() {
                 {isSubmitting ? 'Вхід...' : 'Увійти'}
               </button>
               
-              <p className="mt-2 text-center text-sm text-gray-600">
-                Ще не зареєстровані?{' '}
-                <a href="/signup" className="font-medium text-blue-600 hover:text-blue-500">
-                  Створити аккаунт
-                </a>
-              </p>
+              {registrationStatusLoading ? (
+                <p className="mt-2 text-center text-sm text-gray-600">
+                  Перевірка можливості реєстрації...
+                </p>
+              ) : registrationAllowed ? (
+                <p className="mt-2 text-center text-sm text-gray-600">
+                  Ще не зареєстровані?{' '}
+                  <a href="/signup" className="font-medium text-blue-600 hover:text-blue-500">
+                    Створити аккаунт
+                  </a>
+                </p>
+              ) : (
+                <p className="mt-2 text-center text-sm text-gray-600">
+                  Реєстрація нових користувачів заборонена адміністратором.
+                </p>
+              )}
             </form>
           ) : (
             <form onSubmit={handleVerification} className="space-y-6">

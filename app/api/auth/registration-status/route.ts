@@ -12,24 +12,28 @@ export async function GET() {
     if (hasLocalUsers) {
       return NextResponse.json({ 
         registrationAllowed: false,
-        message: 'Регистрация отключена (администратор уже существует в локальной базе данных)'
+        message: 'Регистрация отключена (в базе данных уже есть пользователи)'
       });
     }
     
     // Проверка существующих пользователей в Clerk
     const clerk = await clerkClient();
     const clerkUsers = await clerk.users.getUserList({
-      limit: 1, // Нам нужно знать только, есть ли хотя бы один пользователь
+      limit: 10, // Увеличиваем лимит для надежности
     });
     const hasClerkUsers = clerkUsers.data.length > 0;
     
-    // Кэширование ответа на 5 минут для уменьшения числа запросов к API
-    const headers = {
-      'Cache-Control': 'max-age=300, s-maxage=300, stale-while-revalidate=60'
-    };
-    
     // Регистрация разрешена только если нет пользователей ни в одной из баз данных
     const registrationAllowed = !hasClerkUsers;
+    
+    // Явно отключаем кэширование для этого эндпоинта,
+    // чтобы всегда получать актуальные данные
+    const headers = {
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'Surrogate-Control': 'no-store'
+    };
     
     return NextResponse.json({ 
       registrationAllowed,
@@ -41,10 +45,10 @@ export async function GET() {
     }, { headers });
   } catch (error) {
     console.error('Ошибка при проверке статуса регистрации:', error);
-    // В случае ошибки, по умолчанию разрешаем регистрацию, чтобы избежать блокировки
+    // В случае ошибки, по умолчанию запрещаем регистрацию для безопасности
     return NextResponse.json({ 
-      registrationAllowed: true,
-      message: 'Регистрация разрешена (ошибка при проверке)'
+      registrationAllowed: false,
+      message: 'Регистрация отключена (ошибка при проверке)'
     });
   }
 } 
