@@ -453,10 +453,10 @@ export function EmployeeReports() {
               <Table className="min-w-full table-fixed">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('admin.reports.tableHeaders.date')}</TableHead>
-                    <TableHead>{t('admin.reports.tableHeaders.hours')}</TableHead>
-                    <TableHead>{t('admin.reports.tableHeaders.companies')}</TableHead>
-                    <TableHead>{t('admin.reports.tableHeaders.actions')}</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Hours</TableHead>
+                    <TableHead>Companies</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -530,10 +530,10 @@ export function EmployeeReports() {
                 <Table className="min-w-full table-fixed">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('admin.reports.tableHeaders.date')}</TableHead>
-                      <TableHead>{t('admin.reports.tableHeaders.company')}</TableHead>
-                      <TableHead>{t('admin.reports.tableHeaders.jobType')}</TableHead>
-                      <TableHead>{t('admin.reports.tableHeaders.hours')}</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Company</TableHead>
+                      <TableHead>Job Type</TableHead>
+                      <TableHead>Hours</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

@@ -686,7 +686,7 @@ export function DayEntryForm({
               <div className="relative w-full" data-market-dropdown>
                 <Input
                   className="w-full"
-                  placeholder="Оберіть ринок"
+                  placeholder="Select market"
                   value={marketInput}
                   onChange={(e) => {
                     setMarketInput(e.target.value)
@@ -700,7 +700,7 @@ export function DayEntryForm({
                   }
                 >
                   <Command>
-                    <CommandEmpty>Ринок не знайдено.</CommandEmpty>
+                    <CommandEmpty>Market not found.</CommandEmpty>
                     <CommandGroup>
                       <CommandList className="max-h-[300px] overflow-y-auto">
                         {markets
@@ -742,7 +742,7 @@ export function DayEntryForm({
               <div className="relative w-full" data-agency-dropdown>
                 <Input
                   className="w-full"
-                  placeholder="Оберіть агентство"
+                  placeholder="Select agency"
                   value={agencyInput}
                   onChange={(e) => {
                     setAgencyInput(e.target.value)
@@ -756,7 +756,7 @@ export function DayEntryForm({
                   }
                 >
                   <Command>
-                    <CommandEmpty>Агентство не знайдено.</CommandEmpty>
+                    <CommandEmpty>Agency not found.</CommandEmpty>
                     <CommandGroup>
                       <CommandList className="max-h-[300px] overflow-y-auto">
                         {agencies
@@ -798,7 +798,7 @@ export function DayEntryForm({
               <div className="relative w-full" data-client-dropdown>
                 <Input
                   className="w-full"
-                  placeholder="Оберіть клієнта"
+                  placeholder="Select client"
                   value={clientInput}
                   onChange={(e) => {
                     setClientInput(e.target.value)
@@ -812,7 +812,7 @@ export function DayEntryForm({
                   }
                 >
                   <Command>
-                    <CommandEmpty>Клієнт не знайдено.</CommandEmpty>
+                    <CommandEmpty>Client not found.</CommandEmpty>
                     <CommandGroup>
                       <CommandList className="max-h-[300px] overflow-y-auto">
                         {clients
@@ -866,7 +866,7 @@ export function DayEntryForm({
               <div className="relative w-full" data-media-dropdown>
                 <Input
                   className="w-full"
-                  placeholder="Оберіть тип медіа"
+                  placeholder="Select media type"
                   value={mediaInput}
                   onChange={(e) => {
                     setMediaInput(e.target.value)
@@ -880,7 +880,7 @@ export function DayEntryForm({
                   }
                 >
                   <Command>
-                    <CommandEmpty>Тип медіа не знайдено.</CommandEmpty>
+                    <CommandEmpty>Media type not found.</CommandEmpty>
                     <CommandGroup>
                       <CommandList className="max-h-[300px] overflow-y-auto">
                         {mediaTypes
@@ -922,7 +922,7 @@ export function DayEntryForm({
               <div className="relative w-full" data-jobtype-dropdown>
                 <Input
                   className="w-full"
-                  placeholder="Оберіть тип роботи"
+                  placeholder="Select job type"
                   value={jobTypeInput}
                   onChange={(e) => {
                     setJobTypeInput(e.target.value)
@@ -936,7 +936,7 @@ export function DayEntryForm({
                   }
                 >
                   <Command>
-                    <CommandEmpty>Тип роботи не знайдено.</CommandEmpty>
+                    <CommandEmpty>Job type not found.</CommandEmpty>
                     <CommandGroup>
                       <CommandList className="max-h-[300px] overflow-y-auto">
                         {jobTypes
@@ -977,7 +977,7 @@ export function DayEntryForm({
               <Label htmlFor="comments">Comments</Label>
               <Textarea
                 id="comments"
-                placeholder="Додаткові коментарі..."
+                placeholder="Additional comments..."
                 rows={3}
                 value={formData.comments}
                 onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
@@ -987,19 +987,19 @@ export function DayEntryForm({
 
           {fields.hours && (
             <div className="space-y-2">
-              <Label htmlFor="hours">Витрачений час (хвилини)</Label>
+              <Label htmlFor="hours">Time spent (minutes)</Label>
               <Input
                 id="hours"
                 type="number"
                 min="1"
                 step="1"
-                placeholder="90 = 1:30 год"
+                placeholder="90 = 1:30 h"
                 value={formData.hours}
                 onChange={(e) => setFormData({ ...formData, hours: e.target.value })}
                 required
               />
               <p className="text-xs text-muted-foreground">
-                Введіть загальний час у хвилинах (наприклад, 90 хвилин = 1:30 год)
+                Enter total time in minutes (for example, 90 minutes = 1:30 hours)
               </p>
             </div>
           )}
@@ -1008,9 +1008,9 @@ export function DayEntryForm({
 
       <div className="flex justify-end gap-2 pt-2">
         <Button variant="outline" type="button" onClick={onClose}>
-          Скасувати
+          Cancel
         </Button>
-        <Button type="submit">Зберегти</Button>
+        <Button type="submit">Save</Button>
       </div>
     </form>
   )

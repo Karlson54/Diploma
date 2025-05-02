@@ -81,10 +81,10 @@ export function RecentReports() {
     fetchReports();
   }, []);
 
-  // Функція для завантаження звіту
+  // Function to download report
   const downloadReport = (reportId: number) => {
-    console.log(`Завантаження звіту ID: ${reportId}`)
-    alert(`Звіт ID: ${reportId} завантажується у форматі Excel...`)
+    console.log(`Downloading report ID: ${reportId}`)
+    alert(`Report ID: ${reportId} is downloading in Excel format...`)
   }
 
   if (loading) {
@@ -94,24 +94,24 @@ export function RecentReports() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Останні звіти</CardTitle>
-        <CardDescription>Нещодавно додані записи обліку часу</CardDescription>
+        <CardTitle>Recent Reports</CardTitle>
+        <CardDescription>Recently added time entries</CardDescription>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Співробітник</TableHead>
-              <TableHead>Дата</TableHead>
-              <TableHead>Години</TableHead>
-              <TableHead>Компанії</TableHead>
-              <TableHead>Дії</TableHead>
+              <TableHead>Employee</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Hours</TableHead>
+              <TableHead>Companies</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {reports.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center">Немає доступних звітів</TableCell>
+                <TableCell colSpan={5} className="text-center">No reports available</TableCell>
               </TableRow>
             ) : (
               reports.map((report) => (
@@ -123,7 +123,7 @@ export function RecentReports() {
                   <TableCell>
                     <Button variant="ghost" size="icon" onClick={() => downloadReport(report.id)}>
                       <Download className="h-4 w-4" />
-                      <span className="sr-only">Завантажити</span>
+                      <span className="sr-only">Download</span>
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -134,7 +134,7 @@ export function RecentReports() {
       </CardContent>
       <CardFooter>
         <Link href="/admin/reports">
-          <Button variant="outline">Всі звіти</Button>
+          <Button variant="outline">All Reports</Button>
         </Link>
       </CardFooter>
     </Card>

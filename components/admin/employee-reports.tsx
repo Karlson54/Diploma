@@ -212,21 +212,21 @@ export function EmployeeReports() {
     try {
       // Create a new workbook and worksheet
       const workbook = new ExcelJS.Workbook()
-      const worksheet = workbook.addWorksheet(t('admin.reports.summary.title'))
+      const worksheet = workbook.addWorksheet('Summary')
       
       // Define columns based on selected columns
       const columns = []
-      if (selectedColumns.company) columns.push({ header: t('admin.reports.tableHeaders.agency'), key: 'company', width: 20 })
-      if (selectedColumns.fullName) columns.push({ header: t('admin.reports.tableHeaders.name'), key: 'fullName', width: 20 })
-      if (selectedColumns.date) columns.push({ header: t('admin.reports.tableHeaders.date'), key: 'date', width: 15 })
-      if (selectedColumns.market) columns.push({ header: t('admin.reports.tableHeaders.market'), key: 'market', width: 15 })
-      if (selectedColumns.contractingAgency) columns.push({ header: t('admin.reports.tableHeaders.contractingAgency'), key: 'contractingAgency', width: 20 })
-      if (selectedColumns.client) columns.push({ header: t('admin.reports.tableHeaders.client'), key: 'client', width: 20 })
-      if (selectedColumns.projectBrand) columns.push({ header: t('admin.reports.tableHeaders.projectBrand'), key: 'projectBrand', width: 20 })
-      if (selectedColumns.media) columns.push({ header: t('admin.reports.tableHeaders.media'), key: 'media', width: 15 })
-      if (selectedColumns.jobType) columns.push({ header: t('admin.reports.tableHeaders.jobType'), key: 'jobType', width: 20 })
-      if (selectedColumns.hours) columns.push({ header: t('admin.reports.tableHeaders.hours'), key: 'hours', width: 10 })
-      if (selectedColumns.comments) columns.push({ header: t('admin.reports.tableHeaders.comments'), key: 'comments', width: 25 })
+      if (selectedColumns.company) columns.push({ header: 'Agency', key: 'company', width: 20 })
+      if (selectedColumns.fullName) columns.push({ header: 'Name', key: 'fullName', width: 20 })
+      if (selectedColumns.date) columns.push({ header: 'Date', key: 'date', width: 15 })
+      if (selectedColumns.market) columns.push({ header: 'Market', key: 'market', width: 15 })
+      if (selectedColumns.contractingAgency) columns.push({ header: 'Contracting Agency / Unit', key: 'contractingAgency', width: 20 })
+      if (selectedColumns.client) columns.push({ header: 'Client', key: 'client', width: 20 })
+      if (selectedColumns.projectBrand) columns.push({ header: 'Project / brand', key: 'projectBrand', width: 20 })
+      if (selectedColumns.media) columns.push({ header: 'Media', key: 'media', width: 15 })
+      if (selectedColumns.jobType) columns.push({ header: 'Job type', key: 'jobType', width: 20 })
+      if (selectedColumns.hours) columns.push({ header: 'Hours', key: 'hours', width: 10 })
+      if (selectedColumns.comments) columns.push({ header: 'Comments', key: 'comments', width: 25 })
       
       worksheet.columns = columns
       
@@ -477,8 +477,8 @@ export function EmployeeReports() {
 
       <Tabs defaultValue="summary">
         <TabsList>
-          <TabsTrigger value="summary">{t('admin.reports.summary.title')}</TabsTrigger>
-          <TabsTrigger value="detailed">{t('admin.reports.summary.detailed')}</TabsTrigger>
+          <TabsTrigger value="summary">Summary</TabsTrigger>
+          <TabsTrigger value="detailed">Detailed Report</TabsTrigger>
         </TabsList>
         <TabsContent value="summary" className="mt-4">
           <Card>
@@ -490,17 +490,17 @@ export function EmployeeReports() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('admin.reports.tableHeaders.name')}</TableHead>
-                    <TableHead>{t('admin.reports.tableHeaders.agency')}</TableHead>
-                    <TableHead>{t('admin.reports.tableHeaders.date')}</TableHead>
-                    <TableHead>{t('admin.reports.tableHeaders.market')}</TableHead>
-                    <TableHead>{t('admin.reports.tableHeaders.contractingAgency')}</TableHead>
-                    <TableHead>{t('admin.reports.tableHeaders.client')}</TableHead>
-                    <TableHead>{t('admin.reports.tableHeaders.projectBrand')}</TableHead>
-                    <TableHead>{t('admin.reports.tableHeaders.media')}</TableHead>
-                    <TableHead>{t('admin.reports.tableHeaders.jobType')}</TableHead>
-                    <TableHead>{t('admin.reports.tableHeaders.hours')}</TableHead>
-                    <TableHead>{t('admin.reports.tableHeaders.comments')}</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Agency</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Market</TableHead>
+                    <TableHead>Contracting Agency / Unit</TableHead>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Project / brand</TableHead>
+                    <TableHead>Media</TableHead>
+                    <TableHead>Job type</TableHead>
+                    <TableHead>Hours</TableHead>
+                    <TableHead>Comments</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -535,8 +535,8 @@ export function EmployeeReports() {
         <TabsContent value="detailed" className="mt-4">
           <Card>
             <CardHeader>
-              <CardTitle>{t('admin.reports.detailed.title')}</CardTitle>
-              <CardDescription>{t('admin.reports.detailed.description')}</CardDescription>
+              <CardTitle>Detailed Report</CardTitle>
+              <CardDescription>Detailed information about time spent</CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground mb-4">
@@ -545,12 +545,12 @@ export function EmployeeReports() {
               {selectedEmployee !== "all" ? (
                 <div className="space-y-6">
                   <div className="border rounded-lg p-4">
-                    <h3 className="font-medium mb-2">{t('admin.reports.detailed.timeDistribution')}</h3>
+                    <h3 className="font-medium mb-2">Time distribution by projects</h3>
                     <div className="space-y-3">
                       <div>
                         <div className="flex justify-between text-sm mb-1">
-                          <span>{t('admin.reports.detailed.rebranding')}</span>
-                          <span>24ч (30%)</span>
+                          <span>Rebranding</span>
+                          <span>24h (30%)</span>
                         </div>
                         <div className="w-full bg-gray-100 rounded-full h-2">
                           <div className="bg-primary h-2 rounded-full" style={{ width: "30%" }}></div>
@@ -558,8 +558,8 @@ export function EmployeeReports() {
                       </div>
                       <div>
                         <div className="flex justify-between text-sm mb-1">
-                          <span>{t('admin.reports.detailed.marketingCampaign')}</span>
-                          <span>18ч (22%)</span>
+                          <span>Marketing Campaign</span>
+                          <span>18h (22%)</span>
                         </div>
                         <div className="w-full bg-gray-100 rounded-full h-2">
                           <div className="bg-primary h-2 rounded-full" style={{ width: "22%" }}></div>
@@ -567,8 +567,8 @@ export function EmployeeReports() {
                       </div>
                       <div>
                         <div className="flex justify-between text-sm mb-1">
-                          <span>{t('admin.reports.detailed.websiteDevelopment')}</span>
-                          <span>32ч (40%)</span>
+                          <span>Website Development</span>
+                          <span>32h (40%)</span>
                         </div>
                         <div className="w-full bg-gray-100 rounded-full h-2">
                           <div className="bg-primary h-2 rounded-full" style={{ width: "40%" }}></div>
@@ -576,8 +576,8 @@ export function EmployeeReports() {
                       </div>
                       <div>
                         <div className="flex justify-between text-sm mb-1">
-                          <span>{t('admin.reports.detailed.otherTasks')}</span>
-                          <span>6ч (8%)</span>
+                          <span>Other Tasks</span>
+                          <span>6h (8%)</span>
                         </div>
                         <div className="w-full bg-gray-100 rounded-full h-2">
                           <div className="bg-primary h-2 rounded-full" style={{ width: "8%" }}></div>
@@ -589,11 +589,11 @@ export function EmployeeReports() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>{t('admin.reports.detailed.date')}</TableHead>
-                        <TableHead>{t('admin.reports.detailed.project')}</TableHead>
-                        <TableHead>{t('admin.reports.detailed.task')}</TableHead>
-                        <TableHead>{t('admin.reports.detailed.hours')}</TableHead>
-                        <TableHead>{t('admin.reports.detailed.comment')}</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Project</TableHead>
+                        <TableHead>Task</TableHead>
+                        <TableHead>Hours</TableHead>
+                        <TableHead>Comment</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -642,9 +642,9 @@ export function EmployeeReports() {
       <Dialog open={showDownloadDialog} onOpenChange={setShowDownloadDialog}>
         <DialogContent className="sm:max-w-4xl max-h-screen flex flex-col">
           <DialogHeader>
-            <DialogTitle>{t('admin.reports.downloadDialog.title')}</DialogTitle>
+            <DialogTitle>Download Report</DialogTitle>
             <DialogDescription>
-              {t('admin.reports.downloadDialog.description')}
+              Select columns to include in the Excel report
             </DialogDescription>
           </DialogHeader>
           
@@ -658,7 +658,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="company-checkbox" className="text-sm font-medium">
-                {t('admin.reports.tableHeaders.agency')}
+                Agency
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -670,7 +670,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="fullName-checkbox" className="text-sm font-medium">
-                {t('admin.reports.tableHeaders.name')}
+                Name
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -682,7 +682,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="date-checkbox" className="text-sm font-medium">
-                {t('admin.reports.tableHeaders.date')}
+                Date
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -694,7 +694,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="market-checkbox" className="text-sm font-medium">
-                {t('admin.reports.tableHeaders.market')}
+                Market
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -706,7 +706,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="contractingAgency-checkbox" className="text-sm font-medium">
-                {t('admin.reports.tableHeaders.contractingAgency')}
+                Contracting Agency / Unit
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -718,7 +718,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="client-checkbox" className="text-sm font-medium">
-                {t('admin.reports.tableHeaders.client')}
+                Client
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -730,7 +730,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="projectBrand-checkbox" className="text-sm font-medium">
-                {t('admin.reports.tableHeaders.projectBrand')}
+                Project / brand
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -742,7 +742,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="media-checkbox" className="text-sm font-medium">
-                {t('admin.reports.tableHeaders.media')}
+                Media
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -754,7 +754,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="jobType-checkbox" className="text-sm font-medium">
-                {t('admin.reports.tableHeaders.jobType')}
+                Job type
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -766,7 +766,7 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="hours-checkbox" className="text-sm font-medium">
-                {t('admin.reports.tableHeaders.hours')}
+                Hours
               </label>
             </div>
             <div className="flex items-center space-x-2">
@@ -778,28 +778,28 @@ export function EmployeeReports() {
                 }
               />
               <label htmlFor="comments-checkbox" className="text-sm font-medium">
-                {t('admin.reports.tableHeaders.comments')}
+                Comments
               </label>
             </div>
           </div>
           
           <div className="overflow-y-auto" style={{ maxHeight: "350px" }}>
-            <h3 className="font-medium mb-2">{t('admin.reports.downloadDialog.tablePreview')} ({previewReports.length + (selectedReport ? 1 : 0)} {t('admin.reports.downloadDialog.reports')})</h3>
+            <h3 className="font-medium mb-2">Table Preview ({previewReports.length + (selectedReport ? 1 : 0)} reports)</h3>
             {selectedReport && (
               <Table className="min-w-full">
                 <TableHeader>
                   <TableRow>
-                    {selectedColumns.company && <TableHead>{t('admin.reports.tableHeaders.agency')}</TableHead>}
-                    {selectedColumns.fullName && <TableHead>{t('admin.reports.tableHeaders.name')}</TableHead>}
-                    {selectedColumns.date && <TableHead>{t('admin.reports.tableHeaders.date')}</TableHead>}
-                    {selectedColumns.market && <TableHead>{t('admin.reports.tableHeaders.market')}</TableHead>}
-                    {selectedColumns.contractingAgency && <TableHead>{t('admin.reports.tableHeaders.contractingAgency')}</TableHead>}
-                    {selectedColumns.client && <TableHead>{t('admin.reports.tableHeaders.client')}</TableHead>}
-                    {selectedColumns.projectBrand && <TableHead>{t('admin.reports.tableHeaders.projectBrand')}</TableHead>}
-                    {selectedColumns.media && <TableHead>{t('admin.reports.tableHeaders.media')}</TableHead>}
-                    {selectedColumns.jobType && <TableHead>{t('admin.reports.tableHeaders.jobType')}</TableHead>}
-                    {selectedColumns.hours && <TableHead>{t('admin.reports.tableHeaders.hours')}</TableHead>}
-                    {selectedColumns.comments && <TableHead>{t('admin.reports.tableHeaders.comments')}</TableHead>}
+                    {selectedColumns.company && <TableHead>Agency</TableHead>}
+                    {selectedColumns.fullName && <TableHead>Name</TableHead>}
+                    {selectedColumns.date && <TableHead>Date</TableHead>}
+                    {selectedColumns.market && <TableHead>Market</TableHead>}
+                    {selectedColumns.contractingAgency && <TableHead>Contracting Agency / Unit</TableHead>}
+                    {selectedColumns.client && <TableHead>Client</TableHead>}
+                    {selectedColumns.projectBrand && <TableHead>Project / brand</TableHead>}
+                    {selectedColumns.media && <TableHead>Media</TableHead>}
+                    {selectedColumns.jobType && <TableHead>Job type</TableHead>}
+                    {selectedColumns.hours && <TableHead>Hours</TableHead>}
+                    {selectedColumns.comments && <TableHead>Comments</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -838,10 +838,10 @@ export function EmployeeReports() {
           
           <DialogFooter className="flex justify-end space-x-2 pt-4 border-t">
             <Button variant="outline" onClick={() => setShowDownloadDialog(false)}>
-              {t('admin.reports.downloadDialog.cancel')}
+              Cancel
             </Button>
             <Button onClick={handleDownloadWithColumns}>
-              {t('admin.reports.downloadDialog.download')}
+              Download
             </Button>
           </DialogFooter>
         </DialogContent>
