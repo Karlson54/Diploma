@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button"
 import { Download } from "lucide-react"
 import Link from "next/link"
+import { useTranslation } from "react-i18next"
 
 interface ReportWithDetails {
   id: number;
@@ -16,6 +17,7 @@ interface ReportWithDetails {
 }
 
 export function RecentReports() {
+  const { t } = useTranslation()
   const [reports, setReports] = useState<ReportWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -84,34 +86,34 @@ export function RecentReports() {
   // Function to download report
   const downloadReport = (reportId: number) => {
     console.log(`Downloading report ID: ${reportId}`)
-    alert(`Report ID: ${reportId} is downloading in Excel format...`)
+    alert(t('admin.recentReports.downloadMessage', { reportId }))
   }
 
   if (loading) {
-    return <div>Loading recent reports...</div>;
+    return <div>{t('admin.recentReports.loading')}</div>;
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent Reports</CardTitle>
-        <CardDescription>Recently added time entries</CardDescription>
+        <CardTitle>{t('admin.recentReports.title')}</CardTitle>
+        <CardDescription>{t('admin.recentReports.description')}</CardDescription>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Employee</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Hours</TableHead>
-              <TableHead>Companies</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead>{t('admin.recentReports.employee')}</TableHead>
+              <TableHead>{t('admin.recentReports.date')}</TableHead>
+              <TableHead>{t('admin.recentReports.hours')}</TableHead>
+              <TableHead>{t('admin.recentReports.companies')}</TableHead>
+              <TableHead>{t('admin.recentReports.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {reports.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center">No reports available</TableCell>
+                <TableCell colSpan={5} className="text-center">{t('admin.recentReports.noReports')}</TableCell>
               </TableRow>
             ) : (
               reports.map((report) => (
@@ -123,7 +125,7 @@ export function RecentReports() {
                   <TableCell>
                     <Button variant="ghost" size="icon" onClick={() => downloadReport(report.id)}>
                       <Download className="h-4 w-4" />
-                      <span className="sr-only">Download</span>
+                      <span className="sr-only">{t('admin.recentReports.download')}</span>
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -134,7 +136,7 @@ export function RecentReports() {
       </CardContent>
       <CardFooter>
         <Link href="/admin/reports">
-          <Button variant="outline">All Reports</Button>
+          <Button variant="outline">{t('admin.recentReports.allReports')}</Button>
         </Link>
       </CardFooter>
     </Card>
