@@ -222,11 +222,11 @@ export function ReportExportModal({ isOpen, onClose, reportData }: ReportExportM
             </div>
             <div className="flex items-center space-x-2">
               <Checkbox
-                id="date"
+                id="dateColumn"
                 checked={selectedColumns.date}
                 onCheckedChange={() => toggleColumn('date')}
               />
-              <label htmlFor="date" className="text-sm font-medium">Date</label>
+              <label htmlFor="dateColumn" className="text-sm font-medium">Date</label>
             </div>
             <div className="flex items-center space-x-2">
               <Checkbox
