@@ -116,12 +116,14 @@ export function WeeklyCalendar() {
 
   // Форматування дати
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString("uk-UA", { day: "numeric", month: "long" })
+    const locale = i18n.language === 'uk' ? 'uk-UA' : 'en-US';
+    return date.toLocaleDateString(locale, { day: 'numeric', month: 'long' });
   }
 
   // Форматування дня тижня
   const formatDayOfWeek = (date: Date) => {
-    return date.toLocaleDateString("uk-UA", { weekday: "short" })
+    const locale = i18n.language === 'uk' ? 'uk-UA' : 'en-US';
+    return date.toLocaleDateString(locale, { weekday: 'short' });
   }
 
   // Перевірка, чи є день поточним
@@ -611,7 +613,10 @@ export function WeeklyCalendar() {
     setCurrentMonth(newMonth)
   }
 
-  const monthName = currentMonth.toLocaleDateString("uk-UA", { month: "long", year: "numeric" })
+  const formattedMonthName = currentMonth.toLocaleDateString(
+    i18n.language === 'uk' ? 'uk-UA' : 'en-US',
+    { month: 'long', year: 'numeric' }
+  )
   const calendarDays = generateCalendarDays(currentMonth.getFullYear(), currentMonth.getMonth())
   const weekDayNames = ["Нд", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"]
 
@@ -645,7 +650,7 @@ export function WeeklyCalendar() {
                 key={index}
                 variant={
                   isToday(day)
-                    ? "outline" // змінено з "default" на "outline", щоб застосувати власний стиль
+                    ? "outline"
                     : selectedDate &&
                         selectedDate.getDate() === day.getDate() &&
                         selectedDate.getMonth() === day.getMonth() &&
@@ -662,7 +667,7 @@ export function WeeklyCalendar() {
                 }`}
                 onClick={() => selectDay(day)}
               >
-                <span className="text-xs font-medium">{formatDayOfWeek(day)}</span>
+                <span className="text-xs font-medium">{t(`calendar.weekdayShort.${index}`)}</span>
                 <span className="text-lg font-bold">{day.getDate()}</span>
                 <span className="text-xs">{day.toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : 'en-US', { month: 'short' })}</span>
               </Button>
@@ -940,7 +945,7 @@ export function WeeklyCalendar() {
                     <Button variant="outline" size="icon" onClick={goToPreviousMonth}>
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
-                    <div className="font-medium">{monthName}</div>
+                    <div className="font-medium">{formattedMonthName}</div>
                     <Button variant="outline" size="icon" onClick={goToNextMonth}>
                       <ChevronRight className="h-4 w-4" />
                     </Button>

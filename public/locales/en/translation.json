@@ -313,6 +313,9 @@
     "minutesHint": "90 = 1:30 h",
     "commentsPlaceholder": "Additional comments..."
   },
+  "dateRangePicker": {
+    "placeholder": "Select period"
+  },
   "auth": {
     "redirecting": "Redirecting...",
     "checkingStatus": "Checking authentication status..."

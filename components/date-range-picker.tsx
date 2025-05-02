@@ -3,6 +3,7 @@ import { useState } from "react"
 import { format } from "date-fns"
 import { CalendarIcon, ChevronLeft, ChevronRight, Check } from "lucide-react"
 import type { DateRange } from "react-day-picker"
+import { useTranslation } from "react-i18next"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -16,12 +17,14 @@ interface DatePickerWithRangeProps {
 }
 
 export function DatePickerWithRange({ date, setDate }: DatePickerWithRangeProps) {
+  const { t, i18n } = useTranslation()
   // State for current month view in the calendar
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [localDateRange, setLocalDateRange] = useState<DateRange | undefined>(date);
   const [isOpen, setIsOpen] = useState(false);
   
-  const monthName = currentMonth.toLocaleDateString("uk-UA", { month: "long", year: "numeric" });
+  const locale = i18n.language === 'uk' ? 'uk-UA' : 'en-US';
+  const monthName = currentMonth.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
   
   // Calendar helper functions
   const getDaysInMonth = (year: number, month: number) => {
@@ -164,7 +167,6 @@ export function DatePickerWithRange({ date, setDate }: DatePickerWithRangeProps)
   };
 
   const calendarDays = generateCalendarDays(currentMonth.getFullYear(), currentMonth.getMonth());
-  const weekDayNames = ["Нд", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
 
   return (
     <div className="grid gap-2">
@@ -185,7 +187,7 @@ export function DatePickerWithRange({ date, setDate }: DatePickerWithRangeProps)
                 format(date.from, "dd.MM.yyyy")
               )
             ) : (
-              <span>Виберіть період</span>
+              <span>{t('dateRangePicker.placeholder')}</span>
             )}
           </Button>
         </PopoverTrigger>
@@ -202,9 +204,9 @@ export function DatePickerWithRange({ date, setDate }: DatePickerWithRangeProps)
             </div>
 
             <div className="grid grid-cols-7 gap-1 text-center mb-1">
-              {weekDayNames.map((day, i) => (
+              {Array.from({ length: 7 }, (_v, i) => (
                 <div key={i} className="text-xs font-medium py-1">
-                  {day}
+                  {t(`calendar.weekdayShort.${i}`)}
                 </div>
               ))}
             </div>

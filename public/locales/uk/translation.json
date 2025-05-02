@@ -313,6 +313,9 @@
     "minutesHint": "90 = 1:30 год",
     "commentsPlaceholder": "Додаткові коментарі..."
   },
+  "dateRangePicker": {
+    "placeholder": "Виберіть період"
+  },
   "auth": {
     "redirecting": "Перенаправлення...",
     "checkingStatus": "Перевірка статусу авторизації..."
