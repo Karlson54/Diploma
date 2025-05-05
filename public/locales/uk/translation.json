@@ -274,6 +274,7 @@
     "agency": "Agency/Unit",
     "client": "Client",
     "projectBrand": "Project/Brand",
+    "projectBrandPlaceholder": "Введіть деталі проекту або бренду",
     "media": "Media",
     "jobType": "Job Type",
     "comments": "Comments",

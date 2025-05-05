@@ -452,7 +452,10 @@ export function EmployeesList() {
                       <div className="flex justify-end gap-2">
                         <Dialog open={isEditDialogOpen && editingEmployee?.id === employee.id} onOpenChange={setIsEditDialogOpen}>
                           <DialogTrigger asChild>
-                            <Button variant="ghost" size="icon" onClick={() => setEditingEmployee(employee)}>
+                          <Button variant="ghost" size="icon" onClick={() => setEditingEmployee({
+                              ...employee,
+                              isAdmin: employee.isAdmin === true
+                            })}>
                               <Pencil className="h-4 w-4" />
                             </Button>
                           </DialogTrigger>

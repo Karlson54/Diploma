@@ -656,7 +656,7 @@ export function DayEntryForm({
                 t('calendar.projectBrand'),
                 <Textarea
                   id="projectBrand"
-                  placeholder="Enter project or brand details"
+                  placeholder={t('calendar.projectBrandPlaceholder')}
                   className="min-h-[64px] text-sm"
                   value={formData.projectBrand}
                   onChange={(e) => setFormData({ ...formData, projectBrand: e.target.value })}
@@ -851,10 +851,10 @@ export function DayEntryForm({
 
           {fields.projectBrand && (
             <div className="space-y-2">
-              <Label htmlFor="projectBrand">Project/Brand</Label>
+              <Label htmlFor="projectBrand">{t('calendar.projectBrand')}</Label>
               <Textarea
                 id="projectBrand"
-                placeholder="Enter project or brand details"
+                placeholder={t('calendar.projectBrandPlaceholder')}
                 className="min-h-[64px] text-sm"
                 value={formData.projectBrand}
                 onChange={(e) => setFormData({ ...formData, projectBrand: e.target.value })}
