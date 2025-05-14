@@ -2,7 +2,7 @@
 
 import React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -45,136 +45,53 @@ export function DayEntryForm({
   // i18n
   const { t } = useTranslation()
 
-  // Список клієнтів
-  const clients = [
-    { id: "1", name: "All clients" },
-    { id: "2", name: "NewBiz" },
-    { id: "3", name: "Adidas/Reebook" },
-    { id: "4", name: "Adobe" },
-    { id: "5", name: "Akzo Nobel" },
-    { id: "6", name: "Asahi" },
-    { id: "7", name: "Asatsu-DK (ADK)" },
-    { id: "8", name: "Audemars Piguet" },
-    { id: "9", name: "AXA" },
-    { id: "10", name: "Bayer" },
-    { id: "11", name: "Beiersdorf" },
-    { id: "12", name: "Beko" },
-    { id: "13", name: "Benetton" },
-    { id: "14", name: "BGL Group" },
-    { id: "15", name: "Blackrock" },
-    { id: "16", name: "Booking.com" },
-    { id: "17", name: "BP" },
-    { id: "18", name: "Bridgestone" },
-    { id: "19", name: "Bumble Holdings" },
-    { id: "20", name: "Calvin Klein" },
-    { id: "21", name: "Campari" },
-    { id: "22", name: "Cartier" },
-    { id: "23", name: "Chevron" },
-    { id: "24", name: "Coca-Cola" },
-    { id: "25", name: "Colgate-Palmolive" },
-    { id: "26", name: "Collistar" },
-    { id: "27", name: "Continental" },
-    { id: "28", name: "Danone" },
-    { id: "29", name: "Darnitsa" },
-    { id: "30", name: "Deloitte" },
-    { id: "31", name: "Deutsche Post DHL" },
-    { id: "32", name: "Deutsche Telekom" },
-    { id: "33", name: "Discovery" },
-    { id: "34", name: "DoorDash, Inc." },
-    { id: "35", name: "Dr Oetker" },
-    { id: "36", name: "Duracell" },
-    { id: "37", name: "EA GAMES" },
-    { id: "38", name: "Edgewell - Global" },
-    { id: "39", name: "Energizer" },
-    { id: "40", name: "Erste Bank" },
-    { id: "41", name: "Essilor" },
-    { id: "42", name: "Falcon and Associates FZ" },
-    { id: "43", name: "Ford" },
-    { id: "44", name: "Formula 1" },
-    { id: "45", name: "Fozzy Group" },
-    { id: "46", name: "FrieslandCampina" },
-    { id: "47", name: "Garden Care Bidco Limited" },
-    { id: "48", name: "GE" },
-    { id: "49", name: "Geberit" },
-    { id: "50", name: "General Mills" },
-    { id: "51", name: "GoDaddy.com" },
-    { id: "52", name: "Haribo" },
-    { id: "53", name: "Hasbro" },
-    { id: "54", name: "Hawley & Hazel (H&H)" },
-    { id: "55", name: "HBO" },
-    { id: "56", name: "Helly Hansen" },
-    { id: "57", name: "Henkel" },
-    { id: "58", name: "Honor Global Master Purchase" },
-    { id: "59", name: "Huawei" },
-    { id: "60", name: "Husqvarna" },
-    { id: "61", name: "IAG (British Airways)" },
-    { id: "62", name: "IBM" },
-    { id: "63", name: "IHG" },
-    { id: "64", name: "IKEA" },
-    { id: "65", name: "Jaco" },
-    { id: "66", name: "Jetstar" },
-    { id: "67", name: "Johnson and Johnson" },
-    { id: "68", name: "Kapp-Ahl" },
-    { id: "69", name: "Karcher" },
-    { id: "70", name: "Kimberly-Clark" },
-    { id: "71", name: "Kingfisher" },
-    { id: "72", name: "Lavazza" },
-    { id: "73", name: "Lektravy" },
-    { id: "74", name: "Lombard Odier" },
-    { id: "75", name: "L'Oreal" },
-    { id: "76", name: "Lufthansa" },
-    { id: "77", name: "LVMH" },
-    { id: "78", name: "MARS" },
-    { id: "79", name: "McArthurGlen" },
-    { id: "80", name: "Menarini" },
-    { id: "81", name: "Mondelez" },
-    { id: "82", name: "MSC Cruises" },
-    { id: "83", name: "Nestlé" },
-    { id: "84", name: "Netflix" },
-    { id: "85", name: "Next" },
-    { id: "86", name: "NFL Gamepass (Overtier)" },
-    { id: "87", name: "Nike" },
-    { id: "88", name: "Osram" },
-    { id: "89", name: "P&G" },
-    { id: "90", name: "Paramount" },
-    { id: "91", name: "Pepsi" },
-    { id: "92", name: "Perfetti Van Melle" },
-    { id: "93", name: "Perrigo" },
-    { id: "94", name: "Pfizer" },
-    { id: "95", name: "Pripravka" },
-    { id: "96", name: "Recordati" },
-    { id: "97", name: "Rolex" },
-    { id: "98", name: "Royal Canin" },
-    { id: "99", name: "Savencia" },
-    { id: "100", name: "Shell" },
-    { id: "101", name: "Skechers" },
-    { id: "102", name: "Sony Playstation" },
-    { id: "103", name: "Subaru/Nissan" },
-    { id: "104", name: "Suntory" },
-    { id: "105", name: "Tata Global Beverages" },
-    { id: "106", name: "Tiffany" },
-    { id: "107", name: "Total Energy" },
-    { id: "108", name: "Toyota" },
-    { id: "109", name: "Trading" },
-    { id: "110", name: "Triumph" },
-    { id: "111", name: "Ubisoft" },
-    { id: "112", name: "UIP" },
-    { id: "113", name: "Unilever" },
-    { id: "114", name: "Versace" },
-    { id: "115", name: "Vodafone" },
-    { id: "116", name: "Volvo" },
-    { id: "117", name: "Weightwatchers" },
-    { id: "118", name: "Whirlpool" },
-    { id: "119", name: "Xerox" },
-    { id: "120", name: "Xiaomi" },
-    { id: "121", name: "Yum!" },
-    { id: "122", name: "Indeed" },
-    { id: "123", name: "Innocent" },
-    { id: "124", name: "Vacheron" },
-    { id: "125", name: "Klarna" },
-    { id: "126", name: "Breuninger" },
-    { id: "127", name: "CCHBC" },
-  ]
+  // Состояние для клиентов
+  const [clients, setClients] = useState<Array<{ id: string, name: string }>>([])
+  const [isLoadingClients, setIsLoadingClients] = useState(true)
+
+  // Загрузка клиентов из API
+  useEffect(() => {
+    async function fetchClients() {
+      try {
+        setIsLoadingClients(true)
+        console.log('Fetching clients from API for form...')
+        const response = await fetch('/api/clients')
+        
+        if (!response.ok) {
+          console.error('API response not OK:', response.status, response.statusText)
+          throw new Error(`Failed to fetch clients: ${response.status} ${response.statusText}`)
+        }
+        
+        const data = await response.json()
+        
+        // Преобразуем данные из БД в формат, ожидаемый компонентом
+        const formattedClients = data.clients.map((client: any) => ({
+          id: client.id.toString(),
+          name: client.name
+        }))
+        
+        // Добавляем опцию "All clients", если её нет
+        if (!formattedClients.some(client => client.name === "All clients")) {
+          formattedClients.unshift({ id: "0", name: "All clients" })
+        }
+        
+        setClients(formattedClients)
+        setIsLoadingClients(false)
+      } catch (error) {
+        console.error('Error fetching clients:', error)
+        // Если загрузка не удалась, используем резервный список
+        const fallbackClients = [
+          { id: "1", name: "All clients" },
+          { id: "2", name: "NewBiz" },
+          { id: "3", name: "Adidas/Reebook" },
+        ]
+        setClients(fallbackClients)
+        setIsLoadingClients(false)
+      }
+    }
+    
+    fetchClients()
+  }, [])
 
   // Приклад списку ринків
   const markets = [

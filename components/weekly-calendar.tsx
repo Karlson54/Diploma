@@ -33,17 +33,10 @@ export function WeeklyCalendar() {
   const [copyDates, setCopyDates] = useState<Date[]>([])
   const [showCopyDialog, setShowCopyDialog] = useState(false)
   const [currentMonth, setCurrentMonth] = useState(new Date())
-
-  // Add these arrays right after the useState declarations
-  // Список клієнтів
-  const clients = [
-    { id: "1", name: "All clients" },
-    { id: "2", name: "NewBiz" },
-    { id: "3", name: "Adidas/Reebook" },
-    { id: "4", name: "Adobe" },
-    // ... other clients
-    { id: "127", name: "CCHBC" },
-  ]
+  
+  // Добавляем состояние для хранения клиентов из API
+  const [clients, setClients] = useState<{id: string, name: string}[]>([])
+  const [isLoadingClients, setIsLoadingClients] = useState(true)
 
   // Приклад списку ринків
   const markets = [
@@ -286,6 +279,51 @@ export function WeeklyCalendar() {
     
     fetchReports();
   }, []);
+
+  // Загрузка клиентов из API
+  useEffect(() => {
+    async function fetchClients() {
+      try {
+        setIsLoadingClients(true)
+        console.log('Fetching clients from API...')
+        const response = await fetch('/api/clients')
+        
+        if (!response.ok) {
+          console.error('API response not OK:', response.status, response.statusText)
+          throw new Error(`Failed to fetch clients: ${response.status} ${response.statusText}`)
+        }
+        
+        const data = await response.json()
+        console.log('Clients data:', data)
+        
+        // Преобразуем данные из БД в формат, ожидаемый компонентом
+        const formattedClients = data.clients.map((client: any) => ({
+          id: client.id.toString(),
+          name: client.name
+        }))
+        
+        // Добавляем опцию "All clients", если её нет
+        if (!formattedClients.some(client => client.name === "All clients")) {
+          formattedClients.unshift({ id: "0", name: "All clients" })
+        }
+        
+        setClients(formattedClients)
+        setIsLoadingClients(false)
+      } catch (error) {
+        console.error('Error fetching clients:', error)
+        // Если загрузка не удалась, используем резервный список
+        const fallbackClients = [
+          { id: "1", name: "All clients" },
+          { id: "2", name: "NewBiz" },
+          { id: "3", name: "Adidas/Reebook" },
+        ]
+        setClients(fallbackClients)
+        setIsLoadingClients(false)
+      }
+    }
+    
+    fetchClients()
+  }, []) // Пустой массив зависимостей означает, что эффект выполнится один раз при монтировании
 
   // Фільтрація звітів за вибраною датою
   const getFilteredReports = () => {
