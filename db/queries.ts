@@ -143,9 +143,14 @@ export const reportQueries = {
           name: employees.name,
           agency: employees.agency,
         },
+        client: {
+          id: clients.id,
+          name: clients.name,
+        },
       })
       .from(reports)
       .leftJoin(employees, eq(reports.employeeId, employees.id))
+      .leftJoin(clients, eq(reports.client, clients.id))
       .orderBy(desc(reports.date))
       .all();
   },
@@ -170,9 +175,14 @@ export const reportQueries = {
           name: employees.name,
           agency: employees.agency,
         },
+        client: {
+          id: clients.id,
+          name: clients.name,
+        },
       })
       .from(reports)
       .leftJoin(employees, eq(reports.employeeId, employees.id))
+      .leftJoin(clients, eq(reports.client, clients.id))
       .where(eq(reports.id, id))
       .get();
       

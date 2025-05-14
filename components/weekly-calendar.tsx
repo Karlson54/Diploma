@@ -17,6 +17,26 @@ import {
 import { Label } from "@/components/ui/label"
 import { useTranslation } from "react-i18next"
 
+// Define interfaces for our data types
+interface Client {
+  id: string;
+  name: string;
+}
+
+interface Report {
+  id: number;
+  date: string;
+  market: string;
+  contractingAgency: string;
+  client: string | number | { id: number | string; name: string };
+  clientName?: string;
+  projectBrand: string;
+  media: string;
+  jobType: string;
+  comments: string;
+  hours: number;
+}
+
 export function WeeklyCalendar() {
   const { t, i18n } = useTranslation()
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
@@ -35,7 +55,7 @@ export function WeeklyCalendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   
   // Добавляем состояние для хранения клиентов из API
-  const [clients, setClients] = useState<{id: string, name: string}[]>([])
+  const [clients, setClients] = useState<Client[]>([])
   const [isLoadingClients, setIsLoadingClients] = useState(true)
 
   // Приклад списку ринків
@@ -150,7 +170,7 @@ export function WeeklyCalendar() {
   }
 
   // Приклад даних звітів поточного співробітника
-  const [allReports, setAllReports] = useState([
+  const [allReports, setAllReports] = useState<Report[]>([
     {
       id: 1,
       date: "16.04.2025",
@@ -297,13 +317,13 @@ export function WeeklyCalendar() {
         console.log('Clients data:', data)
         
         // Преобразуем данные из БД в формат, ожидаемый компонентом
-        const formattedClients = data.clients.map((client: any) => ({
+        const formattedClients = data.clients.map((client: { id: number | string; name: string }) => ({
           id: client.id.toString(),
           name: client.name
         }))
         
         // Добавляем опцию "All clients", если её нет
-        if (!formattedClients.some(client => client.name === "All clients")) {
+        if (!formattedClients.some((client: Client) => client.name === "All clients")) {
           formattedClients.unshift({ id: "0", name: "All clients" })
         }
         
@@ -713,6 +733,24 @@ export function WeeklyCalendar() {
   const calendarDays = generateCalendarDays(currentMonth.getFullYear(), currentMonth.getMonth())
   const weekDayNames = ["Нд", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"]
 
+  // Add a helper function to get client name from client ID
+  const getClientName = (client: Report['client']): string => {
+    // Handle client object with name property
+    if (client && typeof client === 'object' && 'name' in client) {
+      return client.name;
+    }
+    
+    // Handle client ID (string or number)
+    if (typeof client === 'number' || typeof client === 'string') {
+      const clientId = client.toString();
+      const foundClient = clients.find((c) => c.id === clientId);
+      return foundClient ? foundClient.name : clientId;
+    }
+    
+    // Fallback for other cases
+    return client ? String(client) : '';
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -974,7 +1012,7 @@ export function WeeklyCalendar() {
                         <TableRow key={report.id}>
                           <TableCell>{report.market}</TableCell>
                           <TableCell>{report.contractingAgency}</TableCell>
-                          <TableCell>{report.client}</TableCell>
+                          <TableCell>{getClientName(report.client)}</TableCell>
                           <TableCell>{report.projectBrand}</TableCell>
                           <TableCell>{report.media}</TableCell>
                           <TableCell>{report.jobType}</TableCell>

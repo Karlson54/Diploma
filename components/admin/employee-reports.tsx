@@ -43,7 +43,8 @@ interface Report {
   reportDate: Date;
   market: string;
   contractingAgency: string;
-  client: string;
+  client: string | { id: number; name: string };
+  clientName?: string;
   projectBrand: string;
   media: string;
   jobType: string;
@@ -142,6 +143,12 @@ export function EmployeeReports() {
             item.report.project || 
             (item.project ? item.project : "N/A");
           
+          // Handle different client data formats
+          const clientValue = item.client?.name || 
+                              (typeof item.report.client === 'object' ? 
+                                item.report.client?.name : 
+                                item.report.client) || "N/A";
+          
           return {
             id: item.report.id,
             employee: item.employee?.name || 'Unknown',
@@ -155,7 +162,8 @@ export function EmployeeReports() {
             reportDate: reportDate, // Store the actual Date object for filtering
             market: item.report.market || "N/A",
             contractingAgency: item.report.contractingAgency || "N/A",
-            client: item.report.client || "N/A",
+            client: item.client || item.report.client || "N/A",
+            clientName: clientValue,
             projectBrand: projectBrandValue,
             media: item.report.media || "N/A",
             jobType: item.report.jobType || "N/A",
@@ -246,7 +254,7 @@ export function EmployeeReports() {
         if (selectedColumns.date) rowData.date = report.date
         if (selectedColumns.market) rowData.market = report.market
         if (selectedColumns.contractingAgency) rowData.contractingAgency = report.contractingAgency
-        if (selectedColumns.client) rowData.client = report.client
+        if (selectedColumns.client) rowData.client = typeof report.client === 'object' ? report.client.name : report.clientName || report.client
         if (selectedColumns.projectBrand) rowData.projectBrand = report.projectBrand
         if (selectedColumns.media) rowData.media = report.media
         if (selectedColumns.jobType) rowData.jobType = report.jobType
@@ -515,7 +523,7 @@ export function EmployeeReports() {
                         <TableCell>{report.date}</TableCell>
                         <TableCell>{report.market}</TableCell>
                         <TableCell>{report.contractingAgency}</TableCell>
-                        <TableCell>{report.client}</TableCell>
+                        <TableCell>{typeof report.client === 'object' ? report.client.name : report.clientName || report.client}</TableCell>
                         <TableCell>{report.projectBrand}</TableCell>
                         <TableCell>{report.media}</TableCell>
                         <TableCell>{report.jobType}</TableCell>
@@ -808,7 +816,7 @@ export function EmployeeReports() {
                     {selectedColumns.date && <TableCell>{selectedReport.date}</TableCell>}
                     {selectedColumns.market && <TableCell>{selectedReport.market}</TableCell>}
                     {selectedColumns.contractingAgency && <TableCell>{selectedReport.contractingAgency}</TableCell>}
-                    {selectedColumns.client && <TableCell>{selectedReport.client}</TableCell>}
+                    {selectedColumns.client && <TableCell>{typeof selectedReport.client === 'object' ? selectedReport.client.name : selectedReport.clientName || selectedReport.client}</TableCell>}
                     {selectedColumns.projectBrand && <TableCell>{selectedReport.projectBrand}</TableCell>}
                     {selectedColumns.media && <TableCell>{selectedReport.media}</TableCell>}
                     {selectedColumns.jobType && <TableCell>{selectedReport.jobType}</TableCell>}
@@ -822,7 +830,7 @@ export function EmployeeReports() {
                       {selectedColumns.date && <TableCell>{report.date}</TableCell>}
                       {selectedColumns.market && <TableCell>{report.market}</TableCell>}
                       {selectedColumns.contractingAgency && <TableCell>{report.contractingAgency}</TableCell>}
-                      {selectedColumns.client && <TableCell>{report.client}</TableCell>}
+                      {selectedColumns.client && <TableCell>{typeof report.client === 'object' ? report.client.name : report.clientName || report.client}</TableCell>}
                       {selectedColumns.projectBrand && <TableCell>{report.projectBrand}</TableCell>}
                       {selectedColumns.media && <TableCell>{report.media}</TableCell>}
                       {selectedColumns.jobType && <TableCell>{report.jobType}</TableCell>}

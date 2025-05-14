@@ -71,7 +71,7 @@ export function DayEntryForm({
         }))
         
         // Добавляем опцию "All clients", если её нет
-        if (!formattedClients.some(client => client.name === "All clients")) {
+        if (!formattedClients.some((client: { id: string, name: string }) => client.name === "All clients")) {
           formattedClients.unshift({ id: "0", name: "All clients" })
         }
         
@@ -165,6 +165,16 @@ export function DayEntryForm({
     return item ? item.name : "";
   };
 
+  // Функция для поиска имени клиента по ID
+  const findClientNameById = (clientId: string | number | undefined) => {
+    if (!clientId) return "";
+    
+    const id = typeof clientId === 'string' ? clientId : clientId.toString();
+    const client = clients.find(c => c.id === id);
+    
+    return client ? client.name : id;
+  };
+
   // Используем ключ (key), чтобы пересоздавать компонент при переключении между режимами.
   // Это гарантирует сброс всех внутренних состояний.
   const formKey = isEditMode ? `edit-${initialValues?.id}` : 'new-entry';
@@ -190,9 +200,28 @@ export function DayEntryForm({
     isEditMode ? getNameFromId(initialValues?.contractingAgency, agencies) || initialValues?.contractingAgency || "" : ""
   );
   
-  const [clientInput, setClientInput] = useState(
-    isEditMode ? getNameFromId(initialValues?.client, clients) || initialValues?.client || "" : ""
-  );
+  const [clientInput, setClientInput] = useState("");
+
+  // Обновляем clientInput при загрузке клиентов и когда мы в режиме редактирования
+  useEffect(() => {
+    if (isEditMode && initialValues?.client && clients.length > 0) {
+      // Ищем клиента по ID в списке клиентов
+      const clientId = typeof initialValues.client === 'string' 
+        ? initialValues.client 
+        : initialValues.client.toString();
+      
+      const clientObj = clients.find(c => c.id === clientId);
+      
+      if (clientObj) {
+        // Если найдем клиента, устанавливаем его имя
+        setClientInput(clientObj.name);
+      } else {
+        // Если не найдем, выводим предупреждение и устанавливаем ID
+        console.warn(`Client with ID ${initialValues.client} not found in the list`);
+        setClientInput(clientId);
+      }
+    }
+  }, [isEditMode, initialValues?.client, clients]);
   
   const [mediaInput, setMediaInput] = useState(
     isEditMode ? getNameFromId(initialValues?.media, mediaTypes) || initialValues?.media || "" : ""
@@ -240,9 +269,13 @@ export function DayEntryForm({
   // Обработчик отправки формы
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Преобразуем ID клиента в число для соответствия новой структуре БД
+    const clientValue = formData.client ? parseInt(formData.client, 10) : null;
+    
     onSave({
       date: date,
       ...formData,
+      client: clientValue, // Передаем числовой ID
     });
   };
 
@@ -291,8 +324,8 @@ export function DayEntryForm({
                           {markets
                             .filter((market) =>
                               filterStartsWith
-                                ? market.name.toLowerCase().startsWith(marketInput.toLowerCase())
-                                : market.name.toLowerCase().includes(marketInput.toLowerCase())
+                                ? market.name.toLowerCase().startsWith(String(marketInput).toLowerCase())
+                                : market.name.toLowerCase().includes(String(marketInput).toLowerCase())
                             )
                             .map((market) => (
                               <CommandItem
@@ -347,8 +380,8 @@ export function DayEntryForm({
                           {agencies
                             .filter((agency) =>
                               filterStartsWith
-                                ? agency.name.toLowerCase().startsWith(agencyInput.toLowerCase())
-                                : agency.name.toLowerCase().includes(agencyInput.toLowerCase()),
+                                ? agency.name.toLowerCase().startsWith(String(agencyInput).toLowerCase())
+                                : agency.name.toLowerCase().includes(String(agencyInput).toLowerCase())
                             )
                             .map((agency) => (
                               <CommandItem
@@ -403,8 +436,8 @@ export function DayEntryForm({
                           {clients
                             .filter((client) =>
                               filterStartsWith
-                                ? client.name.toLowerCase().startsWith(clientInput.toLowerCase())
-                                : client.name.toLowerCase().includes(clientInput.toLowerCase()),
+                                ? client.name.toLowerCase().startsWith(String(clientInput).toLowerCase())
+                                : client.name.toLowerCase().includes(String(clientInput).toLowerCase())
                             )
                             .map((client) => (
                               <CommandItem
@@ -462,8 +495,8 @@ export function DayEntryForm({
                           {mediaTypes
                             .filter((media) =>
                               filterStartsWith
-                                ? media.name.toLowerCase().startsWith(mediaInput.toLowerCase())
-                                : media.name.toLowerCase().includes(mediaInput.toLowerCase()),
+                                ? media.name.toLowerCase().startsWith(String(mediaInput).toLowerCase())
+                                : media.name.toLowerCase().includes(String(mediaInput).toLowerCase())
                             )
                             .map((media) => (
                               <CommandItem
@@ -518,8 +551,8 @@ export function DayEntryForm({
                           {jobTypes
                             .filter((jobType) =>
                               filterStartsWith
-                                ? jobType.name.toLowerCase().startsWith(jobTypeInput.toLowerCase())
-                                : jobType.name.toLowerCase().includes(jobTypeInput.toLowerCase()),
+                                ? jobType.name.toLowerCase().startsWith(String(jobTypeInput).toLowerCase())
+                                : jobType.name.toLowerCase().includes(String(jobTypeInput).toLowerCase())
                             )
                             .map((jobType) => (
                               <CommandItem
@@ -624,8 +657,8 @@ export function DayEntryForm({
                         {markets
                           .filter((market) =>
                             filterStartsWith
-                              ? market.name.toLowerCase().startsWith(marketInput.toLowerCase())
-                              : market.name.toLowerCase().includes(marketInput.toLowerCase()),
+                              ? market.name.toLowerCase().startsWith(String(marketInput).toLowerCase())
+                              : market.name.toLowerCase().includes(String(marketInput).toLowerCase())
                           )
                           .map((market) => (
                             <CommandItem
@@ -680,8 +713,8 @@ export function DayEntryForm({
                         {agencies
                           .filter((agency) =>
                             filterStartsWith
-                              ? agency.name.toLowerCase().startsWith(agencyInput.toLowerCase())
-                              : agency.name.toLowerCase().includes(agencyInput.toLowerCase()),
+                              ? agency.name.toLowerCase().startsWith(String(agencyInput).toLowerCase())
+                              : agency.name.toLowerCase().includes(String(agencyInput).toLowerCase())
                           )
                           .map((agency) => (
                             <CommandItem
@@ -736,8 +769,8 @@ export function DayEntryForm({
                         {clients
                           .filter((client) =>
                             filterStartsWith
-                              ? client.name.toLowerCase().startsWith(clientInput.toLowerCase())
-                              : client.name.toLowerCase().includes(clientInput.toLowerCase()),
+                              ? client.name.toLowerCase().startsWith(String(clientInput).toLowerCase())
+                              : client.name.toLowerCase().includes(String(clientInput).toLowerCase())
                           )
                           .map((client) => (
                             <CommandItem
@@ -806,8 +839,8 @@ export function DayEntryForm({
                         {mediaTypes
                           .filter((media) =>
                             filterStartsWith
-                              ? media.name.toLowerCase().startsWith(mediaInput.toLowerCase())
-                              : media.name.toLowerCase().includes(mediaInput.toLowerCase()),
+                              ? media.name.toLowerCase().startsWith(String(mediaInput).toLowerCase())
+                              : media.name.toLowerCase().includes(String(mediaInput).toLowerCase())
                           )
                           .map((media) => (
                             <CommandItem
@@ -862,8 +895,8 @@ export function DayEntryForm({
                         {jobTypes
                           .filter((jobType) =>
                             filterStartsWith
-                              ? jobType.name.toLowerCase().startsWith(jobTypeInput.toLowerCase())
-                              : jobType.name.toLowerCase().includes(jobTypeInput.toLowerCase()),
+                              ? jobType.name.toLowerCase().startsWith(String(jobTypeInput).toLowerCase())
+                              : jobType.name.toLowerCase().includes(String(jobTypeInput).toLowerCase())
                           )
                           .map((jobType) => (
                             <CommandItem

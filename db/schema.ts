@@ -39,7 +39,7 @@ export const reports = sqliteTable('reports', {
   date: text('date').notNull(),
   market: text('market'),
   contractingAgency: text('contracting_agency'),
-  client: text('client'),
+  client: integer('client').references(() => clients.id, { onDelete: 'set null' }),
   projectBrand: text('project_brand'),
   media: text('media'),
   jobType: text('job_type'),
@@ -67,6 +67,10 @@ export const reportsRelations = relations(reports, ({ one, many }) => ({
   employee: one(employees, {
     fields: [reports.employeeId],
     references: [employees.id],
+  }),
+  client: one(clients, {
+    fields: [reports.client],
+    references: [clients.id],
   }),
   reportsToCompanies: many(reportsToCompanies),
 }));

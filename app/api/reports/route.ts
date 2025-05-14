@@ -127,7 +127,7 @@ export async function POST(request: Request) {
       date,
       market,
       contractingAgency,
-      client,
+      client: typeof client === 'number' ? client : null,
       projectBrand,
       media,
       jobType,
@@ -141,13 +141,11 @@ export async function POST(request: Request) {
       // If company names are provided, find their IDs
       companyIds = await getCompanyIds(body.companies);
     } else {
-      // Check if client name or contracting agency names match companies
+      // Check if contracting agency names match companies
       const companies = await companyQueries.getAll();
-      const clientCompany = companies.find(c => c.name === client);
       const agencyCompany = companies.find(c => c.name === contractingAgency);
       
-      if (clientCompany) companyIds.push(clientCompany.id);
-      if (agencyCompany && agencyCompany.id !== (clientCompany?.id || 0)) {
+      if (agencyCompany) {
         companyIds.push(agencyCompany.id);
       }
     }
@@ -199,7 +197,7 @@ export async function PUT(request: Request) {
       date,
       market,
       contractingAgency,
-      client,
+      client: typeof client === 'number' ? client : null,
       projectBrand,
       media,
       jobType,
@@ -215,13 +213,11 @@ export async function PUT(request: Request) {
         companyIds = await getCompanyIds(body.companies);
       } else {
         companyIds = [];
-        // Check if client name or contracting agency names match companies
+        // Check if contracting agency names match companies
         const companies = await companyQueries.getAll();
-        const clientCompany = companies.find(c => c.name === client);
         const agencyCompany = companies.find(c => c.name === contractingAgency);
         
-        if (clientCompany) companyIds.push(clientCompany.id);
-        if (agencyCompany && agencyCompany.id !== (clientCompany?.id || 0)) {
+        if (agencyCompany) {
           companyIds.push(agencyCompany.id);
         }
       }
