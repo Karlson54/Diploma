@@ -6,7 +6,7 @@ import { useAuth, useUser } from "@clerk/nextjs"
 
 // Hook to check if user is authenticated
 export function useAuthProtection() {
-  const { isLoaded, userId, isSignedIn } = useAuth()
+  const { isLoaded, isSignedIn } = useAuth()
   const router = useRouter()
   const [isAuthenticated, setIsAuthenticated] = useState(false)
 
@@ -25,7 +25,7 @@ export function useAuthProtection() {
 
 // Hook to check if user is admin
 export function useAdminProtection() {
-  const { isLoaded, userId, isSignedIn } = useAuth()
+  const { isLoaded, isSignedIn } = useAuth()
   const { user } = useUser()
   const router = useRouter()
   const [isAdmin, setIsAdmin] = useState(false)

@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ProjectTable } from "@/components/project-table"
 import { TimeEntryForm } from "@/components/time-entry-form"
-import { companyQueries, reportQueries } from "@/db/queries"
+import ApiService from "@/api/ApiService"
 
 export function TimeTrackingDashboard() {
   const [isTracking, setIsTracking] = useState(false)
@@ -35,10 +35,10 @@ export function TimeTrackingDashboard() {
     async function fetchDashboardData() {
       try {
         // Get all reports
-        const allReports = await reportQueries.getAllWithEmployee()
+        const allReports = await ApiService.getReportsWithEmployees()
         
         // Get companies (projects)
-        const companies = await companyQueries.getAll()
+        const companies = await ApiService.getCompanies()
         
         // Calculate week start and end dates
         const today = new Date()
@@ -62,19 +62,19 @@ export function TimeTrackingDashboard() {
         todayEnd.setHours(23, 59, 59, 999)
         
         const todayReports = allReports.filter(report => {
-          const reportDate = new Date(report.report.date)
+          const reportDate = new Date(report.date)
           return reportDate >= todayStart && reportDate <= todayEnd
         })
         
         // Filter weekly reports
         const weeklyReports = allReports.filter(report => {
-          const reportDate = new Date(report.report.date)
+          const reportDate = new Date(report.date)
           return reportDate >= weekStart && reportDate <= weekEnd
         })
         
         // Calculate hours
-        const todayHours = todayReports.reduce((sum, report) => sum + report.report.hours, 0)
-        const weeklyHours = weeklyReports.reduce((sum, report) => sum + report.report.hours, 0)
+        const todayHours = todayReports.reduce((sum, report) => sum + report.hours, 0)
+        const weeklyHours = weeklyReports.reduce((sum, report) => sum + report.hours, 0)
         
         // Previous week for comparison
         const prevWeekStart = new Date(weekStart)
@@ -83,11 +83,11 @@ export function TimeTrackingDashboard() {
         prevWeekEnd.setDate(prevWeekEnd.getDate() - 7)
         
         const prevWeekReports = allReports.filter(report => {
-          const reportDate = new Date(report.report.date)
+          const reportDate = new Date(report.date)
           return reportDate >= prevWeekStart && reportDate <= prevWeekEnd
         })
         
-        const prevWeekHours = prevWeekReports.reduce((sum, report) => sum + report.report.hours, 0)
+        const prevWeekHours = prevWeekReports.reduce((sum, report) => sum + report.hours, 0)
         
         // Calculate weekly change percentage
         const weeklyChange = prevWeekHours > 0 
@@ -95,10 +95,10 @@ export function TimeTrackingDashboard() {
           : 0
         
         // Calculate efficiency (billable vs non-billable)
-        const totalHours = allReports.reduce((sum, report) => sum + report.report.hours, 0)
+        const totalHours = allReports.reduce((sum, report) => sum + report.hours, 0)
         const billableHours = allReports
-          .filter(report => report.report.client || report.report.contractingAgency)
-          .reduce((sum, report) => sum + report.report.hours, 0)
+          .filter(report => report.client || report.contractingAgency)
+          .reduce((sum, report) => sum + report.hours, 0)
         
         const efficiency = totalHours > 0 ? Math.round((billableHours / totalHours) * 100) : 0
         
@@ -106,11 +106,11 @@ export function TimeTrackingDashboard() {
         const activeProjects = companies.length
         const overdueProjects = companies.filter(company => {
           const companyReports = allReports.filter(r => 
-            r.report.client?.includes(company.name) || 
-            r.report.contractingAgency?.includes(company.name)
+            r.client.toString().includes(company.name) || 
+            r.contractingAgency?.includes(company.name)
           )
           
-          const hoursSpent = companyReports.reduce((sum, r) => sum + r.report.hours, 0)
+          const hoursSpent = companyReports.reduce((sum, r) => sum + r.hours, 0)
           const allocatedHours = company.projects ? company.projects * 40 : 80
           
           return hoursSpent > allocatedHours * 0.9
