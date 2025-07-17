@@ -1,1 +1,0 @@
-ALTER TABLE `employees` ADD `password` text NOT NULL;
