@@ -7,9 +7,7 @@ import { useTranslation } from "react-i18next"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Label } from "@/components/ui/label"
 
 interface DatePickerWithRangeProps {
   date: DateRange | undefined
@@ -23,7 +21,7 @@ export function DatePickerWithRange({ date, setDate }: DatePickerWithRangeProps)
   const [localDateRange, setLocalDateRange] = useState<DateRange | undefined>(date);
   const [isOpen, setIsOpen] = useState(false);
   
-  const locale = i18n.language === 'uk' ? 'uk-UA' : 'en-US';
+  const locale = i18n.language === 'uk' ? 'uk-UA' : en;
   const monthName = currentMonth.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
   
   // Calendar helper functions

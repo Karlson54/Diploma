@@ -330,6 +330,20 @@
     "placeholder": "Select period"
   },
   "auth": {
+    "loading": "Loading...",
+    "title": "System Login",
+    "systemName": "Time Tracking System",
+    "email": "Email",
+    "password": "Password",
+    "loginInProgress": "Login in Progress...",
+    "login": "Login",
+    "registrationStatus": "Checking Registration Status...",
+    "notRegistered": "Still not registered ?",
+    "createAccount": "Create Account",
+    "forbidden": "Registration of new users is forbidden by Administrator",
+    "code": "Confirmation Code",
+    "checking": "Checking...",
+    "submit": "Submit",
     "redirecting": "Redirecting...",
     "checkingStatus": "Checking authentication status..."
   },

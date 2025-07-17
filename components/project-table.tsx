@@ -4,11 +4,11 @@ import { useState, useEffect } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { companyQueries, reportQueries } from "@/db/queries"
+import ApiService from "@/api/ApiService"
 
 // Interface for project data
 interface Project {
-  id: number
+  id: string
   name: string
   client: string
   allocated: number
@@ -25,20 +25,22 @@ export function ProjectTable() {
     async function fetchProjects() {
       try {
         // Fetch companies from the database
-        const companies = await companyQueries.getAll()
+        const companies = await ApiService.getCompanies()
         
         // Get all reports to calculate hours spent
-        const allReports = await reportQueries.getAllWithEmployee()
-        
+        const allReports = await ApiService.getReportsWithEmployees()
+  
+
         // Transform companies into projects with calculated data
         const projectData: Project[] = companies.map(company => {
           // Calculate hours spent for this company
           const reportsForCompany = allReports.filter(r => 
-            r.report.client?.includes(company.name) || 
-            r.report.contractingAgency?.includes(company.name)
+            // TODO: Check if it's working
+            r.client.toString().includes(company.name) || 
+            r.contractingAgency.includes(company.name)
           )
           
-          const hoursSpent = reportsForCompany.reduce((sum, r) => sum + r.report.hours, 0)
+          const hoursSpent = reportsForCompany.reduce((sum, r) => sum + r.hours, 0)
           
           // Estimate allocated hours based on company's projects count
           const allocatedHours = company.projects ? company.projects * 40 : 80
@@ -51,7 +53,8 @@ export function ProjectTable() {
           const deadlineDate = new Date(today)
           deadlineDate.setDate(today.getDate() + (isOverdue ? -2 : 14))
           const deadline = `${deadlineDate.getDate()} ${deadlineDate.toLocaleString('default', { month: 'short' })}`
-          
+        
+
           return {
             id: company.id,
             name: `Project for ${company.name}`,

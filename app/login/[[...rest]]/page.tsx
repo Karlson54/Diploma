@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect } from 'react'
 import { useSignIn } from '@clerk/nextjs'
-import { useRouter } from 'next/navigation'
 import { useAuthContext } from '@/lib/AuthContext'
+import { useTranslation } from 'react-i18next'
 
 export default function LoginPage() {
-  const router = useRouter()
+  const { t } = useTranslation()
+
   const { isAuthenticated, isLoading, redirectToDashboard } = useAuthContext()
   const { isLoaded, signIn, setActive } = useSignIn()
   
@@ -29,21 +30,15 @@ export default function LoginPage() {
   // Проверяем, разрешена ли регистрация
   useEffect(() => {
     async function checkRegistrationStatus() {
-      try {
-        const response = await fetch('/api/auth/registration-status');
-        if (response.ok) {
-          const data = await response.json();
-          setRegistrationAllowed(data.registrationAllowed);
-        } else {
-          console.error('Ошибка при проверке статуса регистрации');
-          setRegistrationAllowed(false);
-        }
-      } catch (error) {
-        console.error('Ошибка при проверке статуса регистрации:', error);
-        setRegistrationAllowed(false);
-      } finally {
-        setRegistrationStatusLoading(false);
-      }
+      // TODO: Implement this logic in the Future API Service
+      // It should look something like this
+      // const response = await Service.checkRegistrationStatus()
+      // API SCHEMA:
+      // {
+      //   registrationAllowed: boolean
+      // }
+      // setRegistrationAllowed(response.registrationAllowed)
+      setRegistrationAllowed(true)
     }
 
     checkRegistrationStatus();
@@ -136,8 +131,8 @@ export default function LoginPage() {
             />
           </div>
         </div>
-        <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">Вхід до системи</h2>
-        <p className="mt-2 text-center text-sm text-gray-600">Система обліку робочого часу</p>
+        <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">{t('auth.title')}</h2>
+        <p className="mt-2 text-center text-sm text-gray-600">{t('auth.systemName')}</p>
 
         <div className="mt-8">
           {error && (
@@ -151,7 +146,7 @@ export default function LoginPage() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Email
+                    {t('auth.email')}
                   </label>
                   <input
                     type="email"
@@ -164,7 +159,7 @@ export default function LoginPage() {
                 
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Пароль
+                    {t('auth.password')}
                   </label>
                   <input
                     type="password"
@@ -181,23 +176,23 @@ export default function LoginPage() {
                 disabled={isSubmitting}
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300"
               >
-                {isSubmitting ? 'Вхід...' : 'Увійти'}
+                {isSubmitting ? t('auth.loginInProgress') : t('auth.login')}
               </button>
               
               {registrationStatusLoading ? (
                 <p className="mt-2 text-center text-sm text-gray-600">
-                  Перевірка можливості реєстрації...
+                  {t('auth.registrationStatus')}
                 </p>
               ) : registrationAllowed ? (
                 <p className="mt-2 text-center text-sm text-gray-600">
-                  Ще не зареєстровані?{' '}
+                  {t('auth.notRegistered')}
                   <a href="/signup" className="font-medium text-blue-600 hover:text-blue-500">
-                    Створити аккаунт
+                    {t('auth.createAccount')}
                   </a>
                 </p>
               ) : (
                 <p className="mt-2 text-center text-sm text-gray-600">
-                  Реєстрація нових користувачів заборонена адміністратором.
+                  {t('auth.forbidden')}
                 </p>
               )}
             </form>
@@ -210,7 +205,7 @@ export default function LoginPage() {
               
               <div className="space-y-2 mt-4">
                 <label className="block text-sm font-medium text-gray-700">
-                  Код підтвердження
+                  {t('auth.code')}
                 </label>
                 <input
                   type="text"
@@ -226,7 +221,7 @@ export default function LoginPage() {
                 disabled={isSubmitting}
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300 mt-4"
               >
-                {isSubmitting ? 'Перевірка...' : 'Підтвердити'}
+                {isSubmitting ? t('auth.checking') : t('auth.submit')}
               </button>
             </form>
           )}

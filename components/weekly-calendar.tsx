@@ -129,13 +129,13 @@ export function WeeklyCalendar() {
 
   // Форматування дати
   const formatDate = (date: Date) => {
-    const locale = i18n.language === 'uk' ? 'uk-UA' : 'en-US';
+    const locale = i18n.language === 'uk' ? 'uk-UA' : en;
     return date.toLocaleDateString(locale, { day: 'numeric', month: 'long' });
   }
 
   // Форматування дня тижня
   const formatDayOfWeek = (date: Date) => {
-    const locale = i18n.language === 'uk' ? 'uk-UA' : 'en-US';
+    const locale = i18n.language === 'uk' ? 'uk-UA' : en;
     return date.toLocaleDateString(locale, { weekday: 'short' });
   }
 
@@ -727,7 +727,7 @@ export function WeeklyCalendar() {
   }
 
   const formattedMonthName = currentMonth.toLocaleDateString(
-    i18n.language === 'uk' ? 'uk-UA' : 'en-US',
+    i18n.language === 'uk' ? 'uk-UA' : en,
     { month: 'long', year: 'numeric' }
   )
   const calendarDays = generateCalendarDays(currentMonth.getFullYear(), currentMonth.getMonth())
@@ -762,7 +762,7 @@ export function WeeklyCalendar() {
         <CardHeader className="pb-0">
           <div className="flex justify-between items-center">
             <CardTitle>
-              {t('calendar.week', { from: weekDays[0].toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : 'en-US', { day: 'numeric', month: 'long' }), to: weekDays[6].toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : 'en-US', { day: 'numeric', month: 'long' }) })}
+              {t('calendar.week', { from: weekDays[0].toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : en, { day: 'numeric', month: 'long' }), to: weekDays[6].toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : en, { day: 'numeric', month: 'long' }) })}
             </CardTitle>
             <div className="flex gap-2">
               <Button variant="outline" size="icon" onClick={goToPreviousWeek}>
@@ -800,7 +800,7 @@ export function WeeklyCalendar() {
               >
                 <span className="text-xs font-medium">{t(`calendar.weekdayShort.${index}`)}</span>
                 <span className="text-lg font-bold">{day.getDate()}</span>
-                <span className="text-xs">{day.toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : 'en-US', { month: 'short' })}</span>
+                <span className="text-xs">{day.toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : en, { month: 'short' })}</span>
               </Button>
             ))}
           </div>
@@ -810,7 +810,7 @@ export function WeeklyCalendar() {
       {selectedDate && (
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-bold">
-            {t('calendar.entriesForDate', { date: selectedDate.toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' }) })}
+            {t('calendar.entriesForDate', { date: selectedDate.toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : en, { day: 'numeric', month: 'long', year: 'numeric' }) })}
           </h2>
           <Button onClick={handleAddNewEntry} className="gap-2">
             <Plus className="h-4 w-4" />
@@ -950,7 +950,7 @@ export function WeeklyCalendar() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">{t('calendar.totalHours')}</CardTitle>
                 <CardDescription>
-                  {t('calendar.forDate', { date: selectedDate.toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : 'en-US', { day: 'numeric', month: 'long' }) })}
+                  {t('calendar.forDate', { date: selectedDate.toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : en, { day: 'numeric', month: 'long' }) })}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -961,7 +961,7 @@ export function WeeklyCalendar() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">{t('calendar.entriesCount')}</CardTitle>
                 <CardDescription>
-                  {t('calendar.forDate', { date: selectedDate.toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : 'en-US', { day: 'numeric', month: 'long' }) })}
+                  {t('calendar.forDate', { date: selectedDate.toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : en, { day: 'numeric', month: 'long' }) })}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -972,7 +972,7 @@ export function WeeklyCalendar() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">{t('calendar.avgTimePerEntry')}</CardTitle>
                 <CardDescription>
-                  {t('calendar.forDate', { date: selectedDate.toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : 'en-US', { day: 'numeric', month: 'long' }) })}
+                  {t('calendar.forDate', { date: selectedDate.toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : en, { day: 'numeric', month: 'long' }) })}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -988,7 +988,7 @@ export function WeeklyCalendar() {
               <CardHeader>
                 <CardTitle>{t('calendar.summaryInfo')}</CardTitle>
                 <CardDescription>
-                  {t('calendar.reportsForDate', { date: selectedDate.toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' }) })}
+                  {t('calendar.reportsForDate', { date: selectedDate.toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : en, { day: 'numeric', month: 'long', year: 'numeric' }) })}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -1048,7 +1048,7 @@ export function WeeklyCalendar() {
               <CardContent className="flex flex-col items-center justify-center py-8">
                 <p className="text-lg font-medium mb-2">{t('calendar.noEntriesForDate')}</p>
                 <p className="text-gray-500 mb-4">
-                  {t('calendar.noEntriesForDateDesc', { date: selectedDate.toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' }) })}
+                  {t('calendar.noEntriesForDateDesc', { date: selectedDate.toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : en, { day: 'numeric', month: 'long', year: 'numeric' }) })}
                 </p>
                 <Button onClick={handleAddNewEntry} className="gap-2">
                   <Plus className="h-4 w-4" />
