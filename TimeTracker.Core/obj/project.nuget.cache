@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "EEzUO1PDxLo=",
+  "success": true,
+  "projectFilePath": "/Users/andrejruban/RiderProjects/TimeTracker/TimeTracker.Core/TimeTracker.Core.csproj",
+  "expectedPackageFiles": [
+    "/Users/andrejruban/.nuget/packages/microsoft.netcore.app.ref/8.0.17/microsoft.netcore.app.ref.8.0.17.nupkg.sha512",
+    "/Users/andrejruban/.nuget/packages/microsoft.aspnetcore.app.ref/8.0.17/microsoft.aspnetcore.app.ref.8.0.17.nupkg.sha512"
+  ],
+  "logs": []
+}
