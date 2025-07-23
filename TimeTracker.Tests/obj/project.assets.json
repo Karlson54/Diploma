@@ -2873,6 +2873,7 @@
           "FluentValidation.AspNetCore": "8.6.3",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "8.0.18",
           "Microsoft.AspNetCore.OpenApi": "8.0.13",
+          "Microsoft.EntityFrameworkCore.SqlServer": "8.0.18",
           "Swashbuckle.AspNetCore": "8.1.4",
           "TimeTracker.Core": "1.0.0",
           "TimeTracker.Data": "1.0.0"
