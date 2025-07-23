@@ -1,0 +1,81 @@
+## .NET
+bin/
+obj/
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Bb]uild/
+[Ll]ogs/
+*.log
+
+# Rider-specific
+.idea/
+.idea_modules/
+*.iml
+*.ipr
+
+# User-specific files
+*.sln.cache
+*.dbmdl
+*.pdb
+*.pidb
+*.svclog
+
+# ASP.NET Core secrets
+secrets.json
+*.dotCover
+
+# IIS Express
+.vs/
+.vscode/
+.vsconfig
+
+# Rider cache
+.idea/
+*.sln.iml
+
+# Others
+*.ncrunch*
+*.localhistory/
+*.sdf
+*.cache
+*.db
+
+# Resharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# dotCover
+*.dotCover
+
+# NuGet
+*.nupkg
+*.snupkg
+*.nuspec
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Paket
+.paket/
+paket-files/
+
+# Entity Framework Migrations snapshot files (optional)
+**/*Snapshot.cs
+
+# JetBrains Rider logs (optional)
+.idea/.idea.*
+
+# Backup & temp files
+*~ 
+*.tmp
+*.bak
+*.swp
+*.swo
+*.DS_Store
+Thumbs.db
