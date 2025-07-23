@@ -6,15 +6,12 @@ using TimeTracker.Data.Entities;
 
 namespace TimeTracker.Data.Context;
 
-public class TimeTrackerDbContext : DbContext
+public class TimeTrackerDbContext : DbContext, ITimeTrackerDbContext
 {
-    private readonly IConfiguration _configuration;
-
-    public TimeTrackerDbContext(IConfiguration configuration)
+    public TimeTrackerDbContext(DbContextOptions<TimeTrackerDbContext> options) : base(options)
     {
-        _configuration = configuration;
     }
-    
+
     public DbSet<Agency> Agencies { get; set; }
     public DbSet<Market> Markets { get; set; }
     public DbSet<ContractingAgency> ContractingAgencies { get; set; }
@@ -30,13 +27,5 @@ public class TimeTrackerDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(TimeTrackerDbContext).Assembly);
-    }
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionbuilder)
-    {
-            optionbuilder
-                .UseSqlServer(_configuration.GetConnectionString("TimeTracker"))
-                .EnableServiceProviderCaching()
-                .EnableDetailedErrors();
     }
 }

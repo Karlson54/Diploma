@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using TimeTracker.Data.Context;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -6,7 +7,30 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddDbContext<TimeTrackerDbContext>();
+builder.Services.AddDbContext<TimeTrackerDbContext>(options =>
+{
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("TimeTracker"),
+        sqlServerOptions =>
+        {
+            sqlServerOptions.MigrationsAssembly(
+                typeof(TimeTrackerDbContext).Assembly.GetName().Name);
+
+            sqlServerOptions.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(30),
+                errorNumbersToAdd: null);
+        });
+
+    if (builder.Environment.IsDevelopment())
+    {
+        options.EnableDetailedErrors();
+        options.EnableSensitiveDataLogging();
+    }
+});
+
+builder.Services.AddScoped<ITimeTrackerDbContext>(provider =>
+    provider.GetRequiredService<TimeTrackerDbContext>());
 
 var app = builder.Build();
 
