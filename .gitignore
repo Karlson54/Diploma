@@ -79,3 +79,4 @@ paket-files/
 *.swo
 *.DS_Store
 Thumbs.db
+/TimeTracker.Data/obj/

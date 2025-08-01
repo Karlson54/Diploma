@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "Nm4HNKIZQks=",
+  "dgSpecHash": "/wIg4EZnOZ8=",
   "success": true,
   "projectFilePath": "/Users/andrejruban/RiderProjects/TimeTracker/TimeTracker.Tests/TimeTracker.Tests.csproj",
   "expectedPackageFiles": [
@@ -15,7 +15,6 @@
     "/Users/andrejruban/.nuget/packages/fluentvalidation.aspnetcore/8.6.3/fluentvalidation.aspnetcore.8.6.3.nupkg.sha512",
     "/Users/andrejruban/.nuget/packages/fluentvalidation.dependencyinjectionextensions/8.6.3/fluentvalidation.dependencyinjectionextensions.8.6.3.nupkg.sha512",
     "/Users/andrejruban/.nuget/packages/microsoft.aspnetcore.authentication.jwtbearer/8.0.18/microsoft.aspnetcore.authentication.jwtbearer.8.0.18.nupkg.sha512",
-    "/Users/andrejruban/.nuget/packages/microsoft.aspnetcore.openapi/8.0.13/microsoft.aspnetcore.openapi.8.0.13.nupkg.sha512",
     "/Users/andrejruban/.nuget/packages/microsoft.bcl.asyncinterfaces/1.1.1/microsoft.bcl.asyncinterfaces.1.1.1.nupkg.sha512",
     "/Users/andrejruban/.nuget/packages/microsoft.codecoverage/17.8.0/microsoft.codecoverage.17.8.0.nupkg.sha512",
     "/Users/andrejruban/.nuget/packages/microsoft.csharp/4.7.0/microsoft.csharp.4.7.0.nupkg.sha512",

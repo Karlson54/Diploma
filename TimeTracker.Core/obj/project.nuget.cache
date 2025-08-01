@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "4YZCZ/DJPJk=",
+  "dgSpecHash": "2c0YZYgeC7I=",
   "success": true,
   "projectFilePath": "/Users/andrejruban/RiderProjects/TimeTracker/TimeTracker.Core/TimeTracker.Core.csproj",
   "expectedPackageFiles": [
@@ -11,7 +11,9 @@
     "/Users/andrejruban/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/6.0.0/microsoft.extensions.dependencyinjection.abstractions.6.0.0.nupkg.sha512",
     "/Users/andrejruban/.nuget/packages/microsoft.extensions.options/6.0.0/microsoft.extensions.options.6.0.0.nupkg.sha512",
     "/Users/andrejruban/.nuget/packages/microsoft.extensions.primitives/6.0.0/microsoft.extensions.primitives.6.0.0.nupkg.sha512",
-    "/Users/andrejruban/.nuget/packages/system.runtime.compilerservices.unsafe/6.0.0/system.runtime.compilerservices.unsafe.6.0.0.nupkg.sha512"
+    "/Users/andrejruban/.nuget/packages/system.runtime.compilerservices.unsafe/6.0.0/system.runtime.compilerservices.unsafe.6.0.0.nupkg.sha512",
+    "/Users/andrejruban/.nuget/packages/microsoft.netcore.app.ref/8.0.17/microsoft.netcore.app.ref.8.0.17.nupkg.sha512",
+    "/Users/andrejruban/.nuget/packages/microsoft.aspnetcore.app.ref/8.0.17/microsoft.aspnetcore.app.ref.8.0.17.nupkg.sha512"
   ],
   "logs": []
 }

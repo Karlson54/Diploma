@@ -1,11 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using TimeTracker.Data.Context;
+using TimeTracker.Data.Repositories.Common;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
 builder.Services.AddDbContext<TimeTrackerDbContext>(options =>
 {
@@ -22,11 +25,9 @@ builder.Services.AddDbContext<TimeTrackerDbContext>(options =>
                 errorNumbersToAdd: null);
         });
 
-    if (builder.Environment.IsDevelopment())
-    {
-        options.EnableDetailedErrors();
-        options.EnableSensitiveDataLogging();
-    }
+    if (!builder.Environment.IsDevelopment()) return;
+    options.EnableDetailedErrors();
+    options.EnableSensitiveDataLogging();
 });
 
 builder.Services.AddScoped<ITimeTrackerDbContext>(provider =>
