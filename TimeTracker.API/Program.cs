@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using TimeTracker.Data.Context;
 using TimeTracker.Data.Repositories.Common;
+using TimeTracker.Data.UnitOfWork;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +10,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 builder.Services.AddDbContext<TimeTrackerDbContext>(options =>
 {
