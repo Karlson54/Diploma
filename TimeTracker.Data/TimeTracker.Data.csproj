@@ -8,10 +8,6 @@
 
     <ItemGroup>
       <Folder Include="Migrations\" />
-      <Folder Include="Repositories\Dictionaries\" />
-      <Folder Include="Repositories\Roles\" />
-      <Folder Include="Repositories\TimeEntries\" />
-      <Folder Include="Repositories\Users\" />
       <Folder Include="Seed\" />
     </ItemGroup>
 

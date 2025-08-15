@@ -1,6 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using TimeTracker.Data.Context;
 using TimeTracker.Data.Repositories.Common;
+using TimeTracker.Data.Repositories.Roles;
+using TimeTracker.Data.Repositories.TimeEntries;
+using TimeTracker.Data.Repositories.Users;
 using TimeTracker.Data.UnitOfWork;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,7 +13,13 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+// Специализированные репозитории
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+builder.Services.AddScoped<ITimeEntryRepository, TimeEntryRepository>();
 
 builder.Services.AddDbContext<TimeTrackerDbContext>(options =>
 {
