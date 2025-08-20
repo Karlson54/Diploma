@@ -29,4 +29,8 @@
       <ProjectReference Include="..\TimeTracker.Data\TimeTracker.Data.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Repositories\UnitOfWork\" />
+    </ItemGroup>
+
 </Project>
