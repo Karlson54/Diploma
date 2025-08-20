@@ -7,20 +7,24 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="Configurations\" />
-      <Folder Include="Context\" />
-      <Folder Include="Entities\" />
       <Folder Include="Migrations\" />
-      <Folder Include="Repositories\Common\" />
-      <Folder Include="Repositories\Dictionaries\" />
-      <Folder Include="Repositories\Roles\" />
-      <Folder Include="Repositories\TimeEntries\" />
-      <Folder Include="Repositories\Users\" />
       <Folder Include="Seed\" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\TimeTracker.Core\TimeTracker.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.18">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+      <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.18" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.18">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
     </ItemGroup>
 
 </Project>
