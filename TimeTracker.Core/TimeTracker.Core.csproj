@@ -7,11 +7,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="Common\" />
-      <Folder Include="DTOs\" />
       <Folder Include="Mappings\" />
       <Folder Include="Services\Audit\" />
-      <Folder Include="Services\Auth\" />
       <Folder Include="Services\Dictionaries\" />
       <Folder Include="Services\Reporting\" />
       <Folder Include="Services\RoleManagement\" />
@@ -22,7 +19,12 @@
 
     <ItemGroup>
       <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
+      <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
       <PackageReference Include="FluentValidation" Version="12.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\TimeTracker.Data\TimeTracker.Data.csproj" />
     </ItemGroup>
 
 </Project>

@@ -1,12 +1,24 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TimeTracker.API", "TimeTracker.API\TimeTracker.API.csproj", "{EE54DE62-47BF-461E-BD09-BF504E7FB868}"
+	ProjectSection(ProjectDependencies) = postProject
+		{E3C9616F-A2F6-4745-818F-CECF225C3742} = {E3C9616F-A2F6-4745-818F-CECF225C3742}
+		{FFFA9C29-4364-42DA-8AF6-20A1C1B0D0B3} = {FFFA9C29-4364-42DA-8AF6-20A1C1B0D0B3}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TimeTracker.Core", "TimeTracker.Core\TimeTracker.Core.csproj", "{E3C9616F-A2F6-4745-818F-CECF225C3742}"
+	ProjectSection(ProjectDependencies) = postProject
+		{FFFA9C29-4364-42DA-8AF6-20A1C1B0D0B3} = {FFFA9C29-4364-42DA-8AF6-20A1C1B0D0B3}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TimeTracker.Data", "TimeTracker.Data\TimeTracker.Data.csproj", "{FFFA9C29-4364-42DA-8AF6-20A1C1B0D0B3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TimeTracker.Tests", "TimeTracker.Tests\TimeTracker.Tests.csproj", "{EC03E1D2-1C08-4713-A36D-0FCE5BFED846}"
+	ProjectSection(ProjectDependencies) = postProject
+		{E3C9616F-A2F6-4745-818F-CECF225C3742} = {E3C9616F-A2F6-4745-818F-CECF225C3742}
+		{EE54DE62-47BF-461E-BD09-BF504E7FB868} = {EE54DE62-47BF-461E-BD09-BF504E7FB868}
+		{FFFA9C29-4364-42DA-8AF6-20A1C1B0D0B3} = {FFFA9C29-4364-42DA-8AF6-20A1C1B0D0B3}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -10,7 +10,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="coverlet.collector" Version="6.0.0"/>
+        <PackageReference Include="coverlet.collector" Version="6.0.4">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
         <PackageReference Include="FluentAssertions" Version="8.5.0" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.18" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0"/>
@@ -24,13 +27,13 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\TimeTracker.API\TimeTracker.API.csproj" />
-      <ProjectReference Include="..\TimeTracker.Core\TimeTracker.Core.csproj" />
-      <ProjectReference Include="..\TimeTracker.Data\TimeTracker.Data.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
       <Folder Include="Repositories\UnitOfWork\" />
     </ItemGroup>
 
+    <ItemGroup>
+        <ProjectReference Include="..\TimeTracker.Data\TimeTracker.API.csproj" />
+        <ProjectReference Include="..\TimeTracker.Core\TimeTracker.Core.csproj" />
+        <ProjectReference Include="..\TimeTracker.Data\TimeTracker.Data.csproj" />
+    </ItemGroup>
+    
 </Project>
