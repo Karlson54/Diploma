@@ -136,21 +136,18 @@ public class JwtTokenService : IJwtTokenService
     {
         var claims = new List<Claim>
         {
-            // Стандартные JWT claims
-            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(ClaimTypes.Name, user.Name),
-            new(ClaimTypes.Email, user.Email),
-            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new(JwtRegisteredClaimNames.Email, user.Email),
-            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            // ✅ Стандартные JWT claims (приоритет)
+            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),           // User ID
+            new(JwtRegisteredClaimNames.Email, user.Email),                 // Email (один раз!)
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),    // Token ID
             new(JwtRegisteredClaimNames.Iat, 
                 new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds().ToString(), 
                 ClaimValueTypes.Integer64),
-            
-            // Кастомные claims для бизнес-логики
-            new("user_login", user.Login),
-            new("agency_id", user.AgencyId.ToString()),
-            new("is_active", user.IsActive.ToString().ToLower())
+        
+            // ✅ Бизнес-логика claims (необходимые)
+            new("name", user.Name),                    // Имя пользователя
+            new("login", user.Login),                  // Логин
+            new("agency_id", user.AgencyId.ToString()) // ID агентства (для фильтрации данных)
         };
 
         // Добавляем роли
