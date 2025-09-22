@@ -1,4 +1,3 @@
-// TimeTracker.API/Infrastructure/Options/JwtOptionsSetup.cs
 using Microsoft.Extensions.Options;
 using TimeTracker.Core.Common;
 

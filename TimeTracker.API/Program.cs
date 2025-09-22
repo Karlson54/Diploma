@@ -8,7 +8,6 @@ using TimeTracker.Data.Repositories.TimeEntries;
 using TimeTracker.Data.Repositories.Users;
 using TimeTracker.Data.UnitOfWork;
 using TimeTracker.API.Infrastructure.Options;
-using TimeTracker.Core.Services.Auth;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,7 +17,6 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerWithJwtAuth();
 
 builder.Services.ConfigureOptions<JwtOptionsSetup>();
-builder.Services.ConfigureOptions<JwtBearerOptionsSetup>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer();
@@ -39,14 +37,12 @@ builder.Services.AddAuthorization(options =>
         policy.RequireClaim("permission", "view_reports"));
 });
 
-builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
-
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<ITimeEntryRepository, TimeEntryRepository>();
+
 
 builder.Services.AddDbContext<TimeTrackerDbContext>(options =>
 {

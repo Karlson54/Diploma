@@ -17,6 +17,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Folder Include="Controllers\Auth\" />
       <Folder Include="Controllers\Dictionaries\" />
       <Folder Include="Controllers\Reports\" />
       <Folder Include="Controllers\Roles\" />
