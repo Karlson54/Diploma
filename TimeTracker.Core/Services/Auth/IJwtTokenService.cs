@@ -4,5 +4,5 @@ namespace TimeTracker.Core.Services.Auth;
 
 public interface IJwtTokenService
 {
-    public string GenerateAccessToken(User user);
+    public string GenerateToken(User user);
 }

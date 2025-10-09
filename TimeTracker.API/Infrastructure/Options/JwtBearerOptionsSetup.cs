@@ -24,7 +24,8 @@ public class JwtBearerOptionsSetup: IConfigureOptions<JwtBearerOptions>
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_jwtSettings.SecretKey))
+                Encoding.UTF8.GetBytes(_jwtSettings.SecretKey)),
+            ClockSkew = TimeSpan.FromMinutes(_jwtSettings.ClockSkew)
         };
     }
 }

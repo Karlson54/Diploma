@@ -17,7 +17,7 @@ public class JwtTokenService : IJwtTokenService
         _jwtSettings = jwtSettings.Value;
     }
 
-    public string GenerateAccessToken(User user)
+    public string GenerateToken(User user)
     {
         var claims = new List<Claim>
         {

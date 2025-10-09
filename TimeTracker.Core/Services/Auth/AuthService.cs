@@ -49,7 +49,7 @@ public class AuthService : IAuthService
         if (user == null || !user.IsActive)
             return null;
 
-        return _jwtTokenService.GenerateAccessToken(user);
+        return _jwtTokenService.GenerateToken(user);
     
         // return BCrypt.Net.BCrypt.Verify(password, user.PasswordHash) ? user : null;
     }
