@@ -10,12 +10,10 @@ namespace TimeTracker.API.Controllers.Auth;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
-    private readonly JwtSettings _jwtSettings;
 
-    public AuthController(IAuthService authService, IOptions<JwtSettings> jwtSettings)
+    public AuthController(IAuthService authService)
     {
         _authService = authService;
-        _jwtSettings = jwtSettings.Value;
     }
 
     [HttpPost("register")]
@@ -41,7 +39,6 @@ public class AuthController : ControllerBase
                     user.Email,
                     user.Name,
                     user.AgencyId,
-                    HashedPassword = user.PasswordHash
                 }
             });
         }
@@ -66,7 +63,6 @@ public class AuthController : ControllerBase
             {
                 Success = true,
                 Token = token,
-                SecretKey = _jwtSettings.SecretKey // только для разработки, в продакшене так нельзя!
             });
 
         }

@@ -1,8 +1,10 @@
+using System.Security.Claims;
 using TimeTracker.Data.Entities;
 
 namespace TimeTracker.Core.Services.Auth;
 
 public interface IJwtTokenService
 {
-    public string GenerateToken(User user);
+    public string GenerateToken(User user, IEnumerable<string>? roles = null);
+    // ClaimsPrincipal? GetClaimsFromToken(string value);
 }
