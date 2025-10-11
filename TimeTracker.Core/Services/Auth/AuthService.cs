@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Identity;
 using TimeTracker.Data.Entities;
 using TimeTracker.Data.Repositories.Roles;
 using TimeTracker.Data.Repositories.Users;
@@ -42,7 +41,6 @@ public class AuthService : IAuthService
             CreatedAt = DateTime.UtcNow,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(password)
         };
-
 
         await _userRepository.AddAsync(user);
         await _unitOfWork.SaveChangesAsync();

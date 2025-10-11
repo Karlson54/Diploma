@@ -1,7 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using AutoMapper.Configuration.Annotations;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using TimeTracker.Core.Common;
@@ -12,7 +11,6 @@ namespace TimeTracker.Core.Services.Auth;
 public class JwtTokenService : IJwtTokenService
 {
     private readonly JwtSettings _jwtSettings;
-    // private readonly JwtBearerOptionsSetup _bearerOptionsSetup;
 
     public JwtTokenService(IOptions<JwtSettings> jwtSettings)
     {
@@ -45,24 +43,4 @@ public class JwtTokenService : IJwtTokenService
 
         return new JwtSecurityTokenHandler().WriteToken(jwtToken);
     }
-
-    // public ClaimsPrincipal? GetClaimsFromToken(string token)
-    // {
-    //     if (string.IsNullOrWhiteSpace(token))
-    //         return null;
-    //
-    //     try
-    //     {
-    //         var tokenHandler = new JwtSecurityTokenHandler();
-    //         var principal = tokenHandler.ValidateToken(
-    //             token,
-    //             _tokenValidationParameters,
-    //             out var validatedToken);
-    //     }
-    //     catch (Exception e)
-    //     {
-    //         Console.WriteLine(e);
-    //         throw;
-    //     }
-    // }
 }

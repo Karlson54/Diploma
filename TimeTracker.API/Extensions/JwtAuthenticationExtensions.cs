@@ -12,7 +12,7 @@ public static class JwtAuthenticationExtensions
     {
         // Явно привязываем settings и кладём в DI
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
-        var jwtSettings = configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()!;
+        var jwtSettings = configuration.GetSection("JwtSettings").Get<JwtSettings>()!;
 
         services.AddAuthentication(options =>
             {
