@@ -1,6 +1,5 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
-using TimeTracker.Core.Common;
 using TimeTracker.Core.Services.Auth;
 
 namespace TimeTracker.API.Controllers.Auth;
@@ -26,12 +25,13 @@ public class AuthController : ControllerBase
                 request.Email,
                 request.Password,
                 request.Name,
-                request.AgencyId);
+                request.AgencyId,
+                request.RoleName); // ← Передаём роль
 
             return Ok(new
             {
                 Success = true,
-                Message = "User registered successfully",
+                Message = "Користувач успішно зареєстрований",
                 Data = new
                 {
                     user.Id,
@@ -39,6 +39,7 @@ public class AuthController : ControllerBase
                     user.Email,
                     user.Name,
                     user.AgencyId,
+                    Role = request.RoleName
                 }
             });
         }
@@ -57,14 +58,23 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var token = await _authService.LoginAsync(request.LoginOrEmail, request.Password);
+            var token = await _authService.LoginAsync(
+                request.LoginOrEmail, 
+                request.Password);
 
             return Ok(new
             {
                 Success = true,
-                Token = token,
+                Token = token
             });
-
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new
+            {
+                Success = false,
+                Message = ex.Message
+            });
         }
         catch (Exception ex)
         {
@@ -77,6 +87,7 @@ public class AuthController : ControllerBase
     }
 }
 
+// DTO для регистрации
 public class RegisterRequest
 {
     public string Login { get; set; } = string.Empty;
@@ -84,8 +95,10 @@ public class RegisterRequest
     public string Password { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public long AgencyId { get; set; }
+    public string? RoleName { get; set; } // ← НОВОЕ: Опциональная роль (если null - Employee по умолчанию)
 }
 
+// DTO для логина
 public class LoginRequest
 {
     public string LoginOrEmail { get; set; } = string.Empty;

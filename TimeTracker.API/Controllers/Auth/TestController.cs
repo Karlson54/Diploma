@@ -5,7 +5,7 @@ namespace TimeTracker.API.Controllers.Auth;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Policy = "AdminOnly")]
 public class TestController : Controller
 {
     [HttpGet]
