@@ -11,6 +11,9 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddTimeTrackerServices(this IServiceCollection services)
     {
+        // AutoMapper
+        services.AddAutoMapper(typeof(TimeTracker.Core.Mappings.UserMappingProfile).Assembly);
+        
         // Repositories
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
