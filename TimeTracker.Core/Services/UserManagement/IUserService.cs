@@ -17,8 +17,6 @@ public interface IUserService
     Task<UserDto> CreateAsync(CreateUserDto dto);
     Task<UserDto> UpdateAsync(long id, UpdateUserDto dto);
     
-    Task UpdateUserRolesAsync(long userId, List<long> roleIds);
-    
     Task ActivateAsync(long id);
     Task DeactivateAsync(long id);
     

@@ -19,9 +19,7 @@
     <ItemGroup>
       <Folder Include="Controllers\Dictionaries\" />
       <Folder Include="Controllers\Reports\" />
-      <Folder Include="Controllers\Roles\" />
       <Folder Include="Controllers\TimeTracking\" />
-      <Folder Include="Controllers\Users\" />
       <Folder Include="Middleware\" />
     </ItemGroup>
 

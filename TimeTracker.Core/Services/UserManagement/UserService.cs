@@ -1,7 +1,6 @@
 using AutoMapper;
 using TimeTracker.Core.DTOs.Users;
 using TimeTracker.Data.Entities;
-using TimeTracker.Data.Repositories.Roles;
 using TimeTracker.Data.Repositories.Users;
 using TimeTracker.Data.UnitOfWork;
 
@@ -10,15 +9,15 @@ namespace TimeTracker.Core.Services.UserManagement;
 public class UserService : IUserService
 {
     private readonly IUserRepository _userRepository;
-    private readonly IRoleRepository _roleRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
 
-    public UserService(IUserRepository userRepository, IRoleRepository roleRepository, IUnitOfWork unitOfWork,
+    public UserService(
+        IUserRepository userRepository,
+        IUnitOfWork unitOfWork,
         IMapper mapper)
     {
         _userRepository = userRepository;
-        _roleRepository = roleRepository;
         _unitOfWork = unitOfWork;
         _mapper = mapper;
     }
@@ -26,7 +25,10 @@ public class UserService : IUserService
     public async Task<UserDetailDto?> GetByIdAsync(long id)
     {
         var user = await _userRepository.GetByIdWithRolesAsync(id);
-        return user == null ? null : _mapper.Map<UserDetailDto>(user);
+        if (user == null)
+            return null;
+
+        return _mapper.Map<UserDetailDto>(user);
     }
 
     public async Task<IEnumerable<UserListItemDto>> GetAllAsync()
@@ -41,15 +43,19 @@ public class UserService : IUserService
         return _mapper.Map<IEnumerable<UserListItemDto>>(users);
     }
 
-    public async Task<(IEnumerable<UserListItemDto> Users, int TotalCount)> GetPagedAsync(int pageNumber, int pageSize,
-        string? searchTerm = null, long? agencyId = null,
+    public async Task<(IEnumerable<UserListItemDto> Users, int TotalCount)> GetPagedAsync(
+        int pageNumber,
+        int pageSize,
+        string? searchTerm = null,
+        long? agencyId = null,
         bool? isActive = null)
     {
         if (pageNumber < 1) pageNumber = 1;
         if (pageSize < 1) pageSize = 10;
         if (pageSize > 100) pageSize = 100;
-        var (users, totalCount) =
-            await _userRepository.GetUsersPagedAsync(pageNumber, pageSize, searchTerm, agencyId, isActive);
+
+        var (users, totalCount) = await _userRepository.GetUsersPagedAsync(
+            pageNumber, pageSize, searchTerm, agencyId, isActive);
 
         var userDtos = _mapper.Map<IEnumerable<UserListItemDto>>(users);
 
@@ -86,20 +92,6 @@ public class UserService : IUserService
         await _userRepository.AddAsync(user);
         await _unitOfWork.SaveChangesAsync();
 
-        if (dto.RoleIds.Any())
-        {
-            foreach (var roleId in dto.RoleIds)
-            {
-                var roleExist = await _roleRepository.ExistsAsync(roleId);
-                if (!roleExist)
-                    throw new KeyNotFoundException($"Роль з ID {roleId} не знайдена");
-
-                await _roleRepository.AssignRoleAsync(user.Id, roleId);
-            }
-
-            await _unitOfWork.SaveChangesAsync();
-        }
-
         var createdUser = await _userRepository.GetByIdAsync(user.Id);
         return _mapper.Map<UserDto>(createdUser);
     }
@@ -124,23 +116,6 @@ public class UserService : IUserService
         await _unitOfWork.SaveChangesAsync();
 
         return _mapper.Map<UserDto>(user);
-    }
-
-    public async Task UpdateUserRolesAsync(long userId, List<long> roleIds)
-    {
-        var userExist = await _userRepository.ExistsAsync(userId);
-        if (!userExist)
-            throw new KeyNotFoundException($"Користувача з ID {userId} не знайдено");
-
-        foreach (var roleId in roleIds)
-        {
-            var roleExists = await _roleRepository.ExistsAsync(roleId);
-            if (!roleExists)
-                throw new KeyNotFoundException($"Роль з ID {roleId} не знайдена");
-        }
-
-        await _roleRepository.ReplaceUserRolesAsync(userId, roleIds);
-        await _unitOfWork.SaveChangesAsync();
     }
 
     public async Task ActivateAsync(long id)
