@@ -1,10 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TimeTracker.Core.DTOs.Roles;
-using TimeTracker.Data.Entities;
-using TimeTracker.Data.Repositories.Roles;
-using TimeTracker.Data.Repositories.Users;
-using TimeTracker.Data.UnitOfWork;
+using TimeTracker.Core.Services.RoleManagement;
 
 namespace TimeTracker.API.Controllers.Roles;
 
@@ -13,18 +10,11 @@ namespace TimeTracker.API.Controllers.Roles;
 [Authorize]
 public class RolesController : ControllerBase
 {
-    private readonly IRoleRepository _roleRepository;
-    private readonly IUserRepository _userRepository;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IRoleService _roleService;
 
-    public RolesController(
-        IRoleRepository roleRepository,
-        IUserRepository userRepository,
-        IUnitOfWork unitOfWork)
+    public RolesController(IRoleService roleService)
     {
-        _roleRepository = roleRepository;
-        _userRepository = userRepository;
-        _unitOfWork = unitOfWork;
+        _roleService = roleService;
     }
 
     [HttpGet]
@@ -33,7 +23,7 @@ public class RolesController : ControllerBase
     {
         try
         {
-            var roles = await _roleRepository.GetAllAsync();
+            var roles = await _roleService.GetAllAsync();
             return Ok(roles);
         }
         catch (Exception ex)
@@ -48,7 +38,7 @@ public class RolesController : ControllerBase
     {
         try
         {
-            var roles = await _roleRepository.GetActiveRolesAsync();
+            var roles = await _roleService.GetActiveRolesAsync();
             return Ok(roles);
         }
         catch (Exception ex)
@@ -63,7 +53,7 @@ public class RolesController : ControllerBase
     {
         try
         {
-            var role = await _roleRepository.GetByIdAsync(id);
+            var role = await _roleService.GetByIdAsync(id);
             if (role == null)
                 return NotFound(new { Message = $"Роль з ID {id} не знайдено" });
 
@@ -81,7 +71,7 @@ public class RolesController : ControllerBase
     {
         try
         {
-            var role = await _roleRepository.GetByNameAsync(name);
+            var role = await _roleService.GetByNameAsync(name);
             if (role == null)
                 return NotFound(new { Message = $"Роль '{name}' не знайдено" });
 
@@ -99,24 +89,16 @@ public class RolesController : ControllerBase
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(dto.Name))
-                return BadRequest(new { Message = "Назва ролі не може бути порожньою" });
-
-            if (await _roleRepository.IsRoleNameExistsAsync(dto.Name))
-                return Conflict(new { Message = "Роль з такою назвою вже існує" });
-
-            var role = new Role
-            {
-                Name = dto.Name,
-                Description = dto.Description,
-                Permissions = dto.Permissions,
-                IsActive = true
-            };
-
-            await _roleRepository.AddAsync(role);
-            await _unitOfWork.SaveChangesAsync();
-
+            var role = await _roleService.CreateAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = role.Id }, role);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { Message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { Message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -130,25 +112,20 @@ public class RolesController : ControllerBase
     {
         try
         {
-            var role = await _roleRepository.GetByIdAsync(id);
-            if (role == null)
-                return NotFound(new { Message = $"Роль з ID {id} не знайдено" });
-
-            if (string.IsNullOrWhiteSpace(dto.Name))
-                return BadRequest(new { Message = "Назва ролі не може бути порожньою" });
-
-            if (await _roleRepository.IsRoleNameExistsAsync(dto.Name, id))
-                return Conflict(new { Message = "Роль з такою назвою вже існує" });
-
-            role.Name = dto.Name;
-            role.Description = dto.Description;
-            role.Permissions = dto.Permissions;
-            role.IsActive = dto.IsActive;
-
-            _roleRepository.Update(role);
-            await _unitOfWork.SaveChangesAsync();
-
+            var role = await _roleService.UpdateAsync(id, dto);
             return Ok(role);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { Message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { Message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { Message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -162,18 +139,16 @@ public class RolesController : ControllerBase
     {
         try
         {
-            var role = await _roleRepository.GetByIdAsync(id);
-            if (role == null)
-                return NotFound(new { Message = $"Роль з ID {id} не знайдено" });
-
-            var usersInRole = await _roleRepository.GetUsersInRoleAsync(role.Name);
-            if (usersInRole.Any())
-                return BadRequest(new { Message = "Неможливо видалити роль, яка призначена користувачам" });
-
-            _roleRepository.Delete(role);
-            await _unitOfWork.SaveChangesAsync();
-
+            await _roleService.DeleteAsync(id);
             return Ok(new { Message = "Роль успішно видалено" });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { Message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { Message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -187,12 +162,12 @@ public class RolesController : ControllerBase
     {
         try
         {
-            var userExists = await _userRepository.ExistsAsync(userId);
-            if (!userExists)
-                return NotFound(new { Message = $"Користувача з ID {userId} не знайдено" });
-
-            var roles = await _roleRepository.GetUserRolesAsync(userId);
+            var roles = await _roleService.GetUserRolesAsync(userId);
             return Ok(roles);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { Message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -206,12 +181,12 @@ public class RolesController : ControllerBase
     {
         try
         {
-            var role = await _roleRepository.GetByIdAsync(roleId);
-            if (role == null)
-                return NotFound(new { Message = $"Роль з ID {roleId} не знайдено" });
-
-            var users = await _roleRepository.GetUsersInRoleAsync(role.Name);
+            var users = await _roleService.GetUsersInRoleAsync(roleId);
             return Ok(users);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { Message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -225,22 +200,16 @@ public class RolesController : ControllerBase
     {
         try
         {
-            var userExists = await _userRepository.ExistsAsync(dto.UserId);
-            if (!userExists)
-                return NotFound(new { Message = $"Користувача з ID {dto.UserId} не знайдено" });
-
-            var roleExists = await _roleRepository.ExistsAsync(dto.RoleId);
-            if (!roleExists)
-                return NotFound(new { Message = $"Роль з ID {dto.RoleId} не знайдено" });
-
-            var role = await _roleRepository.GetByIdAsync(dto.RoleId);
-            if (await _roleRepository.UserHasRoleAsync(dto.UserId, role!.Name))
-                return BadRequest(new { Message = "Роль вже призначена цьому користувачу" });
-
-            await _roleRepository.AssignRoleAsync(dto.UserId, dto.RoleId);
-            await _unitOfWork.SaveChangesAsync();
-
+            await _roleService.AssignRoleToUserAsync(dto.UserId, dto.RoleId);
             return Ok(new { Message = "Роль успішно призначено" });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { Message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { Message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -248,24 +217,22 @@ public class RolesController : ControllerBase
         }
     }
 
-    [HttpDelete("remove")]
+    [HttpPost("remove")]
     [Authorize(Policy = "CanManageUsers")]
     public async Task<IActionResult> RemoveRole([FromBody] AssignRoleDto dto)
     {
         try
         {
-            var userExists = await _userRepository.ExistsAsync(dto.UserId);
-            if (!userExists)
-                return NotFound(new { Message = $"Користувача з ID {dto.UserId} не знайдено" });
-
-            var roleExists = await _roleRepository.ExistsAsync(dto.RoleId);
-            if (!roleExists)
-                return NotFound(new { Message = $"Роль з ID {dto.RoleId} не знайдено" });
-
-            await _roleRepository.RemoveRoleAsync(dto.UserId, dto.RoleId);
-            await _unitOfWork.SaveChangesAsync();
-
+            await _roleService.RemoveRoleFromUserAsync(dto.UserId, dto.RoleId);
             return Ok(new { Message = "Роль успішно видалено" });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { Message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { Message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -273,27 +240,26 @@ public class RolesController : ControllerBase
         }
     }
 
-    [HttpPut("user/{userId}")]
+    [HttpPut("user/{userId}/replace")]
     [Authorize(Policy = "CanManageUsers")]
-    public async Task<IActionResult> UpdateUserRoles(long userId, [FromBody] UpdateUserRolesDto dto)
+    public async Task<IActionResult> ReplaceUserRoles(long userId, [FromBody] UpdateUserRolesDto dto)
     {
         try
         {
-            var userExists = await _userRepository.ExistsAsync(userId);
-            if (!userExists)
-                return NotFound(new { Message = $"Користувача з ID {userId} не знайдено" });
-
-            foreach (var roleId in dto.RoleIds)
-            {
-                var roleExists = await _roleRepository.ExistsAsync(roleId);
-                if (!roleExists)
-                    return NotFound(new { Message = $"Роль з ID {roleId} не знайдено" });
-            }
-
-            await _roleRepository.ReplaceUserRolesAsync(userId, dto.RoleIds);
-            await _unitOfWork.SaveChangesAsync();
-
+            await _roleService.ReplaceUserRolesAsync(userId, dto.RoleIds);
             return Ok(new { Message = "Ролі користувача успішно оновлено" });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { Message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { Message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { Message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -307,12 +273,73 @@ public class RolesController : ControllerBase
     {
         try
         {
-            var userExists = await _userRepository.ExistsAsync(userId);
-            if (!userExists)
-                return NotFound(new { Message = $"Користувача з ID {userId} не знайдено" });
-
-            var hasRole = await _roleRepository.UserHasRoleAsync(userId, roleName);
+            var hasRole = await _roleService.UserHasRoleAsync(userId, roleName);
             return Ok(new { HasRole = hasRole });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { Message = ex.Message });
+        }
+    }
+
+    [HttpGet("check-name")]
+    [Authorize(Policy = "AdminOnly")]
+    public async Task<IActionResult> CheckRoleName([FromQuery] string name, [FromQuery] long? excludeRoleId = null)
+    {
+        var exists = await _roleService.IsRoleNameExistsAsync(name, excludeRoleId);
+        return Ok(new { Exists = exists });
+    }
+
+    [HttpGet("{roleId}/can-delete")]
+    [Authorize(Policy = "AdminOnly")]
+    public async Task<IActionResult> CanDeleteRole(long roleId)
+    {
+        try
+        {
+            var canDelete = await _roleService.CanDeleteRoleAsync(roleId);
+            return Ok(new { CanDelete = canDelete });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { Message = ex.Message });
+        }
+    }
+
+    [HttpGet("{roleId}/permissions")]
+    [Authorize(Policy = "AdminOnly")]
+    public async Task<IActionResult> GetRolePermissions(long roleId)
+    {
+        try
+        {
+            var permissions = await _roleService.GetRolePermissionsAsync(roleId);
+            return Ok(permissions);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { Message = ex.Message });
+        }
+    }
+
+    [HttpPut("{roleId}/permissions")]
+    [Authorize(Policy = "AdminOnly")]
+    public async Task<IActionResult> UpdateRolePermissions(long roleId, [FromBody] UpdateRolePermissionsDto dto)
+    {
+        try
+        {
+            await _roleService.UpdateRolePermissionsAsync(roleId, dto.Permissions);
+            return Ok(new { Message = "Permissions успішно оновлено" });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { Message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { Message = ex.Message });
         }
         catch (Exception ex)
         {

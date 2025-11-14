@@ -1,4 +1,6 @@
 using TimeTracker.Core.Services.Auth;
+using TimeTracker.Core.Services.RoleManagement;
+using TimeTracker.Core.Services.UserManagement;
 using TimeTracker.Data.Repositories.Common;
 using TimeTracker.Data.Repositories.Roles;
 using TimeTracker.Data.Repositories.TimeEntries;
@@ -13,7 +15,7 @@ public static class ServiceCollectionExtensions
     {
         // AutoMapper
         services.AddAutoMapper(typeof(TimeTracker.Core.Mappings.UserMappingProfile).Assembly);
-        
+
         // Repositories
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -24,6 +26,8 @@ public static class ServiceCollectionExtensions
         // Services
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
+        services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IRoleService, RoleService>();
 
         return services;
     }
