@@ -1,5 +1,6 @@
 using System.Text.Json;
 using AutoMapper;
+using Microsoft.Extensions.Logging;
 using TimeTracker.Core.DTOs.Roles;
 using TimeTracker.Data.Entities;
 using TimeTracker.Data.Repositories.Roles;
@@ -14,17 +15,23 @@ public class RoleService : IRoleService
     private readonly IUserRepository _userRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly ILogger<RoleService> _logger;
+
+    // Системні ролі які не можна видаляти або деактивувати
+    private static readonly string[] SystemRoles = { "Admin", "Manager", "Employee", "Accountant" };
 
     public RoleService(
         IRoleRepository roleRepository,
         IUserRepository userRepository,
         IUnitOfWork unitOfWork,
-        IMapper mapper)
+        IMapper mapper,
+        ILogger<RoleService> logger)
     {
         _roleRepository = roleRepository;
         _userRepository = userRepository;
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _logger = logger;
     }
 
     public async Task<RoleDetailDto?> GetByIdAsync(long id)
@@ -99,14 +106,11 @@ public class RoleService : IRoleService
 
     public async Task<RoleDto> CreateAsync(CreateRoleDto dto)
     {
-        if (string.IsNullOrWhiteSpace(dto.Name))
-            throw new ArgumentException("Назва ролі не може бути порожньою");
-
-        if (dto.Name.Length < 3)
-            throw new ArgumentException("Назва ролі має бути мінімум 3 символи");
-
         if (await _roleRepository.IsRoleNameExistsAsync(dto.Name))
             throw new InvalidOperationException($"Роль з назвою '{dto.Name}' вже існує");
+
+        if (IsSystemRole(dto.Name))
+            throw new InvalidOperationException($"Неможливо створити роль з системною назвою '{dto.Name}'");
 
         var role = new Role
         {
@@ -124,18 +128,15 @@ public class RoleService : IRoleService
 
     public async Task<RoleDto> UpdateAsync(long id, UpdateRoleDto dto)
     {
-        if (string.IsNullOrWhiteSpace(dto.Name))
-            throw new ArgumentException("Назва ролі не може бути порожньою");
-
-        if (dto.Name.Length < 3)
-            throw new ArgumentException("Назва ролі має бути мінімум 3 символи");
-
         var role = await _roleRepository.GetByIdAsync(id);
         if (role == null)
             throw new KeyNotFoundException($"Роль з ID {id} не знайдено");
 
         if (IsSystemRole(role.Name) && role.Name != dto.Name)
-            throw new InvalidOperationException("Неможливо змінити назву системної ролі");
+            throw new InvalidOperationException($"Неможливо змінити назву системної ролі '{role.Name}'");
+
+        if (!IsSystemRole(role.Name) && IsSystemRole(dto.Name))
+            throw new InvalidOperationException($"Неможливо змінити назву на системну '{dto.Name}'");
 
         if (await _roleRepository.IsRoleNameExistsAsync(dto.Name, id))
             throw new InvalidOperationException($"Роль з назвою '{dto.Name}' вже існує");
@@ -143,7 +144,6 @@ public class RoleService : IRoleService
         role.Name = dto.Name.Trim();
         role.Description = dto.Description?.Trim();
         role.Permissions = dto.Permissions?.Trim();
-        role.IsActive = dto.IsActive;
 
         _roleRepository.Update(role);
         await _unitOfWork.SaveChangesAsync();
@@ -158,12 +158,50 @@ public class RoleService : IRoleService
             throw new KeyNotFoundException($"Роль з ID {id} не знайдено");
 
         if (IsSystemRole(role.Name))
-            throw new InvalidOperationException("Неможливо видалити системну роль");
+            throw new InvalidOperationException($"Неможливо видалити системну роль '{role.Name}'");
 
         if (!await CanDeleteRoleAsync(id))
             throw new InvalidOperationException("Неможливо видалити роль, яка призначена користувачам");
 
         _roleRepository.Delete(role);
+        await _unitOfWork.SaveChangesAsync();
+    }
+
+    public async Task ActivateAsync(long id)
+    {
+        var role = await _roleRepository.GetByIdAsync(id);
+        if (role == null)
+            throw new KeyNotFoundException($"Роль з ID {id} не знайдено");
+
+        if (role.IsActive)
+            throw new InvalidOperationException("Роль вже активна");
+
+        role.IsActive = true;
+        _roleRepository.Update(role);
+        await _unitOfWork.SaveChangesAsync();
+    }
+
+    public async Task DeactivateAsync(long id)
+    {
+        var role = await _roleRepository.GetByIdAsync(id);
+        if (role == null)
+            throw new KeyNotFoundException($"Роль з ID {id} не знайдено");
+
+        if (!role.IsActive)
+            throw new InvalidOperationException("Роль вже деактивована");
+
+        if (IsSystemRole(role.Name))
+            throw new InvalidOperationException($"Неможливо деактивувати системну роль '{role.Name}'");
+
+        var users = await _roleRepository.GetUsersInRoleAsync(role.Name);
+        var activeUsers = users.Where(u => u.IsActive).ToList();
+        
+        if (activeUsers.Any())
+            throw new InvalidOperationException(
+                $"Неможливо деактивувати роль. Вона призначена {activeUsers.Count} активним користувачам");
+
+        role.IsActive = false;
+        _roleRepository.Update(role);
         await _unitOfWork.SaveChangesAsync();
     }
 
@@ -237,7 +275,20 @@ public class RoleService : IRoleService
 
         var userRoles = await _roleRepository.GetUserRolesAsync(userId);
         if (userRoles.Count() == 1)
-            throw new InvalidOperationException("Неможливо видалити останню роль користувача");
+            throw new InvalidOperationException("Неможливо видалити останню роль користувача. Користувач повинен мати хоча б одну роль");
+
+        if (role.Name == "Admin")
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user != null && user.IsActive)
+            {
+                var activeAdmins = await _userRepository.GetUsersWithRoleAsync("Admin");
+                var activeAdminsCount = activeAdmins.Count(u => u.IsActive);
+                
+                if (activeAdminsCount <= 1)
+                    throw new InvalidOperationException("Неможливо видалити роль Admin у останнього активного адміністратора");
+            }
+        }
 
         await _roleRepository.RemoveRoleAsync(userId, roleId);
         await _unitOfWork.SaveChangesAsync();
@@ -257,6 +308,10 @@ public class RoleService : IRoleService
         if (!roleIdsList.Any())
             throw new ArgumentException("Необхідно передати хоча б одну роль");
 
+        if (roleIdsList.Distinct().Count() != roleIdsList.Count)
+            throw new ArgumentException("Список ролей містить дублікати");
+
+        var roles = new List<Role>();
         foreach (var roleId in roleIdsList)
         {
             var role = await _roleRepository.GetByIdAsync(roleId);
@@ -264,11 +319,23 @@ public class RoleService : IRoleService
                 throw new KeyNotFoundException($"Роль з ID {roleId} не знайдено");
 
             if (!role.IsActive)
-                throw new InvalidOperationException($"Роль з ID {roleId} неактивна");
+                throw new InvalidOperationException($"Роль '{role.Name}' (ID: {roleId}) неактивна");
+
+            roles.Add(role);
         }
 
-        if (roleIdsList.Distinct().Count() != roleIdsList.Count)
-            throw new ArgumentException("Список ролей містить дублікати");
+        var currentRoles = await _roleRepository.GetUserRolesAsync(userId);
+        var hasAdminNow = currentRoles.Any(r => r.Name == "Admin");
+        var willHaveAdmin = roles.Any(r => r.Name == "Admin");
+        
+        if (hasAdminNow && !willHaveAdmin && user.IsActive)
+        {
+            var activeAdmins = await _userRepository.GetUsersWithRoleAsync("Admin");
+            var activeAdminsCount = activeAdmins.Count(u => u.IsActive);
+            
+            if (activeAdminsCount <= 1)
+                throw new InvalidOperationException("Неможливо видалити роль Admin у останнього активного адміністратора");
+        }
 
         await _roleRepository.ReplaceUserRolesAsync(userId, roleIdsList);
         await _unitOfWork.SaveChangesAsync();
@@ -298,6 +365,11 @@ public class RoleService : IRoleService
         return !users.Any();
     }
 
+    private bool IsSystemRole(string roleName)
+    {
+        return SystemRoles.Contains(roleName, StringComparer.OrdinalIgnoreCase);
+    }
+
     public async Task<IEnumerable<string>> GetRolePermissionsAsync(long roleId)
     {
         var role = await _roleRepository.GetByIdAsync(roleId);
@@ -324,25 +396,28 @@ public class RoleService : IRoleService
             throw new KeyNotFoundException($"Роль з ID {roleId} не знайдено");
 
         var permissionsList = permissions.ToList();
-        
-        foreach (var permission in permissionsList)
+
+        if (IsSystemRole(role.Name))
         {
-            if (string.IsNullOrWhiteSpace(permission))
-                throw new ArgumentException("Permission не може бути порожнім");
+            var oldPermissions = string.IsNullOrWhiteSpace(role.Permissions)
+                ? "[]"
+                : role.Permissions;
+    
+            var newPermissions = permissionsList.Any()
+                ? JsonSerializer.Serialize(permissionsList)
+                : "[]";
+
+            _logger.LogWarning(
+                "КРИТИЧНА ДІЯ: Оновлення permissions системної ролі {RoleName} (ID: {RoleId}). " +
+                "Старі: {OldPermissions}, Нові: {NewPermissions}",
+                role.Name, roleId, oldPermissions, newPermissions);
         }
 
-        if (permissionsList.Distinct().Count() != permissionsList.Count)
-            throw new ArgumentException("Список permissions містить дублікати");
-
-        role.Permissions = JsonSerializer.Serialize(permissionsList);
+        role.Permissions = permissionsList.Any() 
+            ? JsonSerializer.Serialize(permissionsList) 
+            : null;
         
         _roleRepository.Update(role);
         await _unitOfWork.SaveChangesAsync();
-    }
-
-    private bool IsSystemRole(string roleName)
-    {
-        var systemRoles = new[] { "Admin", "Manager", "Employee", "Accountant" };
-        return systemRoles.Contains(roleName, StringComparer.OrdinalIgnoreCase);
     }
 }

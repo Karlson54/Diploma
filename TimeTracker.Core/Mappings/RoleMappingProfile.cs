@@ -21,6 +21,6 @@ public class RoleMappingProfile : Profile
             .ForMember(dest => dest.AgencyName,
                 opt => opt.MapFrom(src => src.Agency != null ? src.Agency.Name : string.Empty))
             .ForMember(dest => dest.AssignedAt,
-                opt => opt.MapFrom(src => src.CreatedAt)); // Это приблизительно, точнее брать из UserRole
+                opt => opt.MapFrom(src => src.CreatedAt));
     }
 }

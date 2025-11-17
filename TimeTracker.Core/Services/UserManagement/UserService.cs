@@ -64,26 +64,19 @@ public class UserService : IUserService
 
     public async Task<UserDto> CreateAsync(CreateUserDto dto)
     {
-        if (string.IsNullOrWhiteSpace(dto.Login))
-            throw new ArgumentException("Login не може бути порожнім");
-
-        if (string.IsNullOrWhiteSpace(dto.Email))
-            throw new ArgumentException("Email не може бути порожнім");
-
-        if (string.IsNullOrWhiteSpace(dto.Password))
-            throw new ArgumentException("Password не може бути порожнім");
-
-        if (dto.Password.Length < 6)
-            throw new ArgumentException("Password має бути мінімум 6 символів");
-
-        if (string.IsNullOrWhiteSpace(dto.Name))
-            throw new ArgumentException("Name не може бути порожнім");
-
         if (await _userRepository.IsEmailExistsAsync(dto.Email))
             throw new InvalidOperationException("Email вже використовується");
 
         if (await _userRepository.IsLoginExistsAsync(dto.Login))
             throw new InvalidOperationException("Login вже використовується");
+
+        var agencyExists = await _unitOfWork.Agencies.ExistsAsync(dto.AgencyId);
+        if (!agencyExists)
+            throw new KeyNotFoundException($"Agency з ID {dto.AgencyId} не знайдено");
+
+        var agency = await _unitOfWork.Agencies.GetByIdAsync(dto.AgencyId);
+        if (agency != null && !agency.IsActive)
+            throw new InvalidOperationException("Неможливо створити користувача для неактивного Agency");
 
         var user = _mapper.Map<User>(dto);
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
@@ -98,18 +91,20 @@ public class UserService : IUserService
 
     public async Task<UserDto> UpdateAsync(long id, UpdateUserDto dto)
     {
-        if (string.IsNullOrWhiteSpace(dto.Email))
-            throw new ArgumentException("Email не може бути порожнім");
-
-        if (string.IsNullOrWhiteSpace(dto.Name))
-            throw new ArgumentException("Name не може бути порожнім");
-
         var user = await _userRepository.GetByIdAsync(id);
         if (user == null)
             throw new KeyNotFoundException($"Користувача з ID {id} не знайдено");
 
         if (await _userRepository.IsEmailExistsAsync(dto.Email, id))
             throw new InvalidOperationException("Email вже використовується іншим користувачем");
+
+        var agencyExists = await _unitOfWork.Agencies.ExistsAsync(dto.AgencyId);
+        if (!agencyExists)
+            throw new KeyNotFoundException($"Agency з ID {dto.AgencyId} не знайдено");
+
+        var agency = await _unitOfWork.Agencies.GetByIdAsync(dto.AgencyId);
+        if (agency != null && !agency.IsActive)
+            throw new InvalidOperationException("Неможливо призначити користувача до неактивного Agency");
 
         _mapper.Map(dto, user);
         _userRepository.Update(user);
@@ -148,24 +143,18 @@ public class UserService : IUserService
 
     public async Task ChangePasswordAsync(long userId, ChangePasswordDto dto)
     {
-        if (string.IsNullOrWhiteSpace(dto.CurrentPassword))
-            throw new ArgumentException("Поточний пароль не може бути порожнім");
-
-        if (string.IsNullOrWhiteSpace(dto.NewPassword))
-            throw new ArgumentException("Новий пароль не може бути порожнім");
-
-        if (dto.NewPassword.Length < 6)
-            throw new ArgumentException("Новий пароль має бути мінімум 6 символів");
-
-        if (dto.NewPassword != dto.ConfirmPassword)
-            throw new ArgumentException("Новий пароль та підтвердження не збігаються");
-
         var user = await _userRepository.GetByIdAsync(userId);
         if (user == null)
             throw new KeyNotFoundException($"Користувача з ID {userId} не знайдено");
 
+        if (!user.IsActive)
+            throw new InvalidOperationException("Неможливо змінити пароль неактивного користувача");
+
         if (!BCrypt.Net.BCrypt.Verify(dto.CurrentPassword, user.PasswordHash))
             throw new UnauthorizedAccessException("Поточний пароль невірний");
+
+        if (BCrypt.Net.BCrypt.Verify(dto.NewPassword, user.PasswordHash))
+            throw new InvalidOperationException("Новий пароль не може співпадати зі старим");
 
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
         _userRepository.Update(user);
