@@ -9,12 +9,24 @@ public static class SwaggerExtensions
     {
         services.AddSwaggerGen(options =>
         {
-            // Основная информация об API
-            options.SwaggerDoc("v1", new OpenApiInfo 
-            { 
-                Title = "TimeTracker API", 
+            options.SwaggerDoc("v1", new OpenApiInfo
+            {
+                Title = "TimeTracker API",
                 Version = "v1",
-                Description = "API для системы учета рабочего времени",
+                Description = @"
+                API для системи учета рабочего времени рекламных агентств.
+                
+                **Аутентификація:**
+                1. Отримайте токен через `/api/auth/login`
+                2. Натисніть кнопку 'Authorize' вгорі
+                3. Введіть токен у форматі: `Bearer {ваш-токен}`
+                
+                **Ролі:**
+                - Admin: повний доступ до системи
+                - Manager: управління проектами та користувачами
+                - Employee: створення власних записів часу
+                - Accountant: доступ до фінансових звітів
+            ",
                 Contact = new OpenApiContact
                 {
                     Name = "TimeTracker Support",
@@ -22,7 +34,7 @@ public static class SwaggerExtensions
                 }
             });
 
-            // Определение схемы авторизации JWT
+            // JWT Security Definition
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 Name = "Authorization",
@@ -30,10 +42,15 @@ public static class SwaggerExtensions
                 Scheme = "Bearer",
                 BearerFormat = "JWT",
                 In = ParameterLocation.Header,
-                Description = "Введите JWT токен в формате: Bearer {ваш-токен}"
+                Description = @"
+                JWT Authorization header використовуючи Bearer схему.
+                
+                Введіть 'Bearer' [пробіл] а потім ваш токен.
+                
+                Приклад: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
+            "
             });
 
-            // Требование авторизации для всех endpoints
             options.AddSecurityRequirement(new OpenApiSecurityRequirement
             {
                 {
@@ -49,7 +66,7 @@ public static class SwaggerExtensions
                 }
             });
 
-            // Включение XML документации (опционально)
+            // XML Comments
             var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
             var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
             if (File.Exists(xmlPath))

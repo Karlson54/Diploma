@@ -31,10 +31,10 @@ public class AuthService : IAuthService
     }
 
     public async Task<User> RegisterAsync(
-        string login, 
-        string email, 
-        string password, 
-        string name, 
+        string login,
+        string email,
+        string password,
+        string name,
         long agencyId,
         string? roleName = null)
     {
@@ -61,48 +61,35 @@ public class AuthService : IAuthService
 
         var targetRoleName = string.IsNullOrWhiteSpace(roleName) ? "Employee" : roleName;
         var role = await _roleRepository.GetByNameAsync(targetRoleName);
-        
+
         if (role == null)
             throw new InvalidOperationException($"Роль '{targetRoleName}' не знайдена");
 
         if (!role.IsActive)
             throw new InvalidOperationException($"Роль '{targetRoleName}' неактивна");
 
-        await using var transaction = await _unitOfWork.BeginTransactionAsync();
-        
-        try
+        var user = new User
         {
-            var user = new User
-            {
-                Login = login,
-                Email = email,
-                Name = name,
-                AgencyId = agencyId,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(password)
-            };
+            Login = login,
+            Email = email,
+            Name = name,
+            AgencyId = agencyId,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(password)
+        };
 
-            await _userRepository.AddAsync(user);
-            await _unitOfWork.SaveChangesAsync();
+        await _userRepository.AddAsync(user);
+        await _unitOfWork.SaveChangesAsync();
 
-            await _roleRepository.AssignRoleAsync(user.Id, role.Id);
-            await _unitOfWork.SaveChangesAsync();
+        await _roleRepository.AssignRoleAsync(user.Id, role.Id);
+        await _unitOfWork.SaveChangesAsync();
 
-            await _unitOfWork.CommitTransactionAsync();
+        _logger.LogInformation(
+            "User registered successfully: {UserId}, Email: {Email}, Role: {Role}",
+            user.Id, email, targetRoleName);
 
-            _logger.LogInformation(
-                "User registered successfully: {UserId}, Email: {Email}, Role: {Role}", 
-                user.Id, email, targetRoleName);
-
-            return user;
-        }
-        catch
-        {
-            await _unitOfWork.RollbackTransactionAsync();
-            _logger.LogError("Failed to register user: {Email}", email);
-            throw;
-        }
+        return user;
     }
 
     public async Task<string?> LoginAsync(string loginOrEmail, string password)
@@ -139,7 +126,7 @@ public class AuthService : IAuthService
         var token = _jwtTokenService.GenerateToken(user, roleNames);
 
         _logger.LogInformation(
-            "Successful login for user: {UserId}, Roles: {Roles}", 
+            "Successful login for user: {UserId}, Roles: {Roles}",
             user.Id, string.Join(", ", roleNames));
 
         return token;
