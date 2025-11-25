@@ -1,16 +1,14 @@
-using TimeTracker.Data.Entities;
+using TimeTracker.Core.DTOs.Auth;
 
 namespace TimeTracker.Core.Services.Auth;
 
 public interface IAuthService
 {
-    Task<User> RegisterAsync(
-        string login,
-        string email,
-        string password,
-        string name,
-        long agencyId,
-        string? roleName = null);
-
-    Task<string?> LoginAsync(string loginOrEmail, string password);
+    Task<AuthResponseDto> LoginAsync(LoginDto dto);
+    
+    Task<AuthResponseDto> RegisterAsync(RegisterDto dto);
+    
+    Task ChangePasswordAsync(long userId, string currentPassword, string newPassword);
+    
+    Task<bool> ValidatePasswordAsync(long userId, string password);
 }

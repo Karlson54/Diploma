@@ -1,11 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
-using TimeTracker.Core.Common;
 using TimeTracker.Core.DTOs.Auth;
 using TimeTracker.Core.Services.Auth;
-using TimeTracker.Data.Repositories.Roles;
-using TimeTracker.Data.Repositories.Users;
 
 namespace TimeTracker.API.Controllers.Auth;
 
@@ -15,20 +11,14 @@ namespace TimeTracker.API.Controllers.Auth;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
-    private readonly IUserRepository _userRepository;
-    private readonly IRoleRepository _roleRepository;
-    private readonly JwtSettings _jwtSettings;
+    private readonly ILogger<AuthController> _logger;
 
     public AuthController(
         IAuthService authService,
-        IUserRepository userRepository,
-        IRoleRepository roleRepository,
-        IOptions<JwtSettings> jwtSettings)
+        ILogger<AuthController> logger)
     {
         _authService = authService;
-        _userRepository = userRepository;
-        _roleRepository = roleRepository;
-        _jwtSettings = jwtSettings.Value;
+        _logger = logger;
     }
 
     [HttpPost("register")]
@@ -38,42 +28,15 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Register([FromBody] RegisterDto dto)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
         try
         {
-            var user = await _authService.RegisterAsync(
-                dto.Login,
-                dto.Email,
-                dto.Password,
-                dto.Name,
-                dto.AgencyId,
-                roleName: "Employee");
-
-            var userWithDetails = await _userRepository.GetByIdWithRolesAsync(user.Id);
-            if (userWithDetails == null)
-                return StatusCode(500, new { Message = "Помилка при завантаженні даних користувача" });
-
-            var roles = userWithDetails.UserRoles.Select(ur => ur.Role.Name).ToList();
-            var token = await _authService.LoginAsync(dto.Login, dto.Password);
-
-            var response = new AuthResponseDto
-            {
-                UserId = userWithDetails.Id,
-                Login = userWithDetails.Login,
-                Email = userWithDetails.Email,
-                Name = userWithDetails.Name,
-                AgencyId = userWithDetails.AgencyId,
-                AgencyName = userWithDetails.Agency?.Name ?? string.Empty,
-                Roles = roles,
-                Token = token ?? string.Empty,
-                ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpirationMinutes)
-            };
-
+            var response = await _authService.RegisterAsync(dto);
+            
+            _logger.LogInformation("Користувач {Email} успішно зареєстрований", dto.Email);
+            
             return CreatedAtAction(
-                nameof(Register), 
-                new { id = user.Id }, 
+                nameof(ValidateToken), 
+                new { userId = response.UserId }, 
                 response);
         }
         catch (InvalidOperationException ex)
@@ -88,66 +51,25 @@ public class AuthController : ControllerBase
         {
             return BadRequest(new { Message = ex.Message });
         }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { Message = "Внутрішня помилка сервера", Details = ex.Message });
-        }
     }
 
     [HttpPost("login")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
         try
         {
-            var token = await _authService.LoginAsync(dto.LoginOrEmail, dto.Password);
+            var response = await _authService.LoginAsync(dto);
             
-            if (string.IsNullOrEmpty(token))
-                return Unauthorized(new { Message = "Не вдалося згенерувати токен" });
-
-            var user = await _userRepository.GetByEmailAsync(dto.LoginOrEmail) 
-                       ?? await _userRepository.GetByLoginAsync(dto.LoginOrEmail);
-
-            if (user == null)
-                return Unauthorized(new { Message = "Користувача не знайдено" });
-
-            var userWithDetails = await _userRepository.GetByIdWithRolesAsync(user.Id);
-            if (userWithDetails == null)
-                return StatusCode(500, new { Message = "Помилка при завантаженні даних користувача" });
-
-            var roles = userWithDetails.UserRoles
-                .Where(ur => ur.Role.IsActive)
-                .Select(ur => ur.Role.Name)
-                .ToList();
-
-            var response = new AuthResponseDto
-            {
-                UserId = userWithDetails.Id,
-                Login = userWithDetails.Login,
-                Email = userWithDetails.Email,
-                Name = userWithDetails.Name,
-                AgencyId = userWithDetails.AgencyId,
-                AgencyName = userWithDetails.Agency?.Name ?? string.Empty,
-                Roles = roles,
-                Token = token,
-                ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpirationMinutes)
-            };
-
+            _logger.LogInformation("Користувач {Email} успішно увійшов", response.Email);
+            
             return Ok(response);
         }
         catch (UnauthorizedAccessException ex)
         {
             return Unauthorized(new { Message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { Message = "Внутрішня помилка сервера", Details = ex.Message });
         }
     }
 
@@ -169,5 +91,38 @@ public class AuthController : ControllerBase
             Roles = roles,
             Message = "Токен валідний"
         });
+    }
+
+    [HttpPost("change-password")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestDto dto)
+    {
+        try
+        {
+            var userIdClaim = User.FindFirst("userId")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized(new { Message = "Невалідний токен" });
+            }
+
+            await _authService.ChangePasswordAsync(userId, dto.CurrentPassword, dto.NewPassword);
+            
+            return Ok(new { Message = "Пароль успішно змінено" });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { Message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { Message = ex.Message });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { Message = ex.Message });
+        }
     }
 }
