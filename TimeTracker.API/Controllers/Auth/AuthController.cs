@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TimeTracker.Core.DTOs.Auth;
+using TimeTracker.Core.DTOs.Users;
 using TimeTracker.Core.Services.Auth;
 
 namespace TimeTracker.API.Controllers.Auth;
@@ -98,7 +99,7 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestDto dto)
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto) // ✅ ЗМІНЕНО ТИП
     {
         try
         {
@@ -110,10 +111,13 @@ public class AuthController : ControllerBase
 
             await _authService.ChangePasswordAsync(userId, dto.CurrentPassword, dto.NewPassword);
             
+            _logger.LogInformation("Користувач {UserId} успішно змінив пароль", userId);
+            
             return Ok(new { Message = "Пароль успішно змінено" });
         }
         catch (UnauthorizedAccessException ex)
         {
+            _logger.LogWarning("Невдала спроба зміни пароля: {Message}", ex.Message);
             return Unauthorized(new { Message = ex.Message });
         }
         catch (ArgumentException ex)

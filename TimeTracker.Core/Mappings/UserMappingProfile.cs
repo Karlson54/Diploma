@@ -23,6 +23,8 @@ public class UserMappingProfile : Profile
 
         // User -> UserListItemDto
         CreateMap<User, UserListItemDto>()
+            .ForMember(dest => dest.AgencyId,
+                opt => opt.MapFrom(src => src.AgencyId))
             .ForMember(dest => dest.AgencyName,
                 opt => opt.MapFrom(src => src.Agency != null ? src.Agency.Name : string.Empty))
             .ForMember(dest => dest.RolesCount,
@@ -44,6 +46,7 @@ public class UserMappingProfile : Profile
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.Login, opt => opt.Ignore())
             .ForMember(dest => dest.PasswordHash, opt => opt.Ignore())
+            .ForMember(dest => dest.IsActive, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.Agency, opt => opt.Ignore())

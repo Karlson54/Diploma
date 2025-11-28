@@ -32,6 +32,4 @@ public class RegisterDto
     [Required(ErrorMessage = "AgencyId обов'язковий")]
     [Range(1, long.MaxValue, ErrorMessage = "AgencyId має бути додатним числом")]
     public long AgencyId { get; set; }
-
-    // Роль НЕ вказується при самореєстрації (завжди Employee за замовчуванням)
 }

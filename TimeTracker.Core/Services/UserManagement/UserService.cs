@@ -1,4 +1,6 @@
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
+using TimeTracker.Core.Common;
 using TimeTracker.Core.DTOs.Users;
 using TimeTracker.Data.Entities;
 using TimeTracker.Data.Repositories.Users;
@@ -33,13 +35,28 @@ public class UserService : IUserService
 
     public async Task<IEnumerable<UserListItemDto>> GetAllAsync()
     {
-        var users = await _userRepository.GetAllAsync();
+        var users = await _userRepository
+            .GetQueryable()
+            .Include(u => u.Agency)
+            .Include(u => u.UserRoles)
+            .AsNoTracking()
+            .OrderBy(u => u.Name)
+            .ToListAsync();
+
         return _mapper.Map<IEnumerable<UserListItemDto>>(users);
     }
 
     public async Task<IEnumerable<UserListItemDto>> GetActiveUsersAsync()
     {
-        var users = await _userRepository.GetActiveUsersAsync();
+        var users = await _userRepository
+            .GetQueryable()
+            .Include(u => u.Agency)
+            .Include(u => u.UserRoles)
+            .Where(u => u.IsActive)
+            .AsNoTracking()
+            .OrderBy(u => u.Name)
+            .ToListAsync();
+
         return _mapper.Map<IEnumerable<UserListItemDto>>(users);
     }
 
@@ -54,8 +71,38 @@ public class UserService : IUserService
         if (pageSize < 1) pageSize = 10;
         if (pageSize > 100) pageSize = 100;
 
-        var (users, totalCount) = await _userRepository.GetUsersPagedAsync(
-            pageNumber, pageSize, searchTerm, agencyId, isActive);
+        var query = _userRepository
+            .GetQueryable()
+            .Include(u => u.Agency)
+            .Include(u => u.UserRoles)
+            .AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var term = searchTerm.ToLower();
+            query = query.Where(u =>
+                u.Name.ToLower().Contains(term) ||
+                u.Email.ToLower().Contains(term) ||
+                u.Login.ToLower().Contains(term));
+        }
+
+        if (agencyId.HasValue)
+        {
+            query = query.Where(u => u.AgencyId == agencyId.Value);
+        }
+
+        if (isActive.HasValue)
+        {
+            query = query.Where(u => u.IsActive == isActive.Value);
+        }
+
+        var totalCount = await query.CountAsync();
+
+        var users = await query
+            .OrderBy(u => u.Name)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
 
         var userDtos = _mapper.Map<IEnumerable<UserListItemDto>>(users);
 
@@ -70,22 +117,67 @@ public class UserService : IUserService
         if (await _userRepository.IsLoginExistsAsync(dto.Login))
             throw new InvalidOperationException("Login вже використовується");
 
-        var agencyExists = await _unitOfWork.Agencies.ExistsAsync(dto.AgencyId);
-        if (!agencyExists)
+        var agency = await _unitOfWork.Agencies.GetByIdAsync(dto.AgencyId);
+        if (agency == null)
             throw new KeyNotFoundException($"Agency з ID {dto.AgencyId} не знайдено");
 
-        var agency = await _unitOfWork.Agencies.GetByIdAsync(dto.AgencyId);
-        if (agency != null && !agency.IsActive)
+        if (!agency.IsActive)
             throw new InvalidOperationException("Неможливо створити користувача для неактивного Agency");
+
+        List<long> roleIdsToAssign;
+
+        if (!dto.RoleId.Any())
+        {
+            var employeeRole = await _unitOfWork.Roles
+                .GetQueryable()
+                .FirstOrDefaultAsync(r => r.Name == SystemRoles.Employee && r.IsActive);
+
+            if (employeeRole == null)
+                throw new InvalidOperationException("Роль Employee не знайдена");
+
+            roleIdsToAssign = new List<long> { employeeRole.Id };
+        }
+        else
+        {
+            var roles = await _unitOfWork.Roles
+                .GetQueryable()
+                .Where(r => dto.RoleId.Contains(r.Id) && r.IsActive)
+                .ToListAsync();
+
+            if (roles.Count != dto.RoleId.Count)
+            {
+                var foundIds = roles.Select(r => r.Id);
+                var missingIds = dto.RoleId.Except(foundIds);
+                throw new KeyNotFoundException(
+                    $"Ролі з ID {string.Join(", ", missingIds)} не знайдено або неактивні");
+            }
+
+            roleIdsToAssign = dto.RoleId;
+        }
 
         var user = _mapper.Map<User>(dto);
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
         user.IsActive = true;
 
         await _userRepository.AddAsync(user);
+
+        foreach (var roleId in roleIdsToAssign)
+        {
+            user.UserRoles.Add(new UserRole
+            {
+                User = user,
+                RoleId = roleId,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
         await _unitOfWork.SaveChangesAsync();
 
-        var createdUser = await _userRepository.GetByIdAsync(user.Id);
+        var createdUser = await _userRepository
+            .GetQueryable()
+            .Include(u => u.Agency)
+            .FirstOrDefaultAsync(u => u.Id == user.Id);
+
         return _mapper.Map<UserDto>(createdUser);
     }
 
@@ -98,15 +190,17 @@ public class UserService : IUserService
         if (await _userRepository.IsEmailExistsAsync(dto.Email, id))
             throw new InvalidOperationException("Email вже використовується іншим користувачем");
 
-        var agencyExists = await _unitOfWork.Agencies.ExistsAsync(dto.AgencyId);
-        if (!agencyExists)
+        var agency = await _unitOfWork.Agencies.GetByIdAsync(dto.AgencyId);
+        if (agency == null)
             throw new KeyNotFoundException($"Agency з ID {dto.AgencyId} не знайдено");
 
-        var agency = await _unitOfWork.Agencies.GetByIdAsync(dto.AgencyId);
-        if (agency != null && !agency.IsActive)
+        if (!agency.IsActive)
             throw new InvalidOperationException("Неможливо призначити користувача до неактивного Agency");
 
-        _mapper.Map(dto, user);
+        user.Email = dto.Email.Trim();
+        user.Name = dto.Name.Trim();
+        user.AgencyId = dto.AgencyId;
+
         _userRepository.Update(user);
         await _unitOfWork.SaveChangesAsync();
 
