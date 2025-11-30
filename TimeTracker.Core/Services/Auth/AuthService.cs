@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using TimeTracker.Core.Common;
@@ -20,8 +21,8 @@ public class AuthService : IAuthService
     private readonly ILogger<AuthService> _logger;
     private readonly JwtSettings _jwtSettings;
 
-    private const int MinPasswordLength = 8;
-    private const int MaxPasswordLength = 100;
+    private const int MinPasswordLength = ValidationPatterns.PasswordMinLength;
+    private const int MaxPasswordLength = ValidationPatterns.PasswordMaxLength;
 
     public AuthService(
         IUserRepository userRepository,
@@ -44,7 +45,7 @@ public class AuthService : IAuthService
     public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
     {
         var user = await FindUserByLoginOrEmailAsync(dto.LoginOrEmail);
-        
+
         if (user == null)
         {
             _logger.LogWarning("Спроба входу з неіснуючим логіном/email: {LoginOrEmail}", dto.LoginOrEmail);
@@ -95,7 +96,12 @@ public class AuthService : IAuthService
             ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpirationMinutes)
         };
 
-        _logger.LogInformation("Успішний вхід користувача: {UserId} ({Email})", user.Id, user.Email);
+        _logger.LogInformation(
+            "User login successful. UserId: {UserId}, Email: {Email}, Agency: {AgencyId}, Roles: {Roles}",
+            user.Id,
+            user.Email,
+            user.AgencyId,
+            string.Join(", ", activeRoles));
 
         return response;
     }
@@ -103,24 +109,37 @@ public class AuthService : IAuthService
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
     {
         await ValidateRegistrationDataAsync(dto);
-
         ValidatePasswordStrength(dto.Password);
 
         var agency = await _unitOfWork.Agencies.GetByIdAsync(dto.AgencyId);
         if (agency == null)
         {
+            _logger.LogWarning("Спроба реєстрації з неіснуючим Agency ID: {AgencyId}", dto.AgencyId);
             throw new KeyNotFoundException($"Agency з ID {dto.AgencyId} не знайдено");
         }
 
         if (!agency.IsActive)
         {
+            _logger.LogWarning(
+                "Спроба реєстрації в неактивному Agency. AgencyId: {AgencyId}, AgencyName: {AgencyName}",
+                dto.AgencyId,
+                agency.Name);
             throw new InvalidOperationException("Неможливо зареєструватись в неактивному Agency");
         }
 
-        var employeeRole = await _roleRepository.GetByNameAsync("Employee");
-        if (employeeRole == null || !employeeRole.IsActive)
+        var employeeRole = await _roleRepository.GetByNameAsync(SystemRoles.Employee);
+        if (employeeRole == null)
         {
-            throw new InvalidOperationException("Роль Employee не знайдена або неактивна");
+            _logger.LogError("Системна роль '{RoleName}' не знайдена в базі даних", SystemRoles.Employee);
+            throw new InvalidOperationException(
+                $"Системна помилка: роль '{SystemRoles.Employee}' не знайдена. Зверніться до адміністратора.");
+        }
+
+        if (!employeeRole.IsActive)
+        {
+            _logger.LogError("Системна роль '{RoleName}' деактивована", SystemRoles.Employee);
+            throw new InvalidOperationException(
+                $"Системна помилка: роль '{SystemRoles.Employee}' деактивована. Зверніться до адміністратора.");
         }
 
         var user = new User
@@ -136,33 +155,65 @@ public class AuthService : IAuthService
         try
         {
             await _userRepository.AddAsync(user);
-            await _unitOfWork.SaveChangesAsync();
 
-            await _roleRepository.AssignRoleAsync(user.Id, employeeRole.Id);
+            user.UserRoles.Add(new UserRole
+            {
+                User = user,
+                RoleId = employeeRole.Id
+            });
+
             await _unitOfWork.SaveChangesAsync();
 
             _logger.LogInformation(
-                "Новий користувач зареєстрований: {UserId} ({Email}), Agency: {AgencyId}", 
-                user.Id, user.Email, user.AgencyId);
+                "Новий користувач успішно зареєстрований. UserId: {UserId}, Email: {Email}, Login: {Login}, AgencyId: {AgencyId}, AgencyName: {AgencyName}",
+                user.Id,
+                user.Email,
+                user.Login,
+                user.AgencyId,
+                agency.Name);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Помилка при реєстрації користувача {Email}", dto.Email);
-            throw;
+            _logger.LogError(
+                ex,
+                "Помилка при реєстрації користувача. Email: {Email}, Login: {Login}, AgencyId: {AgencyId}",
+                dto.Email,
+                dto.Login,
+                dto.AgencyId);
+
+            throw new InvalidOperationException(
+                "Не вдалося створити обліковий запис. Спробуйте пізніше або зверніться до адміністратора.",
+                ex);
         }
 
-        var userWithRoles = await _userRepository.GetByIdWithRolesAsync(user.Id);
+        var userWithRoles = await _userRepository
+            .GetQueryable()
+            .Include(u => u.Agency)
+            .Include(u => u.UserRoles)
+            .ThenInclude(ur => ur.Role)
+            .FirstOrDefaultAsync(u => u.Id == user.Id);
+
         if (userWithRoles == null)
         {
+            _logger.LogError("Не вдалося завантажити дані щойно створеного користувача {UserId}", user.Id);
             throw new InvalidOperationException("Помилка завантаження даних користувача");
         }
 
-        var roles = userWithRoles.UserRoles
+        var activeRoles = userWithRoles.UserRoles
             .Where(ur => ur.Role.IsActive)
             .Select(ur => ur.Role.Name)
             .ToList();
 
-        var token = _jwtTokenService.GenerateToken(userWithRoles, roles);
+        if (!activeRoles.Any())
+        {
+            _logger.LogError(
+                "Користувач {UserId} не має активних ролей після реєстрації",
+                user.Id);
+            throw new InvalidOperationException("У користувача немає активних ролей. Зверніться до адміністратора.");
+        }
+
+        var token = _jwtTokenService.GenerateToken(userWithRoles, activeRoles);
+        var expiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpirationMinutes);
 
         var response = new AuthResponseDto
         {
@@ -172,9 +223,9 @@ public class AuthService : IAuthService
             Name = userWithRoles.Name,
             AgencyId = userWithRoles.AgencyId,
             AgencyName = userWithRoles.Agency?.Name ?? string.Empty,
-            Roles = roles,
+            Roles = activeRoles,
             Token = token,
-            ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpirationMinutes)
+            ExpiresAt = expiresAt
         };
 
         return response;
@@ -228,9 +279,9 @@ public class AuthService : IAuthService
     private async Task<User?> FindUserByLoginOrEmailAsync(string loginOrEmail)
     {
         var normalized = loginOrEmail.Trim();
-        
+
         var user = await _userRepository.GetByEmailAsync(normalized);
-        
+
         if (user == null)
         {
             user = await _userRepository.GetByLoginAsync(normalized);
@@ -324,7 +375,7 @@ public class AuthService : IAuthService
     private bool HasSequentialCharacters(string password)
     {
         const int sequenceLength = 3;
-        
+
         for (int i = 0; i <= password.Length - sequenceLength; i++)
         {
             var isSequential = true;
@@ -336,13 +387,13 @@ public class AuthService : IAuthService
                     break;
                 }
             }
-            
+
             if (isSequential)
             {
                 return true;
             }
         }
-        
+
         return false;
     }
 
@@ -359,13 +410,13 @@ public class AuthService : IAuthService
                     break;
                 }
             }
-            
+
             if (allSame)
             {
                 return true;
             }
         }
-        
+
         return false;
     }
 }
