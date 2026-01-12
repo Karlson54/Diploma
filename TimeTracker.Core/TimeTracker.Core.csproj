@@ -8,7 +8,6 @@
 
     <ItemGroup>
       <Folder Include="Services\Audit\" />
-      <Folder Include="Services\Dictionaries\" />
       <Folder Include="Services\Reporting\" />
       <Folder Include="Services\TimeTracking\" />
       <Folder Include="Validators\" />
