@@ -23,7 +23,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddTimeTrackerServices(this IServiceCollection services)
     {
         // AutoMapper
-        services.AddAutoMapper(typeof(TimeTracker.Core.Mappings.UserMappingProfile).Assembly);
+        services.AddAutoMapper(typeof(Core.Mappings.UserMappingProfile).Assembly);
 
         // Generic Repository
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
@@ -41,7 +41,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDictionaryRepository<Market>, DictionaryRepository<Market>>();
         services.AddScoped<IDictionaryRepository<ContractingAgency>, DictionaryRepository<ContractingAgency>>();
         services.AddScoped<IDictionaryRepository<Client>, DictionaryRepository<Client>>();
-        services.AddScoped<IDictionaryRepository<Data.Entities.Media>, DictionaryRepository<Data.Entities.Media>>();
+        services.AddScoped<IDictionaryRepository<Media>, DictionaryRepository<Media>>();
         services.AddScoped<IDictionaryRepository<JobType>, DictionaryRepository<JobType>>();
         services.AddScoped<IDictionaryRepository<ProjectBrand>, DictionaryRepository<ProjectBrand>>();
 
