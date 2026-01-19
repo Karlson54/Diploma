@@ -9,13 +9,24 @@ public class TimeEntryRepository : Repository<TimeEntry>, ITimeEntryRepository
 {
     private const long MaxHoursPerDayMs = 86400000;
 
+    private static readonly Func<TimeTrackerDbContext, long, DateTime, DateTime, Task<long>>
+        _getTotalHoursCompiledQuery =
+            EF.CompileAsyncQuery((TimeTrackerDbContext ctx, long userId, DateTime startOfDay, DateTime endOfDay) =>
+                ctx.TimeEntries
+                    .Where(te => te.UserId == userId &&
+                                 te.EntryDate >= startOfDay &&
+                                 te.EntryDate < endOfDay)
+                    .Sum(te => te.HoursMilliseconds)
+            );
+
     public TimeEntryRepository(TimeTrackerDbContext context) : base(context)
     {
     }
 
     #region Получение записей времени
 
-    public async Task<IEnumerable<TimeEntry>> GetUserTimeEntriesAsync(long userId, DateTime? fromDate = null, DateTime? toDate = null)
+    public async Task<IEnumerable<TimeEntry>> GetUserTimeEntriesAsync(long userId, DateTime? fromDate = null,
+        DateTime? toDate = null)
     {
         var query = _dbSet
             .AsNoTracking()
@@ -49,15 +60,21 @@ public class TimeEntryRepository : Repository<TimeEntry>, ITimeEntryRepository
 
     public async Task<bool> HasTimeEntryForDateAsync(long userId, DateTime date)
     {
+        var startOfDay = date.Date;
+        var endOfDay = date.Date.AddDays(1);
+
         return await _dbSet
-            .AnyAsync(te => te.UserId == userId && te.EntryDate.Date == date.Date);
+            .AnyAsync(te => te.UserId == userId &&
+                            te.EntryDate >= startOfDay &&
+                            te.EntryDate < endOfDay);
     }
 
     public async Task<long> GetTotalHoursForDateAsync(long userId, DateTime date)
     {
-        return await _dbSet
-            .Where(te => te.UserId == userId && te.EntryDate.Date == date.Date)
-            .SumAsync(te => te.HoursMilliseconds);
+        var startOfDay = date.Date;
+        var endOfDay = date.Date.AddDays(1);
+
+        return await _getTotalHoursCompiledQuery(_context, userId, startOfDay, endOfDay);
     }
 
     public async Task<bool> CanAddTimeAsync(long userId, DateTime date, long hoursMilliseconds)
@@ -80,26 +97,28 @@ public class TimeEntryRepository : Repository<TimeEntry>, ITimeEntryRepository
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<TimeEntry>> GetTimeEntriesByAgencyAsync(long agencyId, DateTime fromDate, DateTime toDate)
+    public async Task<IEnumerable<TimeEntry>> GetTimeEntriesByAgencyAsync(long agencyId, DateTime fromDate,
+        DateTime toDate)
     {
         return await _dbSet
             .AsNoTracking()
-            .Where(te => 
+            .Where(te =>
                 te.AgencyId == agencyId &&
-                te.EntryDate >= fromDate.Date && 
+                te.EntryDate >= fromDate.Date &&
                 te.EntryDate <= toDate.Date)
             .OrderBy(te => te.EntryDate)
             .ThenBy(te => te.UserId)
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<TimeEntry>> GetTimeEntriesByClientAsync(long clientId, DateTime fromDate, DateTime toDate)
+    public async Task<IEnumerable<TimeEntry>> GetTimeEntriesByClientAsync(long clientId, DateTime fromDate,
+        DateTime toDate)
     {
         return await _dbSet
             .AsNoTracking()
-            .Where(te => 
+            .Where(te =>
                 te.ClientId == clientId &&
-                te.EntryDate >= fromDate.Date && 
+                te.EntryDate >= fromDate.Date &&
                 te.EntryDate <= toDate.Date)
             .OrderBy(te => te.EntryDate)
             .ThenBy(te => te.UserId)
@@ -201,7 +220,7 @@ public class TimeEntryRepository : Repository<TimeEntry>, ITimeEntryRepository
     /// Получить записи времени с загруженными связанными данными для отчетов
     /// </summary>
     public async Task<IEnumerable<TimeEntry>> GetTimeEntriesWithDetailsAsync(
-        DateTime fromDate, 
+        DateTime fromDate,
         DateTime toDate,
         long? userId = null,
         long? agencyId = null,
@@ -255,7 +274,8 @@ public class TimeEntryRepository : Repository<TimeEntry>, ITimeEntryRepository
                 UserName = g.Key.Name,
                 TotalHours = g.Sum(te => te.HoursMilliseconds),
                 TotalEntries = g.Count(),
-                AverageHoursPerDay = g.Sum(te => te.HoursMilliseconds) / (double)g.Select(te => te.EntryDate).Distinct().Count()
+                AverageHoursPerDay = g.Sum(te => te.HoursMilliseconds) /
+                                     (double)g.Select(te => te.EntryDate).Distinct().Count()
             })
             .OrderByDescending(x => x.TotalHours)
             .ToListAsync();
@@ -287,11 +307,14 @@ public class TimeEntryRepository : Repository<TimeEntry>, ITimeEntryRepository
     /// </summary>
     public async Task<bool> CanUpdateTimeAsync(long entryId, long userId, DateTime date, long newHoursMilliseconds)
     {
-        // Получаем текущее количество часов без учета обновляемой записи
+        var startOfDay = date.Date;
+        var endOfDay = date.Date.AddDays(1);
+
         var totalExistingHours = await _dbSet
-            .Where(te => te.UserId == userId && 
-                        te.EntryDate.Date == date.Date && 
-                        te.Id != entryId)
+            .Where(te => te.UserId == userId &&
+                         te.EntryDate >= startOfDay &&
+                         te.EntryDate < endOfDay &&
+                         te.Id != entryId)
             .SumAsync(te => te.HoursMilliseconds);
 
         return (totalExistingHours + newHoursMilliseconds) <= MaxHoursPerDayMs;
@@ -302,9 +325,14 @@ public class TimeEntryRepository : Repository<TimeEntry>, ITimeEntryRepository
     /// </summary>
     public async Task<object?> GetDailySummaryAsync(long userId, DateTime date)
     {
+        var startOfDay = date.Date;
+        var endOfDay = date.Date.AddDays(1);
+
         var entries = await _dbSet
             .AsNoTracking()
-            .Where(te => te.UserId == userId && te.EntryDate.Date == date.Date)
+            .Where(te => te.UserId == userId &&
+                         te.EntryDate >= startOfDay &&
+                         te.EntryDate < endOfDay)
             .ToListAsync();
 
         if (!entries.Any())

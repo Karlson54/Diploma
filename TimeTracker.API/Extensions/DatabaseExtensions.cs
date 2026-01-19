@@ -29,6 +29,7 @@ public static class DatabaseExtensions
             {
                 options.EnableDetailedErrors();
                 options.EnableSensitiveDataLogging();
+                // options.LogTo(Console.WriteLine, LogLevel.Information);
             }
         });
 
