@@ -9,7 +9,6 @@
     <ItemGroup>
       <Folder Include="Services\Audit\" />
       <Folder Include="Services\Reporting\" />
-      <Folder Include="Services\TimeTracking\" />
     </ItemGroup>
 
     <ItemGroup>
