@@ -35,8 +35,6 @@ public class TimeEntryService : ITimeEntryService
         _logger = logger;
     }
 
-    #region CRUD Operations
-
     public async Task<TimeEntryDetailDto?> GetByIdAsync(long id, long requestingUserId)
     {
         var entry = await _timeEntryRepository
@@ -257,10 +255,6 @@ public class TimeEntryService : ITimeEntryService
             id, entry.UserId, entry.EntryDate);
     }
 
-    #endregion
-
-    #region Pagination
-
     public async Task<(IEnumerable<TimeEntryListItemDto> Entries, int TotalCount)> GetPagedAsync(
         int pageNumber,
         int pageSize,
@@ -310,10 +304,6 @@ public class TimeEntryService : ITimeEntryService
         return (dtos, totalCount);
     }
 
-    #endregion
-
-    #region Bulk Operations
-
     public async Task<IEnumerable<TimeEntryDto>> CreateBulkAsync(
         IEnumerable<CreateTimeEntryDto> dtos,
         long requestingUserId)
@@ -332,9 +322,6 @@ public class TimeEntryService : ITimeEntryService
         }
 
         var createdEntries = new List<TimeEntry>();
-
-        // Використовуємо транзакцію для consistency
-        await using var transaction = await _unitOfWork.BeginTransactionAsync();
 
         try
         {
@@ -386,7 +373,6 @@ public class TimeEntryService : ITimeEntryService
             }
 
             await _unitOfWork.SaveChangesAsync();
-            await _unitOfWork.CommitTransactionAsync();
 
             _logger.LogInformation(
                 "Bulk створення завершено. Створено {Count} записів користувачем {RequestingUserId}",
@@ -394,7 +380,6 @@ public class TimeEntryService : ITimeEntryService
         }
         catch (Exception ex)
         {
-            await _unitOfWork.RollbackTransactionAsync();
             _logger.LogError(ex,
                 "Помилка при bulk створенні записів користувачем {RequestingUserId}",
                 requestingUserId);
@@ -437,8 +422,6 @@ public class TimeEntryService : ITimeEntryService
         }
 
         var updatedEntries = new List<TimeEntry>();
-
-        await using var transaction = await _unitOfWork.BeginTransactionAsync();
 
         try
         {
@@ -491,7 +474,6 @@ public class TimeEntryService : ITimeEntryService
             }
 
             await _unitOfWork.SaveChangesAsync();
-            await _unitOfWork.CommitTransactionAsync();
 
             _logger.LogInformation(
                 "Bulk оновлення завершено. Оновлено {Count} записів користувачем {RequestingUserId}",
@@ -499,7 +481,6 @@ public class TimeEntryService : ITimeEntryService
         }
         catch (Exception ex)
         {
-            await _unitOfWork.RollbackTransactionAsync();
             _logger.LogError(ex,
                 "Помилка при bulk оновленні записів користувачем {RequestingUserId}",
                 requestingUserId);
@@ -539,8 +520,6 @@ public class TimeEntryService : ITimeEntryService
                 "Неможливо видалити більше 100 записів за один раз");
         }
 
-        await using var transaction = await _unitOfWork.BeginTransactionAsync();
-
         try
         {
             var entriesToDelete = new List<TimeEntry>();
@@ -564,7 +543,6 @@ public class TimeEntryService : ITimeEntryService
 
             _timeEntryRepository.DeleteRange(entriesToDelete);
             await _unitOfWork.SaveChangesAsync();
-            await _unitOfWork.CommitTransactionAsync();
 
             _logger.LogInformation(
                 "Bulk видалення завершено. Видалено {Count} записів користувачем {RequestingUserId}",
@@ -572,17 +550,12 @@ public class TimeEntryService : ITimeEntryService
         }
         catch (Exception ex)
         {
-            await _unitOfWork.RollbackTransactionAsync();
             _logger.LogError(ex,
                 "Помилка при bulk видаленні записів користувачем {RequestingUserId}",
                 requestingUserId);
             throw;
         }
     }
-
-    #endregion
-
-    #region Copy Operations
 
     public async Task<IEnumerable<TimeEntryDto>> CopyDayEntriesAsync(
         long userId,
@@ -638,8 +611,6 @@ public class TimeEntryService : ITimeEntryService
 
         var copiedEntries = new List<TimeEntry>();
 
-        await using var transaction = await _unitOfWork.BeginTransactionAsync();
-
         try
         {
             foreach (var sourceEntry in sourceEntries)
@@ -667,7 +638,6 @@ public class TimeEntryService : ITimeEntryService
             }
 
             await _unitOfWork.SaveChangesAsync();
-            await _unitOfWork.CommitTransactionAsync();
 
             _logger.LogInformation(
                 "Копіювання дня завершено. UserId: {UserId}, SourceDate: {SourceDate}, " +
@@ -676,7 +646,6 @@ public class TimeEntryService : ITimeEntryService
         }
         catch (Exception ex)
         {
-            await _unitOfWork.RollbackTransactionAsync();
             _logger.LogError(ex,
                 "Помилка при копіюванні дня для користувача {UserId}",
                 userId);
@@ -755,10 +724,6 @@ public class TimeEntryService : ITimeEntryService
 
         return allCopiedEntries;
     }
-
-    #endregion
-
-    #region Statistics
 
     public async Task<object> GetDailySummaryAsync(long userId, DateTime date)
     {
@@ -943,10 +908,6 @@ public class TimeEntryService : ITimeEntryService
         };
     }
 
-    #endregion
-
-    #region Validation & Permissions
-
     public async Task<bool> CanUserEditEntryAsync(long entryId, long requestingUserId)
     {
         var entry = await _timeEntryRepository.GetByIdAsync(entryId);
@@ -969,10 +930,6 @@ public class TimeEntryService : ITimeEntryService
 
         return ValidationConstants.MaxHoursPerDayMs - totalHours;
     }
-
-    #endregion
-
-    #region Private Helper Methods
 
     private async Task<bool> CanUserViewEntryAsync(TimeEntry entry, long requestingUserId)
     {
@@ -997,6 +954,4 @@ public class TimeEntryService : ITimeEntryService
 
         return roles.Contains("Admin") || roles.Contains("Manager");
     }
-
-    #endregion
 }

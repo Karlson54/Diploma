@@ -146,50 +146,87 @@ public class TimeValidationService : ITimeValidationService
         long jobTypeId)
     {
         var result = new ValidationResult { IsValid = true };
-        var errors = new List<string>();
 
-        // Перевіряємо всі справочники паралельно
-        var validationTasks = new[]
-        {
-            ValidateReferenceAsync("Agency", agencyId, _unitOfWork.Agencies),
-            ValidateReferenceAsync("Market", marketId, _unitOfWork.Markets),
-            ValidateReferenceAsync("ContractingAgency", contractingAgencyId, _unitOfWork.ContractingAgencies),
-            ValidateReferenceAsync("Client", clientId, _unitOfWork.Clients),
-            ValidateReferenceAsync("ProjectBrand", projectBrandId, _unitOfWork.ProjectBrands),
-            ValidateReferenceAsync("Media", mediaId, _unitOfWork.Media),
-            ValidateReferenceAsync("JobType", jobTypeId, _unitOfWork.JobTypes)
-        };
+        // Загружаем все сущности последовательно (исправлено!)
+        var agency = await _unitOfWork.Agencies.GetByIdAsync(agencyId);
+        var market = await _unitOfWork.Markets.GetByIdAsync(marketId);
+        var contractingAgency = await _unitOfWork.ContractingAgencies.GetByIdAsync(contractingAgencyId);
+        var client = await _unitOfWork.Clients.GetByIdAsync(clientId);
+        var projectBrand = await _unitOfWork.ProjectBrands.GetByIdAsync(projectBrandId);
+        var media = await _unitOfWork.Media.GetByIdAsync(mediaId);
+        var jobType = await _unitOfWork.JobTypes.GetByIdAsync(jobTypeId);
 
-        var validationResults = await Task.WhenAll(validationTasks);
-        
-        foreach (var error in validationResults.Where(e => e != null))
+        // Проверяем Agency
+        if (agency == null)
         {
-            result.AddError(error!);
+            result.AddError($"Agency з ID {agencyId} не знайдено");
+        }
+        else if (!agency.IsActive)
+        {
+            result.AddError($"Agency '{agency.Name}' деактивований");
+        }
+
+        // Проверяем Market
+        if (market == null)
+        {
+            result.AddError($"Market з ID {marketId} не знайдено");
+        }
+        else if (!market.IsActive)
+        {
+            result.AddError($"Market '{market.Name}' деактивований");
+        }
+
+        // Проверяем ContractingAgency
+        if (contractingAgency == null)
+        {
+            result.AddError($"ContractingAgency з ID {contractingAgencyId} не знайдено");
+        }
+        else if (!contractingAgency.IsActive)
+        {
+            result.AddError($"ContractingAgency '{contractingAgency.Name}' деактивований");
+        }
+
+        // Проверяем Client
+        if (client == null)
+        {
+            result.AddError($"Client з ID {clientId} не знайдено");
+        }
+        else if (!client.IsActive)
+        {
+            result.AddError($"Client '{client.Name}' деактивований");
+        }
+
+        // Проверяем ProjectBrand
+        if (projectBrand == null)
+        {
+            result.AddError($"ProjectBrand з ID {projectBrandId} не знайдено");
+        }
+        else if (!projectBrand.IsActive)
+        {
+            result.AddError($"ProjectBrand '{projectBrand.Name}' деактивований");
+        }
+
+        // Проверяем Media
+        if (media == null)
+        {
+            result.AddError($"Media з ID {mediaId} не знайдено");
+        }
+        else if (!media.IsActive)
+        {
+            result.AddError($"Media '{media.Name}' деактивований");
+        }
+
+        // Проверяем JobType
+        if (jobType == null)
+        {
+            result.AddError($"JobType з ID {jobTypeId} не знайдено");
+        }
+        else if (!jobType.IsActive)
+        {
+            result.AddError($"JobType '{jobType.Name}' деактивований");
         }
 
         return result;
-    }
-
-    private async Task<string?> ValidateReferenceAsync<T>(
-        string entityName, 
-        long id, 
-        Data.Repositories.Common.IRepository<T> repository) 
-        where T : Data.Entities.BaseEntity
-    {
-        var entity = await repository.GetByIdAsync(id);
-        
-        if (entity == null)
-        {
-            return $"{entityName} з ID {id} не знайдено";
-        }
-
-        // Якщо це DictionaryEntity - перевіряємо IsActive
-        if (entity is Data.Entities.DictionaryEntity dictEntity && !dictEntity.IsActive)
-        {
-            return $"{entityName} '{dictEntity.Name}' деактивований";
-        }
-
-        return null;
     }
 
     public async Task<ValidationResult> ValidateUserPermissionsAsync(

@@ -20,7 +20,6 @@
 
     <ItemGroup>
       <Folder Include="Controllers\Reports\" />
-      <Folder Include="Controllers\TimeTracking\" />
       <Folder Include="Middleware\" />
     </ItemGroup>
 
