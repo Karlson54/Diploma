@@ -1,0 +1,61 @@
+using TimeTracker.Core.DTOs.TimeEntries;
+
+namespace TimeTracker.Core.Services.TimeTracking;
+
+public interface ITimeEntryService
+{
+    // Базовые CRUD операции
+    Task<TimeEntryDetailDto?> GetByIdAsync(long id, long requestingUserId);
+    Task<IEnumerable<TimeEntryListItemDto>> GetUserEntriesAsync(
+        long userId, 
+        DateTime? fromDate = null, 
+        DateTime? toDate = null);
+    
+    Task<TimeEntryDto> CreateAsync(CreateTimeEntryDto dto, long requestingUserId);
+    Task<TimeEntryDto> UpdateAsync(long id, UpdateTimeEntryDto dto, long requestingUserId);
+    Task DeleteAsync(long id, long requestingUserId);
+    
+    // Пагинация
+    Task<(IEnumerable<TimeEntryListItemDto> Entries, int TotalCount)> GetPagedAsync(
+        int pageNumber,
+        int pageSize,
+        long? userId = null,
+        long? agencyId = null,
+        long? clientId = null,
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
+        long requestingUserId = 0);
+    
+    // Bulk операции
+    Task<IEnumerable<TimeEntryDto>> CreateBulkAsync(
+        IEnumerable<CreateTimeEntryDto> dtos, 
+        long requestingUserId);
+    
+    Task<IEnumerable<TimeEntryDto>> UpdateBulkAsync(
+        IEnumerable<(long Id, UpdateTimeEntryDto Dto)> updates,
+        long requestingUserId);
+    
+    Task DeleteBulkAsync(IEnumerable<long> ids, long requestingUserId);
+    
+    // Копирование записей
+    Task<IEnumerable<TimeEntryDto>> CopyDayEntriesAsync(
+        long userId,
+        DateTime sourceDate,
+        DateTime targetDate,
+        long requestingUserId);
+    
+    Task<IEnumerable<TimeEntryDto>> CopyWeekEntriesAsync(
+        long userId,
+        DateTime sourceWeekStart,
+        DateTime targetWeekStart,
+        long requestingUserId);
+    
+    // Статистика и аналитика
+    Task<object> GetDailySummaryAsync(long userId, DateTime date);
+    Task<object> GetWeeklySummaryAsync(long userId, DateTime weekStart);
+    Task<object> GetMonthlySummaryAsync(long userId, int year, int month);
+    
+    // Валидация
+    Task<bool> CanUserEditEntryAsync(long entryId, long requestingUserId);
+    Task<long> GetRemainingHoursForDayAsync(long userId, DateTime date, long? excludeEntryId = null);
+}
