@@ -6,6 +6,7 @@ using TimeTracker.Core.Services.Dictionaries.JobTypes;
 using TimeTracker.Core.Services.Dictionaries.Markets;
 using TimeTracker.Core.Services.Dictionaries.Media;
 using TimeTracker.Core.Services.Dictionaries.ProjectBrands;
+using TimeTracker.Core.Services.Reporting;
 using TimeTracker.Core.Services.RoleManagement;
 using TimeTracker.Core.Services.TimeTracking;
 using TimeTracker.Core.Services.UserManagement;
@@ -66,6 +67,9 @@ public static class ServiceCollectionExtensions
         // TimeEntry Services
         services.AddScoped<ITimeEntryService, TimeEntryService>();
         services.AddScoped<ITimeValidationService, TimeValidationService>();
+        
+        // Report Services
+        services.AddScoped<IReportService, ReportService>();
 
         return services;
     }
