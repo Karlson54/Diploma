@@ -70,7 +70,8 @@ public static class ServiceCollectionExtensions
         
         // Report Services
         services.AddScoped<IReportService, ReportService>();
-
+        services.AddScoped<IExportService, ExportService>(); 
+        
         return services;
     }
 }
