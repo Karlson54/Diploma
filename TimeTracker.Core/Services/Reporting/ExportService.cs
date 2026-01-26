@@ -23,8 +23,6 @@ public class ExportService : IExportService
         _logger = logger;
     }
 
-    #region Excel Export Methods
-
     public async Task<byte[]> ExportUserLoadReportToExcelAsync(
         long userId,
         DateTime fromDate,
@@ -36,7 +34,8 @@ public class ExportService : IExportService
             userId, fromDate, toDate, requestingUserId);
 
         using var workbook = new XLWorkbook();
-        var worksheet = workbook.Worksheets.Add(GetLocalizedText("User Load Report", locale));
+        var sheetName = locale.ToLower() == "uk" ? "Навантаження користувача" : "User Load Report";
+        var worksheet = workbook.Worksheets.Add(sheetName);
 
         var currentRow = 1;
 
@@ -266,10 +265,6 @@ public class ExportService : IExportService
         return stream.ToArray();
     }
 
-    #endregion
-
-    #region CSV Export Methods
-
     public async Task<byte[]> ExportUserLoadReportToCsvAsync(
         long userId,
         DateTime fromDate,
@@ -432,10 +427,6 @@ public class ExportService : IExportService
     {
         return Task.FromResult(ExportToCsvInternal(data, locale));
     }
-
-    #endregion
-
-    #region Helper Methods for Excel Formatting
 
     private int AddReportTitle(IXLWorksheet worksheet, int row, string title, string locale)
     {
@@ -742,10 +733,6 @@ public class ExportService : IExportService
         };
     }
 
-    #endregion
-
-    #region Additional Helper Methods for Team/Client/Summary Reports
-
     private int AddTeamStatistics(IXLWorksheet worksheet, int row, TeamLoadReportDto report, string locale)
     {
         worksheet.Cell(row, 1).Value = GetLocalizedText("Team Statistics", locale);
@@ -1014,10 +1001,6 @@ public class ExportService : IExportService
         return row;
     }
 
-    #endregion
-
-    #region CSV Helper Methods
-
     private byte[] ExportToCsvInternal<T>(IEnumerable<T> data, string locale) where T : class
     {
         using var memoryStream = new MemoryStream();
@@ -1033,10 +1016,6 @@ public class ExportService : IExportService
 
         return memoryStream.ToArray();
     }
-
-    #endregion
-
-    #region CSV Record Classes
 
     private class UserLoadCsvRecord
     {
@@ -1079,5 +1058,3 @@ public class ExportService : IExportService
         public double Percentage { get; set; }
     }
 }
-
-#endregion

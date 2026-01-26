@@ -24,6 +24,9 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddTimeTrackerServices(this IServiceCollection services)
     {
+        //Memory Cache для ReportService
+        services.AddMemoryCache();
+        
         // AutoMapper
         services.AddAutoMapper(typeof(Core.Mappings.UserMappingProfile).Assembly);
 
