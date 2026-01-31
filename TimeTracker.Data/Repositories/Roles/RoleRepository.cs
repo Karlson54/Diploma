@@ -1,4 +1,3 @@
-// TimeTracker.Data/Repositories/Roles/RoleRepository.cs
 using Microsoft.EntityFrameworkCore;
 using TimeTracker.Data.Context;
 using TimeTracker.Data.Entities;

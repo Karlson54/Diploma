@@ -41,7 +41,7 @@ public class AuditService : IAuditService
         {
             var auditLog = new AuditLog
             {
-                UserId = userId.ToString(),
+                UserId = userId,
                 UserName = userName,
                 Action = AuditAction.Create,
                 EntityName = entityName,
@@ -81,7 +81,7 @@ public class AuditService : IAuditService
         {
             var auditLog = new AuditLog
             {
-                UserId = userId.ToString(),
+                UserId = userId,
                 UserName = userName,
                 Action = AuditAction.Update,
                 EntityName = entityName,
@@ -121,7 +121,7 @@ public class AuditService : IAuditService
         {
             var auditLog = new AuditLog
             {
-                UserId = userId.ToString(),
+                UserId = userId,
                 UserName = userName,
                 Action = AuditAction.Delete,
                 EntityName = entityName,
@@ -159,7 +159,7 @@ public class AuditService : IAuditService
         {
             var auditLog = new AuditLog
             {
-                UserId = userId.ToString(),
+                UserId = userId,
                 UserName = userName,
                 Action = success ? AuditAction.Login : AuditAction.LoginFailed,
                 EntityName = "Authentication",
@@ -194,7 +194,7 @@ public class AuditService : IAuditService
         {
             var auditLog = new AuditLog
             {
-                UserId = userId.ToString(),
+                UserId = userId,
                 UserName = userName,
                 Action = AuditAction.Logout,
                 EntityName = "Authentication",
@@ -224,7 +224,7 @@ public class AuditService : IAuditService
         {
             var auditLog = new AuditLog
             {
-                UserId = userId.ToString(),
+                UserId = userId,
                 UserName = userName,
                 Action = AuditAction.PasswordChanged,
                 EntityName = "User",
@@ -269,7 +269,7 @@ public class AuditService : IAuditService
 
             var auditLog = new AuditLog
             {
-                UserId = userId.ToString(),
+                UserId = userId,
                 UserName = userName,
                 Action = AuditAction.RoleAssigned,
                 EntityName = "UserRole",
@@ -315,7 +315,7 @@ public class AuditService : IAuditService
 
             var auditLog = new AuditLog
             {
-                UserId = userId.ToString(),
+                UserId = userId,
                 UserName = userName,
                 Action = AuditAction.RoleRemoved,
                 EntityName = "UserRole",
@@ -358,7 +358,7 @@ public class AuditService : IAuditService
 
             var auditLog = new AuditLog
             {
-                UserId = userId.ToString(),
+                UserId = userId,
                 UserName = userName,
                 Action = action,
                 EntityName = entityName,
@@ -384,7 +384,7 @@ public class AuditService : IAuditService
     public async Task<IEnumerable<AuditLogDto>> GetLogsAsync(
         DateTime? fromDate = null,
         DateTime? toDate = null,
-        string? userId = null,
+        long? userId = null,
         string? action = null,
         string? entityName = null,
         int pageNumber = 1,
@@ -412,7 +412,7 @@ public class AuditService : IAuditService
         int pageSize = 50)
     {
         var logs = await _auditLogRepository.GetUserActivityAsync(
-            userId.ToString(),
+            userId,
             fromDate,
             toDate,
             pageNumber,

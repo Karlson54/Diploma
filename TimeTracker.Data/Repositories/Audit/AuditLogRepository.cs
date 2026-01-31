@@ -14,7 +14,7 @@ public class AuditLogRepository : Repository<AuditLog>, IAuditLogRepository
     public async Task<IEnumerable<AuditLog>> GetLogsAsync(
         DateTime? fromDate,
         DateTime? toDate,
-        string? userId,
+        long? userId,
         string? action,
         string? entityName,
         long? entityId,
@@ -35,7 +35,7 @@ public class AuditLogRepository : Repository<AuditLog>, IAuditLogRepository
     public async Task<int> GetLogsCountAsync(
         DateTime? fromDate,
         DateTime? toDate,
-        string? userId,
+        long? userId,
         string? action,
         string? entityName,
         long? entityId,
@@ -46,7 +46,7 @@ public class AuditLogRepository : Repository<AuditLog>, IAuditLogRepository
     }
 
     public async Task<IEnumerable<AuditLog>> GetUserActivityAsync(
-        string userId,
+        long userId,
         DateTime? fromDate,
         DateTime? toDate,
         int pageNumber,
@@ -89,7 +89,7 @@ public class AuditLogRepository : Repository<AuditLog>, IAuditLogRepository
     }
 
     public async Task<Dictionary<string, int>> GetActionStatisticsAsync(
-        string userId,
+        long userId,
         DateTime fromDate,
         DateTime toDate)
     {
@@ -116,7 +116,7 @@ public class AuditLogRepository : Repository<AuditLog>, IAuditLogRepository
     private IQueryable<AuditLog> BuildLogsQuery(
         DateTime? fromDate,
         DateTime? toDate,
-        string? userId,
+        long? userId,
         string? action,
         string? entityName,
         long? entityId,
@@ -134,7 +134,7 @@ public class AuditLogRepository : Repository<AuditLog>, IAuditLogRepository
             query = query.Where(log => log.CreatedAt <= toDate.Value);
         }
 
-        if (!string.IsNullOrWhiteSpace(userId))
+        if (userId.HasValue)
         {
             query = query.Where(log => log.UserId == userId);
         }

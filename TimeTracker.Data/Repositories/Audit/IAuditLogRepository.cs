@@ -8,7 +8,7 @@ public interface IAuditLogRepository : IRepository<AuditLog>
     Task<IEnumerable<AuditLog>> GetLogsAsync(
         DateTime? fromDate,
         DateTime? toDate,
-        string? userId,
+        long? userId,
         string? action,
         string? entityName,
         long? entityId,
@@ -19,14 +19,14 @@ public interface IAuditLogRepository : IRepository<AuditLog>
     Task<int> GetLogsCountAsync(
         DateTime? fromDate,
         DateTime? toDate,
-        string? userId,
+        long? userId,
         string? action,
         string? entityName,
         long? entityId,
         bool? success);
 
     Task<IEnumerable<AuditLog>> GetUserActivityAsync(
-        string userId,
+        long userId,
         DateTime? fromDate,
         DateTime? toDate,
         int pageNumber,
@@ -39,7 +39,7 @@ public interface IAuditLogRepository : IRepository<AuditLog>
         int pageSize);
 
     Task<Dictionary<string, int>> GetActionStatisticsAsync(
-        string userId,
+        long userId,
         DateTime fromDate,
         DateTime toDate);
 

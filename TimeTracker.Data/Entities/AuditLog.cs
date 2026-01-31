@@ -2,7 +2,7 @@ namespace TimeTracker.Data.Entities;
 
 public class AuditLog : BaseEntity
 {
-    public string UserId { get; set; } = string.Empty;
+    public long UserId { get; set; }
     public string UserName { get; set; } = string.Empty;
     public string Action { get; set; } = string.Empty; // Create, Update, Delete, Login, etc.
     public string EntityName { get; set; } = string.Empty; // User, Role, TimeEntry, etc.

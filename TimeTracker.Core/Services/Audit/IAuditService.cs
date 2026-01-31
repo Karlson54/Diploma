@@ -89,7 +89,7 @@ public interface IAuditService
     Task<IEnumerable<AuditLogDto>> GetLogsAsync(
         DateTime? fromDate = null,
         DateTime? toDate = null,
-        string? userId = null,
+        long? userId = null,
         string? action = null,
         string? entityName = null,
         int pageNumber = 1,
