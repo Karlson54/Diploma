@@ -23,6 +23,7 @@ public class TimeTrackerDbContext : DbContext, ITimeTrackerDbContext
     public DbSet<User> Users { get; set; }
     public DbSet<UserRole> UserRoles { get; set; }
     public DbSet<TimeEntry> TimeEntries { get; set; }
+    public DbSet<AuditLog> AuditLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
