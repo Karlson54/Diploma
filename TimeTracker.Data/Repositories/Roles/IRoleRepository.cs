@@ -1,4 +1,3 @@
-// TimeTracker.Data/Repositories/Roles/IRoleRepository.cs
 using TimeTracker.Data.Entities;
 using TimeTracker.Data.Repositories.Common;
 

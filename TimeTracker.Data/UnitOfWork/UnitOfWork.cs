@@ -1,8 +1,8 @@
-// TimeTracker.Data/UnitOfWork/UnitOfWork.cs
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using TimeTracker.Data.Context;
 using TimeTracker.Data.Entities;
+using TimeTracker.Data.Repositories.Audit;
 using TimeTracker.Data.Repositories.Common;
 
 namespace TimeTracker.Data.UnitOfWork;
@@ -24,6 +24,7 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<User>? _users;
     private IRepository<UserRole>? _userRoles;
     private IRepository<TimeEntry>? _timeEntries;
+    private IAuditLogRepository? _auditLogs;
 
     public UnitOfWork(TimeTrackerDbContext context)
     {
@@ -32,38 +33,41 @@ public class UnitOfWork : IUnitOfWork
 
     #region Репозитории (Lazy Loading pattern)
 
-    public IRepository<Agency> Agencies => 
+    public IRepository<Agency> Agencies =>
         _agencies ??= new Repository<Agency>(_context);
 
-    public IRepository<Market> Markets => 
+    public IRepository<Market> Markets =>
         _markets ??= new Repository<Market>(_context);
 
-    public IRepository<ContractingAgency> ContractingAgencies => 
+    public IRepository<ContractingAgency> ContractingAgencies =>
         _contractingAgencies ??= new Repository<ContractingAgency>(_context);
 
-    public IRepository<Client> Clients => 
+    public IRepository<Client> Clients =>
         _clients ??= new Repository<Client>(_context);
 
-    public IRepository<Media> Media => 
+    public IRepository<Media> Media =>
         _media ??= new Repository<Media>(_context);
 
-    public IRepository<JobType> JobTypes => 
+    public IRepository<JobType> JobTypes =>
         _jobTypes ??= new Repository<JobType>(_context);
 
-    public IRepository<ProjectBrand> ProjectBrands => 
+    public IRepository<ProjectBrand> ProjectBrands =>
         _projectBrands ??= new Repository<ProjectBrand>(_context);
 
-    public IRepository<Role> Roles => 
+    public IRepository<Role> Roles =>
         _roles ??= new Repository<Role>(_context);
 
-    public IRepository<User> Users => 
+    public IRepository<User> Users =>
         _users ??= new Repository<User>(_context);
 
-    public IRepository<UserRole> UserRoles => 
+    public IRepository<UserRole> UserRoles =>
         _userRoles ??= new Repository<UserRole>(_context);
 
-    public IRepository<TimeEntry> TimeEntries => 
+    public IRepository<TimeEntry> TimeEntries =>
         _timeEntries ??= new Repository<TimeEntry>(_context);
+
+    public IAuditLogRepository AuditLogs =>
+        _auditLogs ??= new AuditLogRepository(_context);
 
     #endregion
 
@@ -75,7 +79,8 @@ public class UnitOfWork : IUnitOfWork
     {
         if (_currentTransaction != null)
         {
-            throw new InvalidOperationException("Транзакция уже активна. Завершите текущую транзакцию перед началом новой.");
+            throw new InvalidOperationException(
+                "Транзакция уже активна. Завершите текущую транзакцию перед началом новой.");
         }
 
         _currentTransaction = await _context.Database.BeginTransactionAsync();
@@ -93,7 +98,7 @@ public class UnitOfWork : IUnitOfWork
         {
             // Сначала сохраняем все изменения в контексте
             await SaveChangesAsync();
-            
+
             // Затем коммитим транзакцию
             await _currentTransaction.CommitAsync();
         }
@@ -139,7 +144,7 @@ public class UnitOfWork : IUnitOfWork
         {
             // Обновляем временные метки перед сохранением
             UpdateTimestamps();
-            
+
             return await _context.SaveChangesAsync();
         }
         catch (DbUpdateException ex)
@@ -177,7 +182,7 @@ public class UnitOfWork : IUnitOfWork
                 case EntityState.Added:
                     entry.Entity.CreatedAt = currentTime;
                     break;
-                    
+
                 case EntityState.Modified:
                     entry.Entity.UpdatedAt = currentTime;
                     // Предотвращаем изменение CreatedAt
@@ -254,6 +259,7 @@ public class UnitOfWork : IUnitOfWork
 
             _context?.Dispose();
         }
+
         _disposed = true;
     }
 

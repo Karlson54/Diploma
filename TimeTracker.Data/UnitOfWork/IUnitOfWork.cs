@@ -1,7 +1,6 @@
-// TimeTracker.Data/UnitOfWork/IUnitOfWork.cs
-
 using Microsoft.EntityFrameworkCore.Storage;
 using TimeTracker.Data.Entities;
+using TimeTracker.Data.Repositories.Audit;
 using TimeTracker.Data.Repositories.Common;
 
 namespace TimeTracker.Data.UnitOfWork;
@@ -20,6 +19,7 @@ public interface IUnitOfWork : IDisposable
     IRepository<User> Users { get; }
     IRepository<UserRole> UserRoles { get; }
     IRepository<TimeEntry> TimeEntries { get; }
+    IAuditLogRepository AuditLogs { get; }
     
     // Управление транзакциями
     Task<IDbContextTransaction> BeginTransactionAsync();
