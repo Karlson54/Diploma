@@ -31,13 +31,16 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var response = await _authService.RegisterAsync(dto);
-            
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
+            var response = await _authService.RegisterAsync(dto, ipAddress, userAgent);
+
             _logger.LogInformation("Користувач {Email} успішно зареєстрований", dto.Email);
-            
+
             return CreatedAtAction(
-                nameof(ValidateToken), 
-                new { userId = response.UserId }, 
+                nameof(ValidateToken),
+                new { userId = response.UserId },
                 response);
         }
         catch (InvalidOperationException ex)
@@ -62,10 +65,13 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var response = await _authService.LoginAsync(dto);
-            
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
+            var response = await _authService.LoginAsync(dto, ipAddress, userAgent);
+
             _logger.LogInformation("Користувач {Email} успішно увійшов", response.Email);
-            
+
             return Ok(response);
         }
         catch (UnauthorizedAccessException ex)
@@ -99,7 +105,7 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto) // ✅ ЗМІНЕНО ТИП
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
     {
         try
         {
@@ -109,10 +115,13 @@ public class AuthController : ControllerBase
                 return Unauthorized(new { Message = "Невалідний токен" });
             }
 
-            await _authService.ChangePasswordAsync(userId, dto.CurrentPassword, dto.NewPassword);
-            
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
+            await _authService.ChangePasswordAsync(userId, dto.CurrentPassword, dto.NewPassword, ipAddress, userAgent);
+
             _logger.LogInformation("Користувач {UserId} успішно змінив пароль", userId);
-            
+
             return Ok(new { Message = "Пароль успішно змінено" });
         }
         catch (UnauthorizedAccessException ex)
@@ -128,5 +137,45 @@ public class AuthController : ControllerBase
         {
             return NotFound(new { Message = ex.Message });
         }
+    }
+
+    private string GetIpAddress()
+    {
+        // Спочатку перевіряємо заголовки проксі/load balancer
+        var forwardedFor = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(forwardedFor))
+        {
+            // X-Forwarded-For може містити список IP адрес, беремо першу
+            var ips = forwardedFor.Split(',', StringSplitOptions.RemoveEmptyEntries);
+            if (ips.Length > 0)
+            {
+                return ips[0].Trim();
+            }
+        }
+
+        // Перевіряємо інші стандартні заголовки
+        var realIp = HttpContext.Request.Headers["X-Real-IP"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(realIp))
+        {
+            return realIp.Trim();
+        }
+
+        // Якщо заголовків немає, беремо IP з Connection
+        return HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+    }
+
+    private string GetUserAgent()
+    {
+        var userAgent = HttpContext.Request.Headers["User-Agent"].FirstOrDefault();
+
+        if (string.IsNullOrEmpty(userAgent))
+        {
+            return "Unknown";
+        }
+
+        // Обмежуємо довжину для збереження в БД (max 500 символів згідно конфігурації)
+        return userAgent.Length > 500
+            ? userAgent.Substring(0, 500)
+            : userAgent;
     }
 }
