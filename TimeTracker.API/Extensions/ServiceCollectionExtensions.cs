@@ -17,6 +17,8 @@ using TimeTracker.Data.Repositories.Roles;
 using TimeTracker.Data.Repositories.TimeEntries;
 using TimeTracker.Data.Repositories.Users;
 using TimeTracker.Data.UnitOfWork;
+using TimeTracker.Core.Services.Audit;
+using TimeTracker.Data.Repositories.Audit;
 
 namespace TimeTracker.API.Extensions;
 
@@ -26,21 +28,22 @@ public static class ServiceCollectionExtensions
     {
         //Memory Cache для ReportService
         services.AddMemoryCache();
-        
+
         // AutoMapper
         services.AddAutoMapper(typeof(Core.Mappings.UserMappingProfile).Assembly);
 
         // Generic Repository
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-        
+
         // Unit of Work
         services.AddScoped<IUnitOfWork, UnitOfWork>();
-        
+
         // Specialized Repositories
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<ITimeEntryRepository, TimeEntryRepository>();
-        
+        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+
         // Dictionary Repositories
         services.AddScoped<IDictionaryRepository<Agency>, DictionaryRepository<Agency>>();
         services.AddScoped<IDictionaryRepository<Market>, DictionaryRepository<Market>>();
@@ -53,11 +56,11 @@ public static class ServiceCollectionExtensions
         // Auth Services
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
-        
+
         // User & Role Services
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IRoleService, RoleService>();
-        
+
         // Dictionary Services 
         services.AddScoped<IAgencyService, AgencyService>();
         services.AddScoped<IMarketService, MarketService>();
@@ -66,15 +69,18 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IMediaService, MediaService>();
         services.AddScoped<IJobTypeService, JobTypeService>();
         services.AddScoped<IProjectBrandService, ProjectBrandService>();
-        
+
         // TimeEntry Services
         services.AddScoped<ITimeEntryService, TimeEntryService>();
         services.AddScoped<ITimeValidationService, TimeValidationService>();
-        
+
         // Report Services
         services.AddScoped<IReportService, ReportService>();
-        services.AddScoped<IExportService, ExportService>(); 
-        
+        services.AddScoped<IExportService, ExportService>();
+
+        // Audit Service
+        services.AddScoped<IAuditService, AuditService>();
+
         return services;
     }
 }

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using TimeTracker.Core.Common;
 using TimeTracker.Core.DTOs.Auth;
+using TimeTracker.Core.Services.Audit;
 using TimeTracker.Data.Entities;
 using TimeTracker.Data.Repositories.Roles;
 using TimeTracker.Data.Repositories.Users;
@@ -17,6 +18,7 @@ public class AuthService : IAuthService
     private readonly IRoleRepository _roleRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IJwtTokenService _jwtTokenService;
+    private readonly IAuditService _auditService;
     private readonly IMapper _mapper;
     private readonly ILogger<AuthService> _logger;
     private readonly JwtSettings _jwtSettings;
@@ -29,6 +31,7 @@ public class AuthService : IAuthService
         IRoleRepository roleRepository,
         IUnitOfWork unitOfWork,
         IJwtTokenService jwtTokenService,
+        IAuditService auditService,
         IMapper mapper,
         ILogger<AuthService> logger,
         IOptions<JwtSettings> jwtSettings)
@@ -37,30 +40,59 @@ public class AuthService : IAuthService
         _roleRepository = roleRepository;
         _unitOfWork = unitOfWork;
         _jwtTokenService = jwtTokenService;
+        _auditService = auditService;
         _mapper = mapper;
         _logger = logger;
         _jwtSettings = jwtSettings.Value;
     }
 
-    public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
+    public async Task<AuthResponseDto> LoginAsync(LoginDto dto, string ipAddress, string userAgent)
     {
         var user = await FindUserByLoginOrEmailAsync(dto.LoginOrEmail);
 
         if (user == null)
         {
             _logger.LogWarning("Спроба входу з неіснуючим логіном/email: {LoginOrEmail}", dto.LoginOrEmail);
+
+            // Логуємо невдалу спробу
+            await _auditService.LogLoginAsync(
+                userId: 0,
+                userName: dto.LoginOrEmail,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: false,
+                errorMessage: "Невірний логін/email або пароль");
+
             throw new UnauthorizedAccessException("Невірний логін/email або пароль");
         }
 
         if (!user.IsActive)
         {
             _logger.LogWarning("Спроба входу неактивного користувача: {UserId}", user.Id);
+
+            await _auditService.LogLoginAsync(
+                userId: user.Id,
+                userName: user.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: false,
+                errorMessage: "Обліковий запис деактивовано");
+
             throw new UnauthorizedAccessException("Обліковий запис деактивовано. Зверніться до адміністратора.");
         }
 
         if (!VerifyPassword(dto.Password, user.PasswordHash))
         {
             _logger.LogWarning("Невірний пароль для користувача: {UserId}", user.Id);
+
+            await _auditService.LogLoginAsync(
+                userId: user.Id,
+                userName: user.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: false,
+                errorMessage: "Невірний пароль");
+
             throw new UnauthorizedAccessException("Невірний логін/email або пароль");
         }
 
@@ -78,10 +110,27 @@ public class AuthService : IAuthService
         if (!activeRoles.Any())
         {
             _logger.LogWarning("Користувач {UserId} не має активних ролей", user.Id);
+
+            await _auditService.LogLoginAsync(
+                userId: user.Id,
+                userName: user.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: false,
+                errorMessage: "У вас немає активних ролей");
+
             throw new UnauthorizedAccessException("У вас немає активних ролей. Зверніться до адміністратора.");
         }
 
         var token = _jwtTokenService.GenerateToken(userWithRoles, activeRoles);
+
+        // Логуємо успішний вхід
+        await _auditService.LogLoginAsync(
+            userId: user.Id,
+            userName: user.Name,
+            ipAddress: ipAddress,
+            userAgent: userAgent,
+            success: true);
 
         var response = new AuthResponseDto
         {
@@ -106,7 +155,7 @@ public class AuthService : IAuthService
         return response;
     }
 
-    public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
+    public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto, string ipAddress, string userAgent)
     {
         await ValidateRegistrationDataAsync(dto);
         ValidatePasswordStrength(dto.Password);
@@ -163,6 +212,27 @@ public class AuthService : IAuthService
             });
 
             await _unitOfWork.SaveChangesAsync();
+
+            // Логуємо створення користувача
+            var newValues = new
+            {
+                user.Login,
+                user.Email,
+                user.Name,
+                AgencyId = user.AgencyId,
+                AgencyName = agency.Name,
+                IsActive = user.IsActive,
+                AssignedRole = SystemRoles.Employee
+            };
+
+            await _auditService.LogCreateAsync(
+                entityName: "User",
+                entityId: user.Id,
+                newValues: newValues,
+                userId: user.Id,
+                userName: user.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent);
 
             _logger.LogInformation(
                 "Новий користувач успішно зареєстрований. UserId: {UserId}, Email: {Email}, Login: {Login}, AgencyId: {AgencyId}, AgencyName: {AgencyName}",
@@ -231,7 +301,8 @@ public class AuthService : IAuthService
         return response;
     }
 
-    public async Task ChangePasswordAsync(long userId, string currentPassword, string newPassword)
+    public async Task ChangePasswordAsync(long userId, string currentPassword, string newPassword, string ipAddress,
+        string userAgent)
     {
         var user = await _userRepository.GetByIdAsync(userId);
         if (user == null)
@@ -261,6 +332,13 @@ public class AuthService : IAuthService
 
         _userRepository.Update(user);
         await _unitOfWork.SaveChangesAsync();
+
+        // Логуємо зміну пароля
+        await _auditService.LogPasswordChangeAsync(
+            userId: userId,
+            userName: user.Name,
+            ipAddress: ipAddress,
+            userAgent: userAgent);
 
         _logger.LogInformation("Користувач {UserId} успішно змінив пароль", userId);
     }

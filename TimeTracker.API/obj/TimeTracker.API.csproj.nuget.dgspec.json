@@ -44,7 +44,8 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "direct"
-        }
+        },
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net8.0": {
@@ -80,6 +81,20 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.17, 8.0.17]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Host.osx-x64",
+              "version": "[8.0.17, 8.0.17]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.17, 8.0.17]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.AspNetCore.App": {
               "privateAssets": "none"
@@ -88,7 +103,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.412/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/Users/andrejruban/.dotnet/sdk/9.0.301/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
@@ -129,7 +144,8 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "direct"
-        }
+        },
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net8.0": {
@@ -171,12 +187,22 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.17, 8.0.17]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.17, 8.0.17]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.412/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/Users/andrejruban/.dotnet/sdk/9.0.301/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
@@ -213,7 +239,8 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "direct"
-        }
+        },
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net8.0": {
@@ -247,12 +274,22 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.17, 8.0.17]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.17, 8.0.17]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.412/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/Users/andrejruban/.dotnet/sdk/9.0.301/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

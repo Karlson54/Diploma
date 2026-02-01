@@ -19,10 +19,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Middleware\" />
-    </ItemGroup>
-
-    <ItemGroup>
         <ProjectReference Include="..\TimeTracker.Core\TimeTracker.Core.csproj" />
         <ProjectReference Include="..\TimeTracker.Data\TimeTracker.Data.csproj" />
     </ItemGroup>
