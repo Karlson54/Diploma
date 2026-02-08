@@ -2,6 +2,7 @@ using System.Text.Json;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
 using TimeTracker.Core.DTOs.Roles;
+using TimeTracker.Core.Services.Audit;
 using TimeTracker.Data.Entities;
 using TimeTracker.Data.Repositories.Roles;
 using TimeTracker.Data.Repositories.Users;
@@ -16,6 +17,7 @@ public class RoleService : IRoleService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly ILogger<RoleService> _logger;
+    private readonly IAuditService _auditService;
 
     // Системні ролі які не можна видаляти або деактивувати
     private static readonly string[] SystemRoles = { "Admin", "Manager", "Employee", "Accountant" };
@@ -25,13 +27,15 @@ public class RoleService : IRoleService
         IUserRepository userRepository,
         IUnitOfWork unitOfWork,
         IMapper mapper,
-        ILogger<RoleService> logger)
+        ILogger<RoleService> logger,
+        IAuditService auditService)
     {
         _roleRepository = roleRepository;
         _userRepository = userRepository;
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _logger = logger;
+        _auditService = auditService;
     }
 
     public async Task<RoleDetailDto?> GetByIdAsync(long id)
@@ -237,7 +241,7 @@ public class RoleService : IRoleService
         return await _roleRepository.UserHasRoleAsync(userId, roleName);
     }
 
-    public async Task AssignRoleToUserAsync(long userId, long roleId)
+    public async Task AssignRoleToUserAsync(long userId, long roleId, long requestingUserId, string ipAddress, string userAgent)
     {
         var user = await _userRepository.GetByIdAsync(userId);
         if (user == null)
@@ -258,9 +262,24 @@ public class RoleService : IRoleService
 
         await _roleRepository.AssignRoleAsync(userId, roleId);
         await _unitOfWork.SaveChangesAsync();
+
+        // Audit logging
+        var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
+        if (requestingUser != null)
+        {
+            await _auditService.LogRoleAssignedAsync(
+                userId: requestingUserId,
+                userName: requestingUser.Name,
+                targetUserId: userId,
+                targetUserName: user.Name,
+                roleId: roleId,
+                roleName: role.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent);
+        }
     }
 
-    public async Task RemoveRoleFromUserAsync(long userId, long roleId)
+    public async Task RemoveRoleFromUserAsync(long userId, long roleId, long requestingUserId, string ipAddress, string userAgent)
     {
         var userExists = await _userRepository.ExistsAsync(userId);
         if (!userExists)
@@ -292,9 +311,25 @@ public class RoleService : IRoleService
 
         await _roleRepository.RemoveRoleAsync(userId, roleId);
         await _unitOfWork.SaveChangesAsync();
+
+        // Audit logging
+        var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
+        var targetUser = await _userRepository.GetByIdAsync(userId);
+        if (requestingUser != null && targetUser != null)
+        {
+            await _auditService.LogRoleRemovedAsync(
+                userId: requestingUserId,
+                userName: requestingUser.Name,
+                targetUserId: userId,
+                targetUserName: targetUser.Name,
+                roleId: roleId,
+                roleName: role.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent);
+        }
     }
 
-    public async Task ReplaceUserRolesAsync(long userId, IEnumerable<long> roleIds)
+    public async Task ReplaceUserRolesAsync(long userId, IEnumerable<long> roleIds, long requestingUserId, string ipAddress, string userAgent)
     {
         var roleIdsList = roleIds.ToList();
 
@@ -339,6 +374,27 @@ public class RoleService : IRoleService
 
         await _roleRepository.ReplaceUserRolesAsync(userId, roleIdsList);
         await _unitOfWork.SaveChangesAsync();
+
+        // Audit logging
+        var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
+        if (requestingUser != null)
+        {
+            var oldRoleNames = string.Join(", ", currentRoles.Select(r => r.Name));
+            var newRoleNames = string.Join(", ", roles.Select(r => r.Name));
+            
+            var oldValues = new { RoleIds = currentRoles.Select(r => r.Id).ToList(), RoleNames = oldRoleNames };
+            var newValues = new { RoleIds = roleIdsList, RoleNames = newRoleNames };
+
+            await _auditService.LogUpdateAsync(
+                entityName: "UserRoles",
+                entityId: userId,
+                oldValues: oldValues,
+                newValues: newValues,
+                userId: requestingUserId,
+                userName: requestingUser.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent);
+        }
     }
 
     public async Task<bool> IsRoleNameExistsAsync(string name, long? excludeRoleId = null)
@@ -389,7 +445,7 @@ public class RoleService : IRoleService
         }
     }
 
-    public async Task UpdateRolePermissionsAsync(long roleId, IEnumerable<string> permissions)
+    public async Task UpdateRolePermissionsAsync(long roleId, IEnumerable<string> permissions, long requestingUserId, string ipAddress, string userAgent)
     {
         var role = await _roleRepository.GetByIdAsync(roleId);
         if (role == null)
@@ -397,20 +453,16 @@ public class RoleService : IRoleService
 
         var permissionsList = permissions.ToList();
 
+        // Зберігаємо старі permissions для audit
+        var oldPermissions = string.IsNullOrWhiteSpace(role.Permissions) 
+            ? new List<string>() 
+            : JsonSerializer.Deserialize<List<string>>(role.Permissions) ?? new List<string>();
+
         if (IsSystemRole(role.Name))
         {
-            var oldPermissions = string.IsNullOrWhiteSpace(role.Permissions)
-                ? "[]"
-                : role.Permissions;
-    
-            var newPermissions = permissionsList.Any()
-                ? JsonSerializer.Serialize(permissionsList)
-                : "[]";
-
             _logger.LogWarning(
-                "КРИТИЧНА ДІЯ: Оновлення permissions системної ролі {RoleName} (ID: {RoleId}). " +
-                "Старі: {OldPermissions}, Нові: {NewPermissions}",
-                role.Name, roleId, oldPermissions, newPermissions);
+                "КРИТИЧНА ДІЯ: Оновлення permissions системної ролі {RoleName} (ID: {RoleId}) користувачем {RequestingUserId}",
+                role.Name, roleId, requestingUserId);
         }
 
         role.Permissions = permissionsList.Any() 
@@ -419,6 +471,23 @@ public class RoleService : IRoleService
         
         _roleRepository.Update(role);
         await _unitOfWork.SaveChangesAsync();
-        
+
+        // Audit logging
+        var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
+        if (requestingUser != null)
+        {
+            var oldValues = new { RoleName = role.Name, Permissions = oldPermissions };
+            var newValues = new { RoleName = role.Name, Permissions = permissionsList };
+
+            await _auditService.LogUpdateAsync(
+                entityName: "RolePermissions",
+                entityId: roleId,
+                oldValues: oldValues,
+                newValues: newValues,
+                userId: requestingUserId,
+                userName: requestingUser.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent);
+        }
     }
 }

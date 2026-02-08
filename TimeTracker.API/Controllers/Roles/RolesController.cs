@@ -223,7 +223,17 @@ public class RolesController : ControllerBase
 
         try
         {
-            await _roleService.AssignRoleToUserAsync(dto.UserId, dto.RoleId);
+            var requestingUserId = GetCurrentUserId();
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
+            await _roleService.AssignRoleToUserAsync(
+                dto.UserId, 
+                dto.RoleId, 
+                requestingUserId, 
+                ipAddress, 
+                userAgent);
+
             return Ok(new { Message = "Роль успішно призначено" });
         }
         catch (KeyNotFoundException ex)
@@ -248,7 +258,17 @@ public class RolesController : ControllerBase
 
         try
         {
-            await _roleService.RemoveRoleFromUserAsync(dto.UserId, dto.RoleId);
+            var requestingUserId = GetCurrentUserId();
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
+            await _roleService.RemoveRoleFromUserAsync(
+                dto.UserId, 
+                dto.RoleId, 
+                requestingUserId, 
+                ipAddress, 
+                userAgent);
+
             return Ok(new { Message = "Роль успішно видалено" });
         }
         catch (KeyNotFoundException ex)
@@ -273,7 +293,17 @@ public class RolesController : ControllerBase
 
         try
         {
-            await _roleService.ReplaceUserRolesAsync(userId, dto.RoleIds);
+            var requestingUserId = GetCurrentUserId();
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
+            await _roleService.ReplaceUserRolesAsync(
+                userId, 
+                dto.RoleIds, 
+                requestingUserId, 
+                ipAddress, 
+                userAgent);
+
             return Ok(new { Message = "Ролі користувача успішно оновлено" });
         }
         catch (KeyNotFoundException ex)
@@ -346,7 +376,17 @@ public class RolesController : ControllerBase
 
         try
         {
-            await _roleService.UpdateRolePermissionsAsync(roleId, dto.Permissions);
+            var requestingUserId = GetCurrentUserId();
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
+            await _roleService.UpdateRolePermissionsAsync(
+                roleId, 
+                dto.Permissions, 
+                requestingUserId, 
+                ipAddress, 
+                userAgent);
+
             return Ok(new { Message = "Permissions успішно оновлено" });
         }
         catch (KeyNotFoundException ex)
@@ -357,5 +397,42 @@ public class RolesController : ControllerBase
         {
             return BadRequest(new { Message = ex.Message });
         }
+    }
+
+    // Helper methods для отримання контексту запиту
+    private long GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirst("userId")?.Value;
+        
+        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
+        {
+            throw new UnauthorizedAccessException("Невалідний токен");
+        }
+
+        return userId;
+    }
+
+    private string GetIpAddress()
+    {
+        // Перевіряємо заголовки для проксі/load balancer
+        var ipAddress = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+        
+        if (string.IsNullOrEmpty(ipAddress))
+        {
+            ipAddress = HttpContext.Request.Headers["X-Real-IP"].FirstOrDefault();
+        }
+        
+        if (string.IsNullOrEmpty(ipAddress))
+        {
+            ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+        }
+
+        return ipAddress ?? "Unknown";
+    }
+
+    private string GetUserAgent()
+    {
+        var userAgent = HttpContext.Request.Headers["User-Agent"].FirstOrDefault();
+        return string.IsNullOrEmpty(userAgent) ? "Unknown" : userAgent;
     }
 }

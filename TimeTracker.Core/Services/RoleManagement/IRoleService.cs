@@ -17,15 +17,17 @@ public interface IRoleService
     Task<IEnumerable<UserInRoleDto>> GetUsersInRoleAsync(long roleId);
     Task<bool> UserHasRoleAsync(long userId, string roleName);
     
-    Task AssignRoleToUserAsync(long userId, long roleId);
-    Task RemoveRoleFromUserAsync(long userId, long roleId);
-    Task ReplaceUserRolesAsync(long userId, IEnumerable<long> roleIds);
+    // КРИТИЧНІ ОПЕРАЦІЇ - додано параметри для аудиту
+    Task AssignRoleToUserAsync(long userId, long roleId, long requestingUserId, string ipAddress, string userAgent);
+    Task RemoveRoleFromUserAsync(long userId, long roleId, long requestingUserId, string ipAddress, string userAgent);
+    Task ReplaceUserRolesAsync(long userId, IEnumerable<long> roleIds, long requestingUserId, string ipAddress, string userAgent);
     
     Task<bool> IsRoleNameExistsAsync(string name, long? excludeRoleId = null);
     Task<bool> CanDeleteRoleAsync(long roleId);
     
     Task<IEnumerable<string>> GetRolePermissionsAsync(long roleId);
-    Task UpdateRolePermissionsAsync(long roleId, IEnumerable<string> permissions);
+    // КРИТИЧНА ОПЕРАЦІЯ
+    Task UpdateRolePermissionsAsync(long roleId, IEnumerable<string> permissions, long requestingUserId, string ipAddress, string userAgent);
     
     Task ActivateAsync(long id);
     Task DeactivateAsync(long id);
