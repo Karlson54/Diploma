@@ -30,9 +30,20 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// 1️⃣ ExceptionMiddleware - перший!
+app.UseMiddleware<ExceptionMiddleware>();
+
+// 2️⃣ Authentication
 app.UseAuthentication();
-app.UseMiddleware<AuditMiddleware>(); // MIDDLEWARE
+
+// 3️⃣ AuditMiddleware
+app.UseMiddleware<AuditMiddleware>();
+
+// 4️⃣ Authorization
 app.UseAuthorization();
+
+// 5️⃣ Controllers
 app.MapControllers();
 
 app.Run();

@@ -15,7 +15,8 @@ public class AuditMiddleware
     {
         "/health",
         "/swagger",
-        "/api/audit", // Не логуємо запити до самого аудиту
+        //"/api/auth/register", // ✅ ДОБАВЬ
+        //"/api/auth/login", // ✅ ДОБАВЬ
     };
 
     // HTTP методи які логуємо (тільки зміни)
@@ -27,6 +28,59 @@ public class AuditMiddleware
         "DELETE"
     };
 
+    private async Task LogErrorAsync(
+        HttpContext context,
+        IAuditService auditService,
+        Exception exception,
+        string? requestBody,
+        long elapsedMs)
+    {
+        try
+        {
+            var userId = GetUserId(context);
+            var userName = GetUserName(context);
+
+            if (!userId.HasValue)
+            {
+                return;
+            }
+
+            var errorData = new
+            {
+                ExceptionType = exception.GetType().Name,
+                Message = exception.Message,
+                Method = context.Request.Method,
+                Path = context.Request.Path.Value,
+                RequestBody = requestBody,
+                ElapsedMs = elapsedMs
+            };
+
+            var ipAddress = GetIpAddress(context);
+            var userAgent = GetUserAgent(context);
+
+            await auditService.LogCreateAsync(
+                entityName: "Error",
+                entityId: 0,
+                newValues: errorData,
+                userId: userId.Value,
+                userName: userName,
+                ipAddress: ipAddress,
+                userAgent: userAgent);
+
+            _logger.LogError(
+                exception,
+                "Error in {Method} {Path} by User {UserId}: {Message}",
+                context.Request.Method,
+                context.Request.Path,
+                userId,
+                exception.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to log error audit");
+        }
+    }
+
     public AuditMiddleware(RequestDelegate next, ILogger<AuditMiddleware> logger)
     {
         _next = next;
@@ -35,7 +89,6 @@ public class AuditMiddleware
 
     public async Task InvokeAsync(HttpContext context, IAuditService auditService)
     {
-        // Пропускаємо GET запити та excluded paths
         if (!ShouldLog(context))
         {
             await _next(context);
@@ -44,49 +97,43 @@ public class AuditMiddleware
 
         var stopwatch = Stopwatch.StartNew();
         var originalBodyStream = context.Response.Body;
+        var requestBody = await ReadRequestBodyAsync(context.Request);
+
+        using var responseBody = new MemoryStream();
+        context.Response.Body = responseBody;
 
         try
         {
-            // Зберігаємо request body для логування
-            var requestBody = await ReadRequestBodyAsync(context.Request);
-
-            // Створюємо тимчасовий stream для response
-            using var responseBody = new MemoryStream();
-            context.Response.Body = responseBody;
-
-            // Виконуємо наступний middleware
             await _next(context);
-
             stopwatch.Stop();
 
-            // Логуємо тільки якщо користувач аутентифікований
-            if (context.User.Identity?.IsAuthenticated == true)
+            // Логуємо успішні запити
+            if (context.User.Identity?.IsAuthenticated == true &&
+                context.Response.StatusCode >= 200 &&
+                context.Response.StatusCode < 300)
             {
-                await LogAuditAsync(
-                    context,
-                    auditService,
-                    requestBody,
-                    stopwatch.ElapsedMilliseconds);
+                await LogAuditAsync(context, auditService, requestBody, stopwatch.ElapsedMilliseconds);
             }
 
             // Копіюємо response назад
+            responseBody.Seek(0, SeekOrigin.Begin);
             await responseBody.CopyToAsync(originalBodyStream);
         }
         catch (Exception ex)
         {
             stopwatch.Stop();
 
-            // Логуємо помилку
+            // ⚠️ КРИТИЧНО: Відновлюємо original stream
+            context.Response.Body = originalBodyStream;
+
+            // Логуємо помилку в audit
             if (context.User.Identity?.IsAuthenticated == true)
             {
-                await LogErrorAsync(context, auditService, ex);
+                await LogErrorAsync(context, auditService, ex, requestBody, stopwatch.ElapsedMilliseconds);
             }
 
+            // Пробрасуємо exception далі
             throw;
-        }
-        finally
-        {
-            context.Response.Body = originalBodyStream;
         }
     }
 
@@ -283,14 +330,15 @@ public class AuditMiddleware
         {
             return null;
         }
+
         return userId;
     }
 
     private string GetUserName(HttpContext context)
     {
-        return context.User.FindFirst("userName")?.Value 
-            ?? context.User.Identity?.Name 
-            ?? "Unknown";
+        return context.User.FindFirst("userName")?.Value
+               ?? context.User.Identity?.Name
+               ?? "Unknown";
     }
 
     private string GetIpAddress(HttpContext context)
