@@ -3,23 +3,19 @@ using System.Text;
 using System.Text.Json;
 using TimeTracker.Core.Services.Audit;
 
-namespace TimeTracker.API.Middleware;
-
 public class AuditMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<AuditMiddleware> _logger;
 
-    // Endpoints які НЕ потрібно логувати (щоб не засмічувати БД)
+    // Endpoints які НЕ потрібно логувати
     private static readonly HashSet<string> _excludedPaths = new(StringComparer.OrdinalIgnoreCase)
     {
         "/health",
         "/swagger",
-        //"/api/auth/register", // ✅ ДОБАВЬ
-        //"/api/auth/login", // ✅ ДОБАВЬ
     };
 
-    // HTTP методи які логуємо (тільки зміни)
+    // HTTP методи які логуємо
     private static readonly HashSet<string> _loggedMethods = new(StringComparer.OrdinalIgnoreCase)
     {
         "POST",
@@ -27,59 +23,6 @@ public class AuditMiddleware
         "PATCH",
         "DELETE"
     };
-
-    private async Task LogErrorAsync(
-        HttpContext context,
-        IAuditService auditService,
-        Exception exception,
-        string? requestBody,
-        long elapsedMs)
-    {
-        try
-        {
-            var userId = GetUserId(context);
-            var userName = GetUserName(context);
-
-            if (!userId.HasValue)
-            {
-                return;
-            }
-
-            var errorData = new
-            {
-                ExceptionType = exception.GetType().Name,
-                Message = exception.Message,
-                Method = context.Request.Method,
-                Path = context.Request.Path.Value,
-                RequestBody = requestBody,
-                ElapsedMs = elapsedMs
-            };
-
-            var ipAddress = GetIpAddress(context);
-            var userAgent = GetUserAgent(context);
-
-            await auditService.LogCreateAsync(
-                entityName: "Error",
-                entityId: 0,
-                newValues: errorData,
-                userId: userId.Value,
-                userName: userName,
-                ipAddress: ipAddress,
-                userAgent: userAgent);
-
-            _logger.LogError(
-                exception,
-                "Error in {Method} {Path} by User {UserId}: {Message}",
-                context.Request.Method,
-                context.Request.Path,
-                userId,
-                exception.Message);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to log error audit");
-        }
-    }
 
     public AuditMiddleware(RequestDelegate next, ILogger<AuditMiddleware> logger)
     {
@@ -107,12 +50,12 @@ public class AuditMiddleware
             await _next(context);
             stopwatch.Stop();
 
-            // Логуємо успішні запити
+            // Логуємо успішні запити (тільки для авторизованих)
             if (context.User.Identity?.IsAuthenticated == true &&
                 context.Response.StatusCode >= 200 &&
                 context.Response.StatusCode < 300)
             {
-                await LogAuditAsync(context, auditService, requestBody, stopwatch.ElapsedMilliseconds);
+                await LogSuccessAsync(context, auditService, requestBody, stopwatch.ElapsedMilliseconds);
             }
 
             // Копіюємо response назад
@@ -122,18 +65,99 @@ public class AuditMiddleware
         catch (Exception ex)
         {
             stopwatch.Stop();
-
-            // ⚠️ КРИТИЧНО: Відновлюємо original stream
             context.Response.Body = originalBodyStream;
 
-            // Логуємо помилку в audit
-            if (context.User.Identity?.IsAuthenticated == true)
+            // 🔥 ВИПРАВЛЕННЯ: Логуємо помилки ДЛЯ ВСІХ (навіть неавторизованих)
+            await LogErrorAsync(context, auditService, ex, requestBody, stopwatch.ElapsedMilliseconds);
+
+            throw; // Пробрасуємо exception далі
+        }
+    }
+
+    private async Task LogErrorAsync(
+        HttpContext context,
+        IAuditService auditService,
+        Exception exception,
+        string? requestBody,
+        long elapsedMs)
+    {
+        try
+        {
+            var userId = GetUserId(context);
+            var userName = GetUserName(context);
+
+            // 🔥 ВИПРАВЛЕННЯ: Логуємо навіть якщо userId == null
+            // Для неавторизованих використовуємо userId = 0
+            var actualUserId = userId ?? 0;
+            var actualUserName = userName ?? "Anonymous";
+
+            var errorData = new
             {
-                await LogErrorAsync(context, auditService, ex, requestBody, stopwatch.ElapsedMilliseconds);
+                ExceptionType = exception.GetType().Name,
+                Message = exception.Message,
+                Method = context.Request.Method,
+                Path = context.Request.Path.Value,
+                RequestBody = requestBody,
+                ElapsedMs = elapsedMs,
+                IsAuthenticated = context.User.Identity?.IsAuthenticated ?? false
+            };
+
+            var ipAddress = GetIpAddress(context);
+            var userAgent = GetUserAgent(context);
+
+            // Логуємо в БД
+            await auditService.LogCreateAsync(
+                entityName: "Error",
+                entityId: 0,
+                newValues: errorData,
+                userId: actualUserId,
+                userName: actualUserName,
+                ipAddress: ipAddress,
+                userAgent: userAgent);
+
+            // Логуємо в консоль
+            _logger.LogError(
+                exception,
+                "Error in {Method} {Path} by User {UserId} ({UserName}): {Message}",
+                context.Request.Method,
+                context.Request.Path,
+                actualUserId,
+                actualUserName,
+                exception.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to log error audit");
+        }
+    }
+
+    private async Task LogSuccessAsync(
+        HttpContext context,
+        IAuditService auditService,
+        string? requestBody,
+        long elapsedMs)
+    {
+        try
+        {
+            var userId = GetUserId(context);
+            var userName = GetUserName(context);
+
+            if (!userId.HasValue)
+            {
+                return;
             }
 
-            // Пробрасуємо exception далі
-            throw;
+            _logger.LogInformation(
+                "{Method} {Path} by User {UserId} - {StatusCode} ({ElapsedMs}ms)",
+                context.Request.Method,
+                context.Request.Path,
+                userId,
+                context.Response.StatusCode,
+                elapsedMs);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to log success audit");
         }
     }
 
@@ -141,13 +165,11 @@ public class AuditMiddleware
     {
         var path = context.Request.Path.Value ?? string.Empty;
 
-        // Не логуємо excluded paths
         if (_excludedPaths.Any(excluded => path.StartsWith(excluded, StringComparison.OrdinalIgnoreCase)))
         {
             return false;
         }
 
-        // Логуємо тільки POST, PUT, PATCH, DELETE
         return _loggedMethods.Contains(context.Request.Method);
     }
 
@@ -158,7 +180,6 @@ public class AuditMiddleware
             return null;
         }
 
-        // Дозволяємо читати body кілька разів
         request.EnableBuffering();
 
         try
@@ -171,11 +192,7 @@ public class AuditMiddleware
                 leaveOpen: true);
 
             var body = await reader.ReadToEndAsync();
-
-            // Повертаємо stream на початок
             request.Body.Position = 0;
-
-            // Не зберігаємо паролі
             return SanitizeRequestBody(body);
         }
         catch (Exception ex)
@@ -194,11 +211,9 @@ public class AuditMiddleware
 
         try
         {
-            // Парсимо JSON
             var jsonDocument = JsonDocument.Parse(body);
             var root = jsonDocument.RootElement;
 
-            // Перевіряємо чи є чутливі поля
             var sensitiveFields = new[] { "password", "confirmPassword", "currentPassword", "newPassword" };
             var hasSensitiveData = false;
 
@@ -214,112 +229,16 @@ public class AuditMiddleware
                 }
             }
 
-            // Якщо є чутливі дані - повертаємо null
             if (hasSensitiveData)
             {
                 return "[SENSITIVE DATA HIDDEN]";
             }
 
-            // Обмежуємо розмір (максимум 2000 символів)
             return body.Length > 2000 ? body.Substring(0, 2000) + "..." : body;
         }
         catch
         {
-            // Якщо не JSON - повертаємо як є (обмежено)
             return body.Length > 500 ? body.Substring(0, 500) + "..." : body;
-        }
-    }
-
-    private async Task LogAuditAsync(
-        HttpContext context,
-        IAuditService auditService,
-        string? requestBody,
-        long elapsedMs)
-    {
-        try
-        {
-            var userId = GetUserId(context);
-            var userName = GetUserName(context);
-
-            if (!userId.HasValue)
-            {
-                return;
-            }
-
-            var (action, entityName, entityId) = ParseRouteInfo(context);
-
-            var auditData = new
-            {
-                Method = context.Request.Method,
-                Path = context.Request.Path.Value,
-                QueryString = context.Request.QueryString.Value,
-                RequestBody = requestBody,
-                StatusCode = context.Response.StatusCode,
-                ElapsedMs = elapsedMs
-            };
-
-            var ipAddress = GetIpAddress(context);
-            var userAgent = GetUserAgent(context);
-
-            // Логуємо відповідно до типу операції
-            if (context.Response.StatusCode >= 200 && context.Response.StatusCode < 300)
-            {
-                switch (context.Request.Method.ToUpper())
-                {
-                    case "POST":
-                        // Не логуємо create тут - це робиться в сервісах
-                        break;
-                    case "PUT":
-                    case "PATCH":
-                        // Не логуємо update тут - це робиться в сервісах
-                        break;
-                    case "DELETE":
-                        // Не логуємо delete тут - це робиться в сервісах
-                        break;
-                }
-            }
-
-            // Можна додати загальне логування для моніторингу
-            _logger.LogInformation(
-                "Audit: {Method} {Path} by User {UserId} - {StatusCode} ({ElapsedMs}ms)",
-                context.Request.Method,
-                context.Request.Path,
-                userId,
-                context.Response.StatusCode,
-                elapsedMs);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to log audit information");
-        }
-    }
-
-    private async Task LogErrorAsync(
-        HttpContext context,
-        IAuditService auditService,
-        Exception exception)
-    {
-        try
-        {
-            var userId = GetUserId(context);
-            var userName = GetUserName(context);
-
-            if (!userId.HasValue)
-            {
-                return;
-            }
-
-            _logger.LogError(
-                exception,
-                "Error in {Method} {Path} by User {UserId}: {Message}",
-                context.Request.Method,
-                context.Request.Path,
-                userId,
-                exception.Message);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to log error audit");
         }
     }
 
@@ -338,12 +257,11 @@ public class AuditMiddleware
     {
         return context.User.FindFirst("userName")?.Value
                ?? context.User.Identity?.Name
-               ?? "Unknown";
+               ?? "Anonymous";
     }
 
     private string GetIpAddress(HttpContext context)
     {
-        // Перевіряємо X-Forwarded-For (якщо за proxy/load balancer)
         var forwardedFor = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
         if (!string.IsNullOrEmpty(forwardedFor))
         {
@@ -354,60 +272,24 @@ public class AuditMiddleware
             }
         }
 
-        // Перевіряємо X-Real-IP
         var realIp = context.Request.Headers["X-Real-IP"].FirstOrDefault();
         if (!string.IsNullOrEmpty(realIp))
         {
             return realIp;
         }
 
-        // Використовуємо RemoteIpAddress
         return context.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
     }
 
     private string GetUserAgent(HttpContext context)
     {
         var userAgent = context.Request.Headers["User-Agent"].FirstOrDefault();
+
         if (string.IsNullOrEmpty(userAgent))
         {
             return "Unknown";
         }
 
-        // Обмежуємо розмір
         return userAgent.Length > 500 ? userAgent.Substring(0, 500) : userAgent;
-    }
-
-    private (string action, string entityName, long? entityId) ParseRouteInfo(HttpContext context)
-    {
-        var path = context.Request.Path.Value ?? string.Empty;
-        var method = context.Request.Method.ToUpper();
-
-        // Намагаємось визначити entity та action з route
-        // Приклад: /api/users/123 -> Users, 123
-        var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
-
-        if (segments.Length < 2)
-        {
-            return (method, "Unknown", null);
-        }
-
-        var entityName = segments.Length > 1 ? segments[1] : "Unknown";
-        long? entityId = null;
-
-        if (segments.Length > 2 && long.TryParse(segments[2], out var id))
-        {
-            entityId = id;
-        }
-
-        var action = method switch
-        {
-            "POST" => "Create",
-            "PUT" => "Update",
-            "PATCH" => "Update",
-            "DELETE" => "Delete",
-            _ => "Read"
-        };
-
-        return (action, entityName, entityId);
     }
 }

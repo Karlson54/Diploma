@@ -157,36 +157,116 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto, string ipAddress, string userAgent)
     {
-        await ValidateRegistrationDataAsync(dto);
-        ValidatePasswordStrength(dto.Password);
+        try
+        {
+            await ValidateRegistrationDataAsync(dto);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(
+                "Спроба реєстрації з існуючими даними. Email: {Email}, Login: {Login}, Error: {Error}",
+                dto.Email, dto.Login, ex.Message);
+
+            await _auditService.LogRegistrationAsync(
+                userName: dto.Name,
+                email: dto.Email,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: false,
+                errorMessage: ex.Message);
+
+            throw;
+        }
+
+        try
+        {
+            ValidatePasswordStrength(dto.Password);
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(
+                "Спроба реєстрації зі слабким паролем. Email: {Email}, Login: {Login}",
+                dto.Email, dto.Login);
+
+            await _auditService.LogRegistrationAsync(
+                userName: dto.Name,
+                email: dto.Email,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: false,
+                errorMessage: "Пароль не відповідає вимогам безпеки");
+
+            throw;
+        }
 
         var agency = await _unitOfWork.Agencies.GetByIdAsync(dto.AgencyId);
         if (agency == null)
         {
-            _logger.LogWarning("Спроба реєстрації з неіснуючим Agency ID: {AgencyId}", dto.AgencyId);
+            _logger.LogWarning(
+                "Спроба реєстрації з неіснуючим Agency ID: {AgencyId}. Email: {Email}",
+                dto.AgencyId, dto.Email);
+
+            await _auditService.LogRegistrationAsync(
+                userName: dto.Name,
+                email: dto.Email,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: false,
+                errorMessage: $"Agency з ID {dto.AgencyId} не знайдено");
+
             throw new KeyNotFoundException($"Agency з ID {dto.AgencyId} не знайдено");
         }
 
         if (!agency.IsActive)
         {
             _logger.LogWarning(
-                "Спроба реєстрації в неактивному Agency. AgencyId: {AgencyId}, AgencyName: {AgencyName}",
-                dto.AgencyId,
-                agency.Name);
+                "Спроба реєстрації в неактивному Agency. AgencyId: {AgencyId}, AgencyName: {AgencyName}, Email: {Email}",
+                dto.AgencyId, agency.Name, dto.Email);
+
+            await _auditService.LogRegistrationAsync(
+                userName: dto.Name,
+                email: dto.Email,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: false,
+                errorMessage: $"Agency '{agency.Name}' неактивне");
+
             throw new InvalidOperationException("Неможливо зареєструватись в неактивному Agency");
         }
 
         var employeeRole = await _roleRepository.GetByNameAsync(SystemRoles.Employee);
         if (employeeRole == null)
         {
-            _logger.LogError("Системна роль '{RoleName}' не знайдена в базі даних", SystemRoles.Employee);
+            _logger.LogError(
+                "Системна роль '{RoleName}' не знайдена в базі даних при реєстрації користувача {Email}",
+                SystemRoles.Employee, dto.Email);
+
+            await _auditService.LogRegistrationAsync(
+                userName: dto.Name,
+                email: dto.Email,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: false,
+                errorMessage: $"Системна помилка: роль '{SystemRoles.Employee}' не знайдена");
+
             throw new InvalidOperationException(
                 $"Системна помилка: роль '{SystemRoles.Employee}' не знайдена. Зверніться до адміністратора.");
         }
 
         if (!employeeRole.IsActive)
         {
-            _logger.LogError("Системна роль '{RoleName}' деактивована", SystemRoles.Employee);
+            _logger.LogError(
+                "Системна роль '{RoleName}' деактивована при реєстрації користувача {Email}",
+                SystemRoles.Employee, dto.Email);
+
+            await _auditService.LogRegistrationAsync(
+                userName: dto.Name,
+                email: dto.Email,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: false,
+                errorMessage: $"Системна помилка: роль '{SystemRoles.Employee}' деактивована");
+
             throw new InvalidOperationException(
                 $"Системна помилка: роль '{SystemRoles.Employee}' деактивована. Зверніться до адміністратора.");
         }
@@ -213,7 +293,6 @@ public class AuthService : IAuthService
 
             await _unitOfWork.SaveChangesAsync();
 
-            // Логуємо створення користувача
             var newValues = new
             {
                 user.Login,
@@ -234,22 +313,32 @@ public class AuthService : IAuthService
                 ipAddress: ipAddress,
                 userAgent: userAgent);
 
+            await _auditService.LogRegistrationAsync(
+                userName: user.Name,
+                email: user.Email,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: true,
+                userId: user.Id);
+
             _logger.LogInformation(
                 "Новий користувач успішно зареєстрований. UserId: {UserId}, Email: {Email}, Login: {Login}, AgencyId: {AgencyId}, AgencyName: {AgencyName}",
-                user.Id,
-                user.Email,
-                user.Login,
-                user.AgencyId,
-                agency.Name);
+                user.Id, user.Email, user.Login, user.AgencyId, agency.Name);
         }
         catch (Exception ex)
         {
             _logger.LogError(
                 ex,
                 "Помилка при реєстрації користувача. Email: {Email}, Login: {Login}, AgencyId: {AgencyId}",
-                dto.Email,
-                dto.Login,
-                dto.AgencyId);
+                dto.Email, dto.Login, dto.AgencyId);
+
+            await _auditService.LogRegistrationAsync(
+                userName: dto.Name,
+                email: dto.Email,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: false,
+                errorMessage: "Помилка при збереженні даних користувача в БД");
 
             throw new InvalidOperationException(
                 "Не вдалося створити обліковий запис. Спробуйте пізніше або зверніться до адміністратора.",

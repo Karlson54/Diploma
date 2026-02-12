@@ -20,7 +20,6 @@ public class RoleService : IRoleService
     private readonly ILogger<RoleService> _logger;
     private readonly IAuditService _auditService;
 
-    // Системні ролі які не можна видаляти або деактивувати
     private static readonly string[] SystemRoles = { "Admin", "Manager", "Employee", "Accountant" };
 
     public RoleService(
@@ -46,7 +45,6 @@ public class RoleService : IRoleService
             return null;
 
         var dto = _mapper.Map<RoleDetailDto>(role);
-
         var users = await _roleRepository.GetUsersInRoleAsync(role.Name);
         dto.UsersCount = users.Count();
 
@@ -190,24 +188,57 @@ public class RoleService : IRoleService
         string ipAddress,
         string userAgent)
     {
-        // Валидация
-        if (await _roleRepository.IsRoleNameExistsAsync(dto.Name))
+        var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
+        if (requestingUser == null)
         {
             _logger.LogWarning(
-                "Спроба створення ролі з існуючою назвою: {Name} користувачем {UserId}",
-                dto.Name, requestingUserId);
-            throw new InvalidOperationException($"Роль з назвою '{dto.Name}' вже існує");
+                "Невалідний токен при створенні ролі. UserId: {UserId}",
+                requestingUserId);
+            throw new UnauthorizedAccessException("Невалідний токен користувача");
+        }
+
+        if (await _roleRepository.IsRoleNameExistsAsync(dto.Name))
+        {
+            var errorMsg = $"Роль з назвою '{dto.Name}' вже існує";
+            
+            _logger.LogWarning(
+                "Спроба створення ролі з існуючою назвою: {Name} користувачем {UserId} ({UserName})",
+                dto.Name, requestingUserId, requestingUser.Name);
+
+            await LogFailedOperationAsync(
+                action: "CreateRole",
+                entityName: "Role",
+                requestingUserId: requestingUserId,
+                requestingUserName: requestingUser.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                errorMessage: errorMsg,
+                additionalData: new { dto.Name, dto.Description });
+
+            throw new InvalidOperationException(errorMsg);
         }
 
         if (IsSystemRole(dto.Name))
         {
+            var errorMsg = $"Неможливо створити роль з системною назвою '{dto.Name}'";
+            
             _logger.LogWarning(
-                "Спроба створення системної ролі: {Name} користувачем {UserId}",
-                dto.Name, requestingUserId);
-            throw new InvalidOperationException($"Неможливо створити роль з системною назвою '{dto.Name}'");
+                "SECURITY:Спроба створення системної ролі: {Name} користувачем {UserId} ({UserName})",
+                dto.Name, requestingUserId, requestingUser.Name);
+
+            await LogFailedOperationAsync(
+                action: "CreateRole",
+                entityName: "Role",
+                requestingUserId: requestingUserId,
+                requestingUserName: requestingUser.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                errorMessage: errorMsg,
+                additionalData: new { dto.Name, Reason = "SystemRole" });
+
+            throw new InvalidOperationException(errorMsg);
         }
 
-        // Создание роли
         var role = new Role
         {
             Name = dto.Name.Trim(),
@@ -220,40 +251,27 @@ public class RoleService : IRoleService
         await _unitOfWork.SaveChangesAsync();
 
         _logger.LogInformation(
-            "Роль створена. Id: {Id}, Name: {Name}, створена користувачем {UserId}",
-            role.Id, role.Name, requestingUserId);
+            "Роль створена. Id: {Id}, Name: {Name}, створена користувачем {UserId} ({UserName})",
+            role.Id, role.Name, requestingUserId, requestingUser.Name);
 
-        // 🔥 АУДИТ: Логируем создание роли
-        try
+        var newValues = new
         {
-            var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
-            if (requestingUser != null)
-            {
-                var newValues = new
-                {
-                    role.Id,
-                    role.Name,
-                    role.Description,
-                    role.Permissions,
-                    role.IsActive,
-                    CreatedBy = requestingUser.Name
-                };
+            role.Id,
+            role.Name,
+            role.Description,
+            role.Permissions,
+            role.IsActive,
+            CreatedBy = requestingUser.Name
+        };
 
-                await _auditService.LogCreateAsync(
-                    entityName: "Role",
-                    entityId: role.Id,
-                    newValues: newValues,
-                    userId: requestingUserId,
-                    userName: requestingUser.Name,
-                    ipAddress: ipAddress,
-                    userAgent: userAgent);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Помилка при логуванні аудиту створення ролі {RoleId}", role.Id);
-            // Не бросаем исключение - роль уже создана
-        }
+        await _auditService.LogCreateAsync(
+            entityName: "Role",
+            entityId: role.Id,
+            newValues: newValues,
+            userId: requestingUserId,
+            userName: requestingUser.Name,
+            ipAddress: ipAddress,
+            userAgent: userAgent);
 
         return _mapper.Map<RoleDto>(role);
     }
@@ -265,13 +283,36 @@ public class RoleService : IRoleService
         string ipAddress,
         string userAgent)
     {
+        var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
+        if (requestingUser == null)
+        {
+            _logger.LogWarning("Невалідний токен при оновленні ролі. UserId: {UserId}", requestingUserId);
+            throw new UnauthorizedAccessException("Невалідний токен користувача");
+        }
+
         var role = await _roleRepository.GetByIdAsync(id);
         if (role == null)
         {
-            throw new KeyNotFoundException($"Роль з ID {id} не знайдено");
+            var errorMsg = $"Роль з ID {id} не знайдено";
+            
+            _logger.LogWarning(
+                "Спроба оновлення неіснуючої ролі {RoleId} користувачем {UserId} ({UserName})",
+                id, requestingUserId, requestingUser.Name);
+
+            await LogFailedOperationAsync(
+                action: "UpdateRole",
+                entityName: "Role",
+                entityId: id,
+                requestingUserId: requestingUserId,
+                requestingUserName: requestingUser.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                errorMessage: errorMsg,
+                additionalData: new { AttemptedName = dto.Name });
+
+            throw new KeyNotFoundException(errorMsg);
         }
 
-        // Сохраняем старые значения для аудита
         var oldValues = new
         {
             role.Id,
@@ -281,33 +322,72 @@ public class RoleService : IRoleService
             role.IsActive
         };
 
-        // Валидация изменения системных ролей
         if (IsSystemRole(role.Name) && role.Name != dto.Name)
         {
+            var errorMsg = $"Неможливо змінити назву системної ролі '{role.Name}'";
+            
             _logger.LogWarning(
-                "Спроба зміни назви системної ролі {OldName} на {NewName} користувачем {UserId}",
-                role.Name, dto.Name, requestingUserId);
-            throw new InvalidOperationException($"Неможливо змінити назву системної ролі '{role.Name}'");
+                " SECURITY:Спроба зміни назви системної ролі {OldName} на {NewName} користувачем {UserId} ({UserName})",
+                role.Name, dto.Name, requestingUserId, requestingUser.Name);
+
+            await LogFailedOperationAsync(
+                action: "UpdateRole",
+                entityName: "Role",
+                entityId: id,
+                requestingUserId: requestingUserId,
+                requestingUserName: requestingUser.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                errorMessage: errorMsg,
+                additionalData: new { OldName = role.Name, NewName = dto.Name, Reason = "SystemRole" });
+
+            throw new InvalidOperationException(errorMsg);
         }
 
         if (!IsSystemRole(role.Name) && IsSystemRole(dto.Name))
         {
+            var errorMsg = $"Неможливо змінити назву на системну '{dto.Name}'";
+            
             _logger.LogWarning(
-                "Спроба зміни назви ролі {OldName} на системну {NewName} користувачем {UserId}",
-                role.Name, dto.Name, requestingUserId);
-            throw new InvalidOperationException($"Неможливо змінити назву на системну '{dto.Name}'");
+                " SECURITY:Спроба зміни назви ролі {OldName} на системну {NewName} користувачем {UserId} ({UserName})",
+                role.Name, dto.Name, requestingUserId, requestingUser.Name);
+
+            await LogFailedOperationAsync(
+                action: "UpdateRole",
+                entityName: "Role",
+                entityId: id,
+                requestingUserId: requestingUserId,
+                requestingUserName: requestingUser.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                errorMessage: errorMsg,
+                additionalData: new { OldName = role.Name, NewName = dto.Name, Reason = "SystemRole" });
+
+            throw new InvalidOperationException(errorMsg);
         }
 
-        // Проверка уникальности нового имени
         if (await _roleRepository.IsRoleNameExistsAsync(dto.Name, id))
         {
+            var errorMsg = $"Роль з назвою '{dto.Name}' вже існує";
+            
             _logger.LogWarning(
-                "Спроба оновлення ролі {Id} з існуючою назвою: {Name} користувачем {UserId}",
-                id, dto.Name, requestingUserId);
-            throw new InvalidOperationException($"Роль з назвою '{dto.Name}' вже існує");
+                "Спроба оновлення ролі {Id} з існуючою назвою: {Name} користувачем {UserId} ({UserName})",
+                id, dto.Name, requestingUserId, requestingUser.Name);
+
+            await LogFailedOperationAsync(
+                action: "UpdateRole",
+                entityName: "Role",
+                entityId: id,
+                requestingUserId: requestingUserId,
+                requestingUserName: requestingUser.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                errorMessage: errorMsg,
+                additionalData: new { OldName = role.Name, NewName = dto.Name });
+
+            throw new InvalidOperationException(errorMsg);
         }
 
-        // Обновление роли
         role.Name = dto.Name.Trim();
         role.Description = dto.Description?.Trim();
         role.Permissions = dto.Permissions?.Trim();
@@ -316,41 +396,28 @@ public class RoleService : IRoleService
         await _unitOfWork.SaveChangesAsync();
 
         _logger.LogInformation(
-            "Роль оновлена. Id: {Id}, Name: {Name}, оновлена користувачем {UserId}",
-            role.Id, role.Name, requestingUserId);
+            "Роль оновлена. Id: {Id}, Name: {Name}, оновлена користувачем {UserId} ({UserName})",
+            role.Id, role.Name, requestingUserId, requestingUser.Name);
 
-        // 🔥 АУДИТ: Логируем обновление роли
-        try
+        var newValues = new
         {
-            var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
-            if (requestingUser != null)
-            {
-                var newValues = new
-                {
-                    role.Id,
-                    role.Name,
-                    role.Description,
-                    role.Permissions,
-                    role.IsActive,
-                    UpdatedBy = requestingUser.Name
-                };
+            role.Id,
+            role.Name,
+            role.Description,
+            role.Permissions,
+            role.IsActive,
+            UpdatedBy = requestingUser.Name
+        };
 
-                await _auditService.LogUpdateAsync(
-                    entityName: "Role",
-                    entityId: role.Id,
-                    oldValues: oldValues,
-                    newValues: newValues,
-                    userId: requestingUserId,
-                    userName: requestingUser.Name,
-                    ipAddress: ipAddress,
-                    userAgent: userAgent);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Помилка при логуванні аудиту оновлення ролі {RoleId}", role.Id);
-            // Не бросаем исключение - роль уже обновлена
-        }
+        await _auditService.LogUpdateAsync(
+            entityName: "Role",
+            entityId: role.Id,
+            oldValues: oldValues,
+            newValues: newValues,
+            userId: requestingUserId,
+            userName: requestingUser.Name,
+            ipAddress: ipAddress,
+            userAgent: userAgent);
 
         return _mapper.Map<RoleDto>(role);
     }
@@ -361,13 +428,35 @@ public class RoleService : IRoleService
         string ipAddress,
         string userAgent)
     {
+        var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
+        if (requestingUser == null)
+        {
+            _logger.LogWarning(" Невалідний токен при видаленні ролі. UserId: {UserId}", requestingUserId);
+            throw new UnauthorizedAccessException("Невалідний токен користувача");
+        }
+
         var role = await _roleRepository.GetByIdAsync(id);
         if (role == null)
         {
-            throw new KeyNotFoundException($"Роль з ID {id} не знайдено");
+            var errorMsg = $"Роль з ID {id} не знайдено";
+            
+            _logger.LogWarning(
+                "Спроба видалення неіснуючої ролі {RoleId} користувачем {UserId} ({UserName})",
+                id, requestingUserId, requestingUser.Name);
+
+            await LogFailedOperationAsync(
+                action: "DeleteRole",
+                entityName: "Role",
+                entityId: id,
+                requestingUserId: requestingUserId,
+                requestingUserName: requestingUser.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                errorMessage: errorMsg);
+
+            throw new KeyNotFoundException(errorMsg);
         }
 
-        // Сохраняем значения для аудита
         var oldValues = new
         {
             role.Id,
@@ -377,58 +466,67 @@ public class RoleService : IRoleService
             role.IsActive
         };
 
-        // Валидация удаления системных ролей
         if (IsSystemRole(role.Name))
         {
+            var errorMsg = $"Неможливо видалити системну роль '{role.Name}'";
+            
             _logger.LogWarning(
-                "Спроба видалення системної ролі {Name} користувачем {UserId}",
-                role.Name, requestingUserId);
-            throw new InvalidOperationException($"Неможливо видалити системну роль '{role.Name}'");
+                " SECURITY:Спроба видалення системної ролі {Name} користувачем {UserId} ({UserName})",
+                role.Name, requestingUserId, requestingUser.Name);
+
+            await LogFailedOperationAsync(
+                action: "DeleteRole",
+                entityName: "Role",
+                entityId: id,
+                requestingUserId: requestingUserId,
+                requestingUserName: requestingUser.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                errorMessage: errorMsg,
+                additionalData: new { RoleName = role.Name, Reason = "SystemRole" });
+
+            throw new InvalidOperationException(errorMsg);
         }
 
-        // Проверка использования роли
         if (!await CanDeleteRoleAsync(id))
         {
             var users = await _roleRepository.GetUsersInRoleAsync(role.Name);
             var usersCount = users.Count();
+            var errorMsg = $"Неможливо видалити роль '{role.Name}', оскільки вона призначена {usersCount} користувачам";
 
             _logger.LogWarning(
-                "Спроба видалення ролі {Name} яка використовується ({UsersCount} користувачів) користувачем {UserId}",
-                role.Name, usersCount, requestingUserId);
+                "Спроба видалення ролі {Name} яка використовується ({UsersCount} користувачів) користувачем {UserId} ({UserName})",
+                role.Name, usersCount, requestingUserId, requestingUser.Name);
 
-            throw new InvalidOperationException(
-                $"Неможливо видалити роль '{role.Name}', оскільки вона призначена {usersCount} користувачам");
+            await LogFailedOperationAsync(
+                action: "DeleteRole",
+                entityName: "Role",
+                entityId: id,
+                requestingUserId: requestingUserId,
+                requestingUserName: requestingUser.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                errorMessage: errorMsg,
+                additionalData: new { RoleName = role.Name, UsersCount = usersCount });
+
+            throw new InvalidOperationException(errorMsg);
         }
 
-        // Удаление роли
         _roleRepository.Delete(role);
         await _unitOfWork.SaveChangesAsync();
 
         _logger.LogInformation(
-            "Роль видалена. Id: {Id}, Name: {Name}, видалена користувачем {UserId}",
-            role.Id, role.Name, requestingUserId);
+            "Роль видалена. Id: {Id}, Name: {Name}, видалена користувачем {UserId} ({UserName})",
+            role.Id, role.Name, requestingUserId, requestingUser.Name);
 
-        // 🔥 АУДИТ: Логируем удаление роли
-        try
-        {
-            var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
-            if (requestingUser != null)
-            {
-                await _auditService.LogDeleteAsync(
-                    entityName: "Role",
-                    entityId: role.Id,
-                    oldValues: oldValues,
-                    userId: requestingUserId,
-                    userName: requestingUser.Name,
-                    ipAddress: ipAddress,
-                    userAgent: userAgent);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Помилка при логуванні аудиту видалення ролі {RoleId}", role.Id);
-            // Не бросаем исключение - роль уже удалена
-        }
+        await _auditService.LogDeleteAsync(
+            entityName: "Role",
+            entityId: role.Id,
+            oldValues: oldValues,
+            userId: requestingUserId,
+            userName: requestingUser.Name,
+            ipAddress: ipAddress,
+            userAgent: userAgent);
     }
 
     public async Task ActivateAsync(
@@ -437,18 +535,44 @@ public class RoleService : IRoleService
         string ipAddress,
         string userAgent)
     {
+        var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
+        if (requestingUser == null)
+        {
+            _logger.LogWarning(" Невалідний токен при активації ролі. UserId: {UserId}", requestingUserId);
+            throw new UnauthorizedAccessException("Невалідний токен користувача");
+        }
+
         var role = await _roleRepository.GetByIdAsync(id);
         if (role == null)
         {
-            throw new KeyNotFoundException($"Роль з ID {id} не знайдено");
+            var errorMsg = $"Роль з ID {id} не знайдено";
+            
+            _logger.LogWarning(
+                "Спроба активації неіснуючої ролі {RoleId} користувачем {UserId} ({UserName})",
+                id, requestingUserId, requestingUser.Name);
+
+            await LogFailedOperationAsync(
+                action: "ActivateRole",
+                entityName: "Role",
+                entityId: id,
+                requestingUserId: requestingUserId,
+                requestingUserName: requestingUser.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                errorMessage: errorMsg);
+
+            throw new KeyNotFoundException(errorMsg);
         }
 
         if (role.IsActive)
         {
+            _logger.LogWarning(
+                "Спроба активації вже активної ролі {Name} (ID: {RoleId}) користувачем {UserId} ({UserName})",
+                role.Name, id, requestingUserId, requestingUser.Name);
+            
             throw new InvalidOperationException("Роль вже активна");
         }
 
-        // Сохраняем старые значения для аудита
         var oldValues = new
         {
             role.Id,
@@ -456,45 +580,31 @@ public class RoleService : IRoleService
             IsActive = role.IsActive
         };
 
-        // Активация роли
         role.IsActive = true;
         _roleRepository.Update(role);
         await _unitOfWork.SaveChangesAsync();
 
         _logger.LogInformation(
-            "Роль активована. Id: {Id}, Name: {Name}, активована користувачем {UserId}",
-            role.Id, role.Name, requestingUserId);
+            "Роль активована. Id: {Id}, Name: {Name}, активована користувачем {UserId} ({UserName})",
+            role.Id, role.Name, requestingUserId, requestingUser.Name);
 
-        // 🔥 АУДИТ: Логируем активацию роли
-        try
+        var newValues = new
         {
-            var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
-            if (requestingUser != null)
-            {
-                var newValues = new
-                {
-                    role.Id,
-                    role.Name,
-                    IsActive = role.IsActive,
-                    ActivatedBy = requestingUser.Name
-                };
+            role.Id,
+            role.Name,
+            IsActive = role.IsActive,
+            ActivatedBy = requestingUser.Name
+        };
 
-                await _auditService.LogUpdateAsync(
-                    entityName: "Role",
-                    entityId: role.Id,
-                    oldValues: oldValues,
-                    newValues: newValues,
-                    userId: requestingUserId,
-                    userName: requestingUser.Name,
-                    ipAddress: ipAddress,
-                    userAgent: userAgent);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Помилка при логуванні аудиту активації ролі {RoleId}", role.Id);
-            // Не бросаем исключение - роль уже активирована
-        }
+        await _auditService.LogUpdateAsync(
+            entityName: "Role",
+            entityId: role.Id,
+            oldValues: oldValues,
+            newValues: newValues,
+            userId: requestingUserId,
+            userName: requestingUser.Name,
+            ipAddress: ipAddress,
+            userAgent: userAgent);
     }
 
     public async Task DeactivateAsync(
@@ -503,43 +613,93 @@ public class RoleService : IRoleService
         string ipAddress,
         string userAgent)
     {
+        var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
+        if (requestingUser == null)
+        {
+            _logger.LogWarning(" Невалідний токен при деактивації ролі. UserId: {UserId}", requestingUserId);
+            throw new UnauthorizedAccessException("Невалідний токен користувача");
+        }
+
         var role = await _roleRepository.GetByIdAsync(id);
         if (role == null)
         {
-            throw new KeyNotFoundException($"Роль з ID {id} не знайдено");
+            var errorMsg = $"Роль з ID {id} не знайдено";
+            
+            _logger.LogWarning(
+                "Спроба деактивації неіснуючої ролі {RoleId} користувачем {UserId} ({UserName})",
+                id, requestingUserId, requestingUser.Name);
+
+            await LogFailedOperationAsync(
+                action: "DeactivateRole",
+                entityName: "Role",
+                entityId: id,
+                requestingUserId: requestingUserId,
+                requestingUserName: requestingUser.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                errorMessage: errorMsg);
+
+            throw new KeyNotFoundException(errorMsg);
         }
 
         if (!role.IsActive)
         {
+            _logger.LogWarning(
+                "Спроба деактивації вже неактивної ролі {Name} (ID: {RoleId}) користувачем {UserId} ({UserName})",
+                role.Name, id, requestingUserId, requestingUser.Name);
+            
             throw new InvalidOperationException("Роль вже деактивована");
         }
 
-        // Валидация деактивации системных ролей
         if (IsSystemRole(role.Name))
         {
+            var errorMsg = $"Неможливо деактивувати системну роль '{role.Name}'";
+            
             _logger.LogWarning(
-                "Спроба деактивації системної ролі {Name} користувачем {UserId}",
-                role.Name, requestingUserId);
-            throw new InvalidOperationException($"Неможливо деактивувати системну роль '{role.Name}'");
+                " SECURITY:Спроба деактивації системної ролі {Name} користувачем {UserId} ({UserName})",
+                role.Name, requestingUserId, requestingUser.Name);
+
+            await LogFailedOperationAsync(
+                action: "DeactivateRole",
+                entityName: "Role",
+                entityId: id,
+                requestingUserId: requestingUserId,
+                requestingUserName: requestingUser.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                errorMessage: errorMsg,
+                additionalData: new { RoleName = role.Name, Reason = "SystemRole" });
+
+            throw new InvalidOperationException(errorMsg);
         }
 
-        // Проверка активных пользователей с этой ролью
         var users = await _roleRepository.GetUsersInRoleAsync(role.Name);
         var activeUsers = users.Where(u => u.IsActive).ToList();
 
         if (activeUsers.Any())
         {
+            var errorMsg = $"Неможливо деактивувати роль '{role.Name}'. " +
+                          $"Вона призначена {activeUsers.Count} активним користувачам. " +
+                          $"Спочатку деактивуйте користувачів або змініть їх ролі.";
+            
             _logger.LogWarning(
-                "Спроба деактивації ролі {Name} яка призначена {ActiveUsersCount} активним користувачам користувачем {UserId}",
-                role.Name, activeUsers.Count, requestingUserId);
+                "Спроба деактивації ролі {Name} яка призначена {ActiveUsersCount} активним користувачам користувачем {UserId} ({UserName})",
+                role.Name, activeUsers.Count, requestingUserId, requestingUser.Name);
 
-            throw new InvalidOperationException(
-                $"Неможливо деактивувати роль '{role.Name}'. " +
-                $"Вона призначена {activeUsers.Count} активним користувачам. " +
-                $"Спочатку деактивуйте користувачів або змініть їх ролі.");
+            await LogFailedOperationAsync(
+                action: "DeactivateRole",
+                entityName: "Role",
+                entityId: id,
+                requestingUserId: requestingUserId,
+                requestingUserName: requestingUser.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                errorMessage: errorMsg,
+                additionalData: new { RoleName = role.Name, ActiveUsersCount = activeUsers.Count });
+
+            throw new InvalidOperationException(errorMsg);
         }
 
-        // Сохраняем старые значения для аудита
         var oldValues = new
         {
             role.Id,
@@ -547,45 +707,31 @@ public class RoleService : IRoleService
             IsActive = role.IsActive
         };
 
-        // Деактивация роли
         role.IsActive = false;
         _roleRepository.Update(role);
         await _unitOfWork.SaveChangesAsync();
 
         _logger.LogInformation(
-            "Роль деактивована. Id: {Id}, Name: {Name}, деактивована користувачем {UserId}",
-            role.Id, role.Name, requestingUserId);
+            "Роль деактивована. Id: {Id}, Name: {Name}, деактивована користувачем {UserId} ({UserName})",
+            role.Id, role.Name, requestingUserId, requestingUser.Name);
 
-        // 🔥 АУДИТ: Логируем деактивацию роли
-        try
+        var newValues = new
         {
-            var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
-            if (requestingUser != null)
-            {
-                var newValues = new
-                {
-                    role.Id,
-                    role.Name,
-                    IsActive = role.IsActive,
-                    DeactivatedBy = requestingUser.Name
-                };
+            role.Id,
+            role.Name,
+            IsActive = role.IsActive,
+            DeactivatedBy = requestingUser.Name
+        };
 
-                await _auditService.LogUpdateAsync(
-                    entityName: "Role",
-                    entityId: role.Id,
-                    oldValues: oldValues,
-                    newValues: newValues,
-                    userId: requestingUserId,
-                    userName: requestingUser.Name,
-                    ipAddress: ipAddress,
-                    userAgent: userAgent);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Помилка при логуванні аудиту деактивації ролі {RoleId}", role.Id);
-            // Не бросаем исключение - роль уже деактивирована
-        }
+        await _auditService.LogUpdateAsync(
+            entityName: "Role",
+            entityId: role.Id,
+            oldValues: oldValues,
+            newValues: newValues,
+            userId: requestingUserId,
+            userName: requestingUser.Name,
+            ipAddress: ipAddress,
+            userAgent: userAgent);
     }
 
     public async Task AssignRoleToUserAsync(
@@ -595,52 +741,100 @@ public class RoleService : IRoleService
         string ipAddress,
         string userAgent)
     {
+        var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
+        if (requestingUser == null)
+        {
+            _logger.LogWarning(" Невалідний токен при призначенні ролі. UserId: {UserId}", requestingUserId);
+            throw new UnauthorizedAccessException("Невалідний токен користувача");
+        }
+
         var user = await _userRepository.GetByIdAsync(userId);
         if (user == null)
-            throw new KeyNotFoundException($"Користувача з ID {userId} не знайдено");
+        {
+            var errorMsg = $"Користувача з ID {userId} не знайдено";
+            
+            _logger.LogWarning(
+                "Спроба призначення ролі неіснуючому користувачу {UserId} користувачем {RequestingUserId} ({UserName})",
+                userId, requestingUserId, requestingUser.Name);
+
+            await LogFailedOperationAsync(
+                action: "AssignRole",
+                entityName: "UserRole",
+                requestingUserId: requestingUserId,
+                requestingUserName: requestingUser.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                errorMessage: errorMsg,
+                additionalData: new { UserId = userId, RoleId = roleId });
+
+            throw new KeyNotFoundException(errorMsg);
+        }
 
         if (!user.IsActive)
+        {
+            _logger.LogWarning(
+                "Спроба призначення ролі неактивному користувачу {UserId} ({UserName}) користувачем {RequestingUserId}",
+                userId, user.Name, requestingUserId);
+            
             throw new InvalidOperationException("Неможливо призначити роль неактивному користувачу");
+        }
 
         var role = await _roleRepository.GetByIdAsync(roleId);
         if (role == null)
-            throw new KeyNotFoundException($"Роль з ID {roleId} не знайдено");
+        {
+            var errorMsg = $"Роль з ID {roleId} не знайдено";
+            
+            _logger.LogWarning(
+                "Спроба призначення неіснуючої ролі {RoleId} користувачу {UserId} користувачем {RequestingUserId} ({UserName})",
+                roleId, userId, requestingUserId, requestingUser.Name);
+
+            await LogFailedOperationAsync(
+                action: "AssignRole",
+                entityName: "UserRole",
+                requestingUserId: requestingUserId,
+                requestingUserName: requestingUser.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                errorMessage: errorMsg,
+                additionalData: new { UserId = userId, UserName = user.Name, RoleId = roleId });
+
+            throw new KeyNotFoundException(errorMsg);
+        }
 
         if (!role.IsActive)
+        {
+            _logger.LogWarning(
+                "Спроба призначення неактивної ролі {RoleName} (ID: {RoleId}) користувачу {UserId} користувачем {RequestingUserId} ({UserName})",
+                role.Name, roleId, userId, requestingUserId, requestingUser.Name);
+            
             throw new InvalidOperationException("Неможливо призначити неактивну роль");
+        }
 
         if (await _roleRepository.UserHasRoleAsync(userId, role.Name))
+        {
+            _logger.LogWarning(
+                "Спроба повторного призначення ролі {RoleName} користувачу {UserId} ({UserName}) користувачем {RequestingUserId}",
+                role.Name, userId, user.Name, requestingUserId);
+            
             throw new InvalidOperationException($"Роль '{role.Name}' вже призначена цьому користувачу");
+        }
 
         await _roleRepository.AssignRoleAsync(userId, roleId);
         await _unitOfWork.SaveChangesAsync();
 
         _logger.LogInformation(
-            "Роль {RoleName} (ID: {RoleId}) призначена користувачу {UserId} користувачем {RequestingUserId}",
-            role.Name, roleId, userId, requestingUserId);
+            "Роль {RoleName} (ID: {RoleId}) призначена користувачу {UserId} ({UserName}) користувачем {RequestingUserId} ({RequestingUserName})",
+            role.Name, roleId, userId, user.Name, requestingUserId, requestingUser.Name);
 
-        // 🔥 АУДИТ: Логируем назначение роли
-        try
-        {
-            var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
-            if (requestingUser != null)
-            {
-                await _auditService.LogRoleAssignedAsync(
-                    userId: requestingUserId,
-                    userName: requestingUser.Name,
-                    targetUserId: userId,
-                    targetUserName: user.Name,
-                    roleId: roleId,
-                    roleName: role.Name,
-                    ipAddress: ipAddress,
-                    userAgent: userAgent);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Помилка при логуванні аудиту призначення ролі");
-            // Не бросаем исключение - роль уже назначена
-        }
+        await _auditService.LogRoleAssignedAsync(
+            userId: requestingUserId,
+            userName: requestingUser.Name,
+            targetUserId: userId,
+            targetUserName: user.Name,
+            roleId: roleId,
+            roleName: role.Name,
+            ipAddress: ipAddress,
+            userAgent: userAgent);
     }
 
     public async Task RemoveRoleFromUserAsync(
@@ -650,39 +844,112 @@ public class RoleService : IRoleService
         string ipAddress,
         string userAgent)
     {
-        var userExists = await _userRepository.ExistsAsync(userId);
-        if (!userExists)
-            throw new KeyNotFoundException($"Користувача з ID {userId} не знайдено");
+        var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
+        if (requestingUser == null)
+        {
+            _logger.LogWarning(" Невалідний токен при видаленні ролі. UserId: {UserId}", requestingUserId);
+            throw new UnauthorizedAccessException("Невалідний токен користувача");
+        }
+
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+        {
+            var errorMsg = $"Користувача з ID {userId} не знайдено";
+            
+            _logger.LogWarning(
+                "Спроба видалення ролі у неіснуючого користувача {UserId} користувачем {RequestingUserId} ({UserName})",
+                userId, requestingUserId, requestingUser.Name);
+
+            await LogFailedOperationAsync(
+                action: "RemoveRole",
+                entityName: "UserRole",
+                requestingUserId: requestingUserId,
+                requestingUserName: requestingUser.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                errorMessage: errorMsg,
+                additionalData: new { UserId = userId, RoleId = roleId });
+
+            throw new KeyNotFoundException(errorMsg);
+        }
 
         var role = await _roleRepository.GetByIdAsync(roleId);
         if (role == null)
-            throw new KeyNotFoundException($"Роль з ID {roleId} не знайдено");
+        {
+            var errorMsg = $"Роль з ID {roleId} не знайдено";
+            
+            _logger.LogWarning(
+                "Спроба видалення неіснуючої ролі {RoleId} у користувача {UserId} користувачем {RequestingUserId} ({UserName})",
+                roleId, userId, requestingUserId, requestingUser.Name);
+
+            await LogFailedOperationAsync(
+                action: "RemoveRole",
+                entityName: "UserRole",
+                requestingUserId: requestingUserId,
+                requestingUserName: requestingUser.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                errorMessage: errorMsg,
+                additionalData: new { UserId = userId, UserName = user.Name, RoleId = roleId });
+
+            throw new KeyNotFoundException(errorMsg);
+        }
 
         if (!await _roleRepository.UserHasRoleAsync(userId, role.Name))
+        {
+            _logger.LogWarning(
+                "Спроба видалення не призначеної ролі {RoleName} у користувача {UserId} ({UserName}) користувачем {RequestingUserId}",
+                role.Name, userId, user.Name, requestingUserId);
+            
             throw new InvalidOperationException($"Роль '{role.Name}' не призначена цьому користувачу");
+        }
 
         var userRoles = await _roleRepository.GetUserRolesAsync(userId);
         if (userRoles.Count() == 1)
-            throw new InvalidOperationException(
-                "Неможливо видалити останню роль користувача. Користувач повинен мати хоча б одну роль");
-
-        // Специальная проверка для Admin роли
-        if (role.Name == "Admin")
         {
-            var user = await _userRepository.GetByIdAsync(userId);
-            if (user != null && user.IsActive)
-            {
-                var activeAdmins = await _userRepository.GetUsersWithRoleAsync("Admin");
-                var activeAdminsCount = activeAdmins.Count(u => u.IsActive);
+            var errorMsg = "Неможливо видалити останню роль користувача. Користувач повинен мати хоча б одну роль";
+            
+            _logger.LogWarning(
+                "Спроба видалення останньої ролі {RoleName} у користувача {UserId} ({UserName}) користувачем {RequestingUserId} ({UserName})",
+                role.Name, userId, user.Name, requestingUserId, requestingUser.Name);
 
-                if (activeAdminsCount <= 1)
-                {
-                    _logger.LogWarning(
-                        "Спроба видалення ролі Admin у останнього активного адміністратора користувачем {RequestingUserId}",
-                        requestingUserId);
-                    throw new InvalidOperationException(
-                        "Неможливо видалити роль Admin у останнього активного адміністратора");
-                }
+            await LogFailedOperationAsync(
+                action: "RemoveRole",
+                entityName: "UserRole",
+                requestingUserId: requestingUserId,
+                requestingUserName: requestingUser.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                errorMessage: errorMsg,
+                additionalData: new { UserId = userId, UserName = user.Name, RoleId = roleId, RoleName = role.Name, RemainingRolesCount = 1 });
+
+            throw new InvalidOperationException(errorMsg);
+        }
+
+        if (role.Name == "Admin" && user.IsActive)
+        {
+            var activeAdmins = await _userRepository.GetUsersWithRoleAsync("Admin");
+            var activeAdminsCount = activeAdmins.Count(u => u.IsActive);
+
+            if (activeAdminsCount <= 1)
+            {
+                var errorMsg = "Неможливо видалити роль Admin у останнього активного адміністратора";
+                
+                _logger.LogWarning(
+                    " SECURITY:Спроба видалення ролі Admin у останнього активного адміністратора {UserId} ({UserName}) користувачем {RequestingUserId} ({RequestingUserName})",
+                    userId, user.Name, requestingUserId, requestingUser.Name);
+
+                await LogFailedOperationAsync(
+                    action: "RemoveRole",
+                    entityName: "UserRole",
+                    requestingUserId: requestingUserId,
+                    requestingUserName: requestingUser.Name,
+                    ipAddress: ipAddress,
+                    userAgent: userAgent,
+                    errorMessage: errorMsg,
+                    additionalData: new { UserId = userId, UserName = user.Name, RoleId = roleId, RoleName = role.Name, ActiveAdminsCount = activeAdminsCount, Reason = "LastAdmin" });
+
+                throw new InvalidOperationException(errorMsg);
             }
         }
 
@@ -690,32 +957,18 @@ public class RoleService : IRoleService
         await _unitOfWork.SaveChangesAsync();
 
         _logger.LogInformation(
-            "Роль {RoleName} (ID: {RoleId}) видалена у користувача {UserId} користувачем {RequestingUserId}",
-            role.Name, roleId, userId, requestingUserId);
+            "Роль {RoleName} (ID: {RoleId}) видалена у користувача {UserId} ({UserName}) користувачем {RequestingUserId} ({RequestingUserName})",
+            role.Name, roleId, userId, user.Name, requestingUserId, requestingUser.Name);
 
-        // 🔥 АУДИТ: Логируем удаление роли
-        try
-        {
-            var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
-            var targetUser = await _userRepository.GetByIdAsync(userId);
-            if (requestingUser != null && targetUser != null)
-            {
-                await _auditService.LogRoleRemovedAsync(
-                    userId: requestingUserId,
-                    userName: requestingUser.Name,
-                    targetUserId: userId,
-                    targetUserName: targetUser.Name,
-                    roleId: roleId,
-                    roleName: role.Name,
-                    ipAddress: ipAddress,
-                    userAgent: userAgent);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Помилка при логуванні аудиту видалення ролі");
-            // Не бросаем исключение - роль уже удалена
-        }
+        await _auditService.LogRoleRemovedAsync(
+            userId: requestingUserId,
+            userName: requestingUser.Name,
+            targetUserId: userId,
+            targetUserName: user.Name,
+            roleId: roleId,
+            roleName: role.Name,
+            ipAddress: ipAddress,
+            userAgent: userAgent);
     }
 
     public async Task ReplaceUserRolesAsync(
@@ -726,40 +979,117 @@ public class RoleService : IRoleService
         string userAgent)
     {
         var roleIdsList = roleIds.ToList();
+        var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
+        
+        if (requestingUser == null)
+        {
+            _logger.LogWarning(" Невалідний токен при заміні ролей. UserId: {UserId}", requestingUserId);
+            throw new UnauthorizedAccessException("Невалідний токен користувача");
+        }
 
         var user = await _userRepository.GetByIdAsync(userId);
         if (user == null)
-            throw new KeyNotFoundException($"Користувача з ID {userId} не знайдено");
+        {
+            var errorMsg = $"Користувача з ID {userId} не знайдено";
+            
+            _logger.LogWarning(
+                "Спроба заміни ролей неіснуючого користувача {UserId} користувачем {RequestingUserId} ({UserName})",
+                userId, requestingUserId, requestingUser.Name);
+
+            await LogFailedOperationAsync(
+                action: "ReplaceUserRoles",
+                entityName: "UserRoles",
+                requestingUserId: requestingUserId,
+                requestingUserName: requestingUser.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                errorMessage: errorMsg,
+                additionalData: new { UserId = userId, NewRoleIds = roleIdsList });
+
+            throw new KeyNotFoundException(errorMsg);
+        }
 
         if (!user.IsActive)
+        {
+            _logger.LogWarning(
+                "Спроба заміни ролей неактивного користувача {UserId} ({UserName}) користувачем {RequestingUserId}",
+                userId, user.Name, requestingUserId);
+            
             throw new InvalidOperationException("Неможливо змінити ролі неактивного користувача");
+        }
 
         if (!roleIdsList.Any())
+        {
+            _logger.LogWarning(
+                "Спроба заміни ролей порожнім списком для користувача {UserId} ({UserName}) користувачем {RequestingUserId} ({RequestingUserName})",
+                userId, user.Name, requestingUserId, requestingUser.Name);
+            
             throw new ArgumentException("Необхідно передати хоча б одну роль");
+        }
 
         if (roleIdsList.Distinct().Count() != roleIdsList.Count)
+        {
+            _logger.LogWarning(
+                "Спроба заміни ролей зі дублікатами для користувача {UserId} ({UserName}) користувачем {RequestingUserId} ({RequestingUserName})",
+                userId, user.Name, requestingUserId, requestingUser.Name);
+            
             throw new ArgumentException("Список ролей містить дублікати");
+        }
 
-        // Проверка существования и активности всех ролей
         var roles = new List<Role>();
         foreach (var roleId in roleIdsList)
         {
             var role = await _roleRepository.GetByIdAsync(roleId);
+            
             if (role == null)
-                throw new KeyNotFoundException($"Роль з ID {roleId} не знайдено");
+            {
+                var errorMsg = $"Роль з ID {roleId} не знайдено";
+                
+                _logger.LogWarning(
+                    "Спроба заміни ролей з неіснуючою роллю {RoleId} для користувача {UserId} ({UserName}) користувачем {RequestingUserId} ({RequestingUserName})",
+                    roleId, userId, user.Name, requestingUserId, requestingUser.Name);
+
+                await LogFailedOperationAsync(
+                    action: "ReplaceUserRoles",
+                    entityName: "UserRoles",
+                    requestingUserId: requestingUserId,
+                    requestingUserName: requestingUser.Name,
+                    ipAddress: ipAddress,
+                    userAgent: userAgent,
+                    errorMessage: errorMsg,
+                    additionalData: new { UserId = userId, UserName = user.Name, NewRoleIds = roleIdsList, MissingRoleId = roleId });
+
+                throw new KeyNotFoundException(errorMsg);
+            }
 
             if (!role.IsActive)
-                throw new InvalidOperationException($"Роль '{role.Name}' (ID: {roleId}) неактивна");
+            {
+                var errorMsg = $"Роль '{role.Name}' (ID: {roleId}) неактивна";
+                
+                _logger.LogWarning(
+                    "Спроба заміни ролей з неактивною роллю {RoleName} (ID: {RoleId}) для користувача {UserId} ({UserName}) користувачем {RequestingUserId} ({RequestingUserName})",
+                    role.Name, roleId, userId, user.Name, requestingUserId, requestingUser.Name);
+
+                await LogFailedOperationAsync(
+                    action: "ReplaceUserRoles",
+                    entityName: "UserRoles",
+                    requestingUserId: requestingUserId,
+                    requestingUserName: requestingUser.Name,
+                    ipAddress: ipAddress,
+                    userAgent: userAgent,
+                    errorMessage: errorMsg,
+                    additionalData: new { UserId = userId, UserName = user.Name, NewRoleIds = roleIdsList, InactiveRoleId = roleId, InactiveRoleName = role.Name });
+
+                throw new InvalidOperationException(errorMsg);
+            }
 
             roles.Add(role);
         }
 
-        // Получаем текущие роли для сравнения
         var currentRoles = await _roleRepository.GetUserRolesAsync(userId);
         var hasAdminNow = currentRoles.Any(r => r.Name == "Admin");
         var willHaveAdmin = roles.Any(r => r.Name == "Admin");
 
-        // Проверка на удаление Admin роли у последнего администратора
         if (hasAdminNow && !willHaveAdmin && user.IsActive)
         {
             var activeAdmins = await _userRepository.GetUsersWithRoleAsync("Admin");
@@ -767,63 +1097,70 @@ public class RoleService : IRoleService
 
             if (activeAdminsCount <= 1)
             {
+                var errorMsg = "Неможливо видалити роль Admin у останнього активного адміністратора";
+                
                 _logger.LogWarning(
-                    "Спроба видалення ролі Admin у останнього активного адміністратора користувачем {RequestingUserId}",
-                    requestingUserId);
-                throw new InvalidOperationException(
-                    "Неможливо видалити роль Admin у останнього активного адміністратора");
+                    "SECURITY:Спроба видалення ролі Admin у останнього активного адміністратора {UserId} ({UserName}) через заміну ролей користувачем {RequestingUserId} ({RequestingUserName})",
+                    userId, user.Name, requestingUserId, requestingUser.Name);
+
+                await LogFailedOperationAsync(
+                    action: "ReplaceUserRoles",
+                    entityName: "UserRoles",
+                    requestingUserId: requestingUserId,
+                    requestingUserName: requestingUser.Name,
+                    ipAddress: ipAddress,
+                    userAgent: userAgent,
+                    errorMessage: errorMsg,
+                    additionalData: new 
+                    { 
+                        UserId = userId, 
+                        UserName = user.Name, 
+                        OldRoles = string.Join(", ", currentRoles.Select(r => r.Name)),
+                        NewRoles = string.Join(", ", roles.Select(r => r.Name)),
+                        ActiveAdminsCount = activeAdminsCount,
+                        Reason = "LastAdmin"
+                    });
+
+                throw new InvalidOperationException(errorMsg);
             }
         }
 
-        // Заменяем роли
         await _roleRepository.ReplaceUserRolesAsync(userId, roleIdsList);
         await _unitOfWork.SaveChangesAsync();
 
         _logger.LogInformation(
-            "Ролі користувача {UserId} замінені користувачем {RequestingUserId}. Нові ролі: {NewRoles}",
-            userId, requestingUserId, string.Join(", ", roles.Select(r => r.Name)));
+            "Ролі користувача {UserId} ({UserName}) замінені користувачем {RequestingUserId} ({RequestingUserName}). Нові ролі: {NewRoles}",
+            userId, user.Name, requestingUserId, requestingUser.Name, string.Join(", ", roles.Select(r => r.Name)));
 
-        // 🔥 АУДИТ: Логируем замену ролей
-        try
+        var oldRoleNames = string.Join(", ", currentRoles.Select(r => r.Name));
+        var newRoleNames = string.Join(", ", roles.Select(r => r.Name));
+
+        var oldValues = new
         {
-            var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
-            if (requestingUser != null)
-            {
-                var oldRoleNames = string.Join(", ", currentRoles.Select(r => r.Name));
-                var newRoleNames = string.Join(", ", roles.Select(r => r.Name));
-
-                var oldValues = new
-                {
-                    UserId = userId,
-                    UserName = user.Name,
-                    RoleIds = currentRoles.Select(r => r.Id).ToList(),
-                    RoleNames = oldRoleNames
-                };
-                var newValues = new
-                {
-                    UserId = userId,
-                    UserName = user.Name,
-                    RoleIds = roleIdsList,
-                    RoleNames = newRoleNames,
-                    UpdatedBy = requestingUser.Name
-                };
-
-                await _auditService.LogUpdateAsync(
-                    entityName: "UserRoles",
-                    entityId: userId,
-                    oldValues: oldValues,
-                    newValues: newValues,
-                    userId: requestingUserId,
-                    userName: requestingUser.Name,
-                    ipAddress: ipAddress,
-                    userAgent: userAgent);
-            }
-        }
-        catch (Exception ex)
+            UserId = userId,
+            UserName = user.Name,
+            RoleIds = currentRoles.Select(r => r.Id).ToList(),
+            RoleNames = oldRoleNames
+        };
+        
+        var newValues = new
         {
-            _logger.LogError(ex, "Помилка при логуванні аудиту заміни ролей користувача {UserId}", userId);
-            // Не бросаем исключение - роли уже заменены
-        }
+            UserId = userId,
+            UserName = user.Name,
+            RoleIds = roleIdsList,
+            RoleNames = newRoleNames,
+            UpdatedBy = requestingUser.Name
+        };
+
+        await _auditService.LogUpdateAsync(
+            entityName: "UserRoles",
+            entityId: userId,
+            oldValues: oldValues,
+            newValues: newValues,
+            userId: requestingUserId,
+            userName: requestingUser.Name,
+            ipAddress: ipAddress,
+            userAgent: userAgent);
     }
 
     public async Task UpdateRolePermissionsAsync(
@@ -833,26 +1170,49 @@ public class RoleService : IRoleService
         string ipAddress,
         string userAgent)
     {
+        var permissionsList = permissions.ToList();
+        var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
+        
+        if (requestingUser == null)
+        {
+            _logger.LogWarning(" Невалідний токен при оновленні permissions. UserId: {UserId}", requestingUserId);
+            throw new UnauthorizedAccessException("Невалідний токен користувача");
+        }
+
         var role = await _roleRepository.GetByIdAsync(roleId);
         if (role == null)
-            throw new KeyNotFoundException($"Роль з ID {roleId} не знайдено");
+        {
+            var errorMsg = $"Роль з ID {roleId} не знайдено";
+            
+            _logger.LogWarning(
+                "Спроба оновлення permissions неіснуючої ролі {RoleId} користувачем {UserId} ({UserName})",
+                roleId, requestingUserId, requestingUser.Name);
 
-        var permissionsList = permissions.ToList();
+            await LogFailedOperationAsync(
+                action: "UpdateRolePermissions",
+                entityName: "RolePermissions",
+                entityId: roleId,
+                requestingUserId: requestingUserId,
+                requestingUserName: requestingUser.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                errorMessage: errorMsg,
+                additionalData: new { RoleId = roleId, NewPermissions = permissionsList });
 
-        // Сохраняем старые permissions для аудита
+            throw new KeyNotFoundException(errorMsg);
+        }
+
         var oldPermissions = string.IsNullOrWhiteSpace(role.Permissions)
             ? new List<string>()
             : JsonSerializer.Deserialize<List<string>>(role.Permissions) ?? new List<string>();
 
-        // КРИТИЧЕСКОЕ ПРЕДУПРЕЖДЕНИЕ при изменении системных ролей
         if (IsSystemRole(role.Name))
         {
             _logger.LogWarning(
-                "КРИТИЧНА ДІЯ: Оновлення permissions системної ролі {RoleName} (ID: {RoleId}) користувачем {RequestingUserId}",
-                role.Name, roleId, requestingUserId);
+                "Спроба CRITICAL: Оновлення permissions системної ролі {RoleName} (ID: {RoleId}) користувачем {RequestingUserId} ({RequestingUserName})",
+                role.Name, roleId, requestingUserId, requestingUser.Name);
         }
 
-        // Обновление permissions
         role.Permissions = permissionsList.Any()
             ? JsonSerializer.Serialize(permissionsList)
             : null;
@@ -861,50 +1221,72 @@ public class RoleService : IRoleService
         await _unitOfWork.SaveChangesAsync();
 
         _logger.LogInformation(
-            "Permissions ролі {RoleName} (ID: {RoleId}) оновлені користувачем {RequestingUserId}",
-            role.Name, roleId, requestingUserId);
+            "Permissions ролі {RoleName} (ID: {RoleId}) оновлені користувачем {RequestingUserId} ({RequestingUserName})",
+            role.Name, roleId, requestingUserId, requestingUser.Name);
 
-        // 🔥 АУДИТ: Логируем обновление permissions
-        try
+        var oldValues = new
         {
-            var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
-            if (requestingUser != null)
-            {
-                var oldValues = new
-                {
-                    RoleId = roleId,
-                    RoleName = role.Name,
-                    Permissions = oldPermissions
-                };
+            RoleId = roleId,
+            RoleName = role.Name,
+            Permissions = oldPermissions
+        };
 
-                var newValues = new
-                {
-                    RoleId = roleId,
-                    RoleName = role.Name,
-                    Permissions = permissionsList,
-                    UpdatedBy = requestingUser.Name
-                };
-
-                await _auditService.LogUpdateAsync(
-                    entityName: "RolePermissions",
-                    entityId: roleId,
-                    oldValues: oldValues,
-                    newValues: newValues,
-                    userId: requestingUserId,
-                    userName: requestingUser.Name,
-                    ipAddress: ipAddress,
-                    userAgent: userAgent);
-            }
-        }
-        catch (Exception ex)
+        var newValues = new
         {
-            _logger.LogError(ex, "Помилка при логуванні аудиту оновлення permissions ролі {RoleId}", roleId);
-            // Не бросаем исключение - permissions уже обновлены
-        }
+            RoleId = roleId,
+            RoleName = role.Name,
+            Permissions = permissionsList,
+            UpdatedBy = requestingUser.Name
+        };
+
+        await _auditService.LogUpdateAsync(
+            entityName: "RolePermissions",
+            entityId: roleId,
+            oldValues: oldValues,
+            newValues: newValues,
+            userId: requestingUserId,
+            userName: requestingUser.Name,
+            ipAddress: ipAddress,
+            userAgent: userAgent);
     }
 
     private bool IsSystemRole(string roleName)
     {
         return SystemRoles.Contains(roleName, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private async Task LogFailedOperationAsync(
+        string action,
+        string entityName,
+        long requestingUserId,
+        string requestingUserName,
+        string ipAddress,
+        string userAgent,
+        string errorMessage,
+        object? additionalData = null,
+        long? entityId = null)
+    {
+        try
+        {
+            var failureData = new
+            {
+                Action = action,
+                ErrorMessage = errorMessage,
+                AdditionalData = additionalData
+            };
+
+            await _auditService.LogCreateAsync(
+                entityName: $"{entityName}Failure",
+                entityId: entityId ?? 0,
+                newValues: failureData,
+                userId: requestingUserId,
+                userName: requestingUserName,
+                ipAddress: ipAddress,
+                userAgent: userAgent);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Помилка при логуванні неуспішної операції {Action} для {EntityName}", action, entityName);
+        }
     }
 }

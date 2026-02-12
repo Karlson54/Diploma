@@ -67,6 +67,55 @@ public class AuditService : IAuditService
         }
     }
 
+    public async Task LogRegistrationAsync(
+        string userName,
+        string email,
+        string ipAddress,
+        string userAgent,
+        bool success = true,
+        string? errorMessage = null,
+        long? userId = null)
+    {
+        try
+        {
+            var newValues = new
+            {
+                UserName = userName,
+                Email = email
+            };
+
+            var auditLog = new AuditLog
+            {
+                UserId = userId ?? 0, // 0 для неудачних спроб
+                UserName = userName,
+                Action = success ? AuditAction.Register : AuditAction.RegisterFailed,
+                EntityName = "Authentication",
+                NewValues = SerializeObject(newValues),
+                IpAddress = ipAddress,
+                UserAgent = userAgent,
+                Success = success,
+                ErrorMessage = errorMessage
+            };
+
+            await _auditLogRepository.AddAsync(auditLog);
+            await _unitOfWork.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Audit: {Action} - User: {UserName}, Email: {Email}, Success: {Success}",
+                success ? AuditAction.Register : AuditAction.RegisterFailed,
+                userName,
+                email,
+                success);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to log audit for Registration attempt. User: {UserName}, Email: {Email}",
+                userName,
+                email);
+        }
+    }
+
     public async Task LogUpdateAsync(
         string entityName,
         long entityId,

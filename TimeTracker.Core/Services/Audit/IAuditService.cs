@@ -34,6 +34,15 @@ public interface IAuditService
         string userAgent);
 
     // Логування аутентифікації
+    Task LogRegistrationAsync(
+        string userName,
+        string email,
+        string ipAddress,
+        string userAgent,
+        bool success = true,
+        string? errorMessage = null,
+        long? userId = null);
+
     Task LogLoginAsync(
         long userId,
         string userName,
