@@ -1,4 +1,3 @@
-// TimeTracker.Data/Repositories/Common/Repository.cs
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using TimeTracker.Data.Context;

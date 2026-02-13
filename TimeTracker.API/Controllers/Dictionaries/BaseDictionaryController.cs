@@ -105,7 +105,15 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
 
         try
         {
-            var item = await _service.CreateAsync(dto);
+            //Отримуємо контекст для аудиту
+            var userId = GetCurrentUserId();
+            var userName = GetCurrentUserName();
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
+            //Передаємо параметри аудиту
+            var item = await _service.CreateAsync(dto, userId, userName, ipAddress, userAgent);
+            
             return CreatedAtAction(nameof(GetById), new { id = item.Id }, item);
         }
         catch (InvalidOperationException ex)
@@ -132,7 +140,15 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
 
         try
         {
-            var item = await _service.UpdateAsync(id, dto);
+            //Отримуємо контекст для аудиту
+            var userId = GetCurrentUserId();
+            var userName = GetCurrentUserName();
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
+            //Передаємо параметри аудиту
+            var item = await _service.UpdateAsync(id, dto, userId, userName, ipAddress, userAgent);
+            
             return Ok(item);
         }
         catch (KeyNotFoundException ex)
@@ -159,7 +175,15 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
     {
         try
         {
-            await _service.DeleteAsync(id);
+            //Отримуємо контекст для аудиту
+            var userId = GetCurrentUserId();
+            var userName = GetCurrentUserName();
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
+            //Передаємо параметри аудиту
+            await _service.DeleteAsync(id, userId, userName, ipAddress, userAgent);
+            
             return Ok(new { Message = $"{_entityName} успішно видалено" });
         }
         catch (KeyNotFoundException ex)
@@ -186,7 +210,15 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
     {
         try
         {
-            await _service.ActivateAsync(id);
+            //Отримуємо контекст для аудиту
+            var userId = GetCurrentUserId();
+            var userName = GetCurrentUserName();
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
+            //Передаємо параметри аудиту
+            await _service.ActivateAsync(id, userId, userName, ipAddress, userAgent);
+            
             return Ok(new { Message = $"{_entityName} успішно активовано" });
         }
         catch (KeyNotFoundException ex)
@@ -213,7 +245,15 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
     {
         try
         {
-            await _service.DeactivateAsync(id);
+            //Отримуємо контекст для аудиту
+            var userId = GetCurrentUserId();
+            var userName = GetCurrentUserName();
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
+            //Передаємо параметри аудиту
+            await _service.DeactivateAsync(id, userId, userName, ipAddress, userAgent);
+            
             return Ok(new { Message = $"{_entityName} успішно деактивовано" });
         }
         catch (KeyNotFoundException ex)
@@ -265,5 +305,65 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
             TotalCount = totalCount,
             InactiveCount = totalCount - activeCount
         });
+    }
+
+    //HELPER МЕТОДИ ДЛЯ АУДИТУ
+    protected long GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirst("userId")?.Value;
+        
+        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
+        {
+            _logger.LogWarning("Невалідний токен: не вдалося отримати userId");
+            throw new UnauthorizedAccessException("Невалідний токен");
+        }
+
+        return userId;
+    }
+
+    protected string GetCurrentUserName()
+    {
+        return User.FindFirst("userName")?.Value
+               ?? User.Identity?.Name
+               ?? "Unknown";
+    }
+
+    protected string GetIpAddress()
+    {
+        // Перевіряємо X-Forwarded-For (якщо за proxy/load balancer)
+        var forwardedFor = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(forwardedFor))
+        {
+            var ips = forwardedFor.Split(',', StringSplitOptions.RemoveEmptyEntries);
+            if (ips.Length > 0)
+            {
+                return ips[0].Trim();
+            }
+        }
+
+        // Перевіряємо X-Real-IP
+        var realIp = HttpContext.Request.Headers["X-Real-IP"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(realIp))
+        {
+            return realIp.Trim();
+        }
+
+        // Використовуємо RemoteIpAddress
+        return HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+    }
+
+    protected string GetUserAgent()
+    {
+        var userAgent = HttpContext.Request.Headers["User-Agent"].FirstOrDefault();
+        
+        if (string.IsNullOrEmpty(userAgent))
+        {
+            return "Unknown";
+        }
+
+        // Обмежуємо розмір (БД constraint 500 символів)
+        return userAgent.Length > 500 
+            ? userAgent.Substring(0, 500) 
+            : userAgent;
     }
 }

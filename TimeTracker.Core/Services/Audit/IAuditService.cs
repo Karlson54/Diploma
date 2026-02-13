@@ -116,4 +116,44 @@ public interface IAuditService
         long entityId,
         int pageNumber = 1,
         int pageSize = 50);
+
+    // Логування операцій зі словниками (Dictionaries)
+    Task LogDictionaryCreatedAsync(
+        string dictionaryType,
+        long dictionaryId,
+        string dictionaryName,
+        object newValues,
+        long userId,
+        string userName,
+        string ipAddress,
+        string userAgent);
+
+    Task LogDictionaryUpdatedAsync(
+        string dictionaryType,
+        long dictionaryId,
+        string dictionaryName,
+        object oldValues,
+        object newValues,
+        long userId,
+        string userName,
+        string ipAddress,
+        string userAgent);
+
+    Task LogDictionaryActivatedAsync(
+        string dictionaryType,
+        long dictionaryId,
+        string dictionaryName,
+        long userId,
+        string userName,
+        string ipAddress,
+        string userAgent);
+
+    Task LogDictionaryDeactivatedAsync(
+        string dictionaryType,
+        long dictionaryId,
+        string dictionaryName,
+        long userId,
+        string userName,
+        string ipAddress,
+        string userAgent);
 }

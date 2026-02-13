@@ -1,4 +1,3 @@
-// TimeTracker.Data/Repositories/Dictionaries/DictionaryRepository.cs
 using Microsoft.EntityFrameworkCore;
 using TimeTracker.Data.Context;
 using TimeTracker.Data.Entities;

@@ -1,4 +1,3 @@
-// TimeTracker.Data/Repositories/TimeEntries/ITimeEntryRepository.cs
 using TimeTracker.Data.Entities;
 using TimeTracker.Data.Repositories.Common;
 

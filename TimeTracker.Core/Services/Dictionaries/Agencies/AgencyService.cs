@@ -2,6 +2,7 @@ using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using TimeTracker.Core.DTOs.Dictionaries.Agencies;
+using TimeTracker.Core.Services.Audit;
 using TimeTracker.Data.Entities;
 using TimeTracker.Data.Repositories.Dictionaries;
 using TimeTracker.Data.UnitOfWork;
@@ -14,8 +15,9 @@ public class AgencyService : DictionaryService<Agency, AgencyDto, CreateAgencyDt
         IDictionaryRepository<Agency> repository,
         IUnitOfWork unitOfWork,
         IMapper mapper,
-        ILogger<AgencyService> logger)
-        : base(repository, unitOfWork, mapper, logger)
+        ILogger<AgencyService> logger,
+        IAuditService auditService)
+        : base(repository, unitOfWork, mapper, logger, auditService)
     {
     }
 
@@ -55,8 +57,6 @@ public class AgencyService : DictionaryService<Agency, AgencyDto, CreateAgencyDt
         var agencies = await _repository
             .GetQueryable()
             .Where(a => a.Country.ToLower() == country.ToLower())
-            .OrderBy(a => a.Name)
-            .AsNoTracking()
             .ToListAsync();
 
         var dtos = _mapper.Map<List<AgencyDto>>(agencies);
@@ -90,44 +90,28 @@ public class AgencyService : DictionaryService<Agency, AgencyDto, CreateAgencyDt
 
     protected override async Task<bool> CanBeDeletedAsync(long id)
     {
-        // Перевіряємо чи є користувачі
+        // Не можна видалити Agency якщо є користувачі
         var hasUsers = await _unitOfWork.Users
             .GetQueryable()
             .AnyAsync(u => u.AgencyId == id);
 
-        if (hasUsers)
-            return false;
-
-        // Перевіряємо чи є TimeEntries
-        var hasTimeEntries = await _unitOfWork.TimeEntries
-            .GetQueryable()
-            .AnyAsync(te => te.AgencyId == id);
-
-        return !hasTimeEntries;
+        return !hasUsers;
     }
 
     public override async Task<bool> CanBeDeactivatedAsync(long id)
     {
         // Можна деактивувати тільки якщо немає активних користувачів
         var hasActiveUsers = await HasActiveUsersAsync(id);
-        
-        if (hasActiveUsers)
-        {
-            _logger.LogWarning(
-                "Неможливо деактивувати Agency {Id}, оскільки є активні користувачі",
-                id);
-            return false;
-        }
-
-        // І немає активних TimeEntries
-        var hasActiveTimeEntries = await _unitOfWork.TimeEntries
-            .GetQueryable()
-            .AnyAsync(te => te.AgencyId == id);
-
-        return !hasActiveTimeEntries;
+        return !hasActiveUsers;
     }
 
-    public override async Task DeactivateAsync(long id)
+    //DeactivateAsync для детальних помилок
+    public override async Task DeactivateAsync(
+        long id,
+        long userId,
+        string userName,
+        string ipAddress,
+        string userAgent)
     {
         var agency = await _repository.GetByIdAsync(id);
         if (agency == null)
@@ -137,19 +121,26 @@ public class AgencyService : DictionaryService<Agency, AgencyDto, CreateAgencyDt
 
         if (!agency.IsActive)
         {
-            throw new InvalidOperationException("Agency вже деактивований");
+            _logger.LogWarning(
+                "Спроба деактивації вже деактивованого Agency '{Name}' (ID: {Id})",
+                agency.Name, id);
+            throw new InvalidOperationException("Agency вже деактивоване");
         }
 
-        // Додаткова перевірка активних користувачів
-        if (await HasActiveUsersAsync(id))
-        {
-            var usersCount = await _unitOfWork.Users
-                .GetQueryable()
-                .CountAsync(u => u.AgencyId == id && u.IsActive);
+        // Перевірка активних користувачів
+        var activeUsersCount = await _unitOfWork.Users
+            .GetQueryable()
+            .CountAsync(u => u.AgencyId == id && u.IsActive);
 
+        if (activeUsersCount > 0)
+        {
+            _logger.LogWarning(
+                "Неможливо деактивувати Agency '{Name}' (ID: {Id}) - є {Count} активних користувачів",
+                agency.Name, id, activeUsersCount);
+            
             throw new InvalidOperationException(
                 $"Неможливо деактивувати Agency '{agency.Name}', " +
-                $"оскільки є {usersCount} активних користувачів. " +
+                $"оскільки є {activeUsersCount} активних користувачів. " +
                 "Спочатку деактивуйте або перемістіть всіх користувачів.");
         }
 
@@ -157,54 +148,73 @@ public class AgencyService : DictionaryService<Agency, AgencyDto, CreateAgencyDt
         await _unitOfWork.SaveChangesAsync();
 
         _logger.LogInformation(
-            "Agency деактивовано. Id: {Id}, Name: {Name}, Country: {Country}",
-            id, agency.Name, agency.Country);
+            "Agency деактивовано. Id: {Id}, Name: {Name}",
+            id, agency.Name);
+
+        //АУДИТ В БД
+        await _auditService.LogDictionaryDeactivatedAsync(
+            dictionaryType: _entityName,
+            dictionaryId: id,
+            dictionaryName: agency.Name,
+            userId: userId,
+            userName: userName,
+            ipAddress: ipAddress,
+            userAgent: userAgent);
     }
 
-    public override async Task<(IEnumerable<AgencyDto> Items, int TotalCount)> GetPagedAsync(
-        int pageNumber,
-        int pageSize,
-        string? searchTerm = null,
-        bool? isActive = null)
+    //DeleteAsync для детальних помилок
+    public override async Task DeleteAsync(
+        long id,
+        long userId,
+        string userName,
+        string ipAddress,
+        string userAgent)
     {
-        if (pageNumber < 1) pageNumber = 1;
-        if (pageSize < 1) pageSize = 10;
-        if (pageSize > 100) pageSize = 100;
-
-        var query = _repository.GetQueryable();
-
-        // Фільтр за пошуковим терміном (шукаємо і в назві і в країні)
-        if (!string.IsNullOrWhiteSpace(searchTerm))
+        var agency = await _repository.GetByIdAsync(id);
+        if (agency == null)
         {
-            var term = searchTerm.ToLower();
-            query = query.Where(e => 
-                e.Name.ToLower().Contains(term) || 
-                e.Country.ToLower().Contains(term));
+            throw new KeyNotFoundException($"Agency з ID {id} не знайдено");
         }
 
-        // Фільтр за активністю
-        if (isActive.HasValue)
+        // Перевірка наявності користувачів
+        var usersCount = await GetUsersCountAsync(id);
+        
+        if (usersCount > 0)
         {
-            query = query.Where(e => e.IsActive == isActive.Value);
+            _logger.LogWarning(
+                "Спроба видалення Agency '{Name}' (ID: {Id}), який має {Count} користувачів",
+                agency.Name, id, usersCount);
+            
+            throw new InvalidOperationException(
+                $"Неможливо видалити Agency '{agency.Name}', " +
+                $"оскільки до нього прив'язано {usersCount} користувачів. " +
+                "Спочатку перемістіть або видаліть всіх користувачів.");
         }
 
-        var totalCount = await query.CountAsync();
-
-        var entities = await query
-            .OrderBy(e => e.Name)
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .AsNoTracking()
-            .ToListAsync();
-
-        var dtos = _mapper.Map<List<AgencyDto>>(entities);
-
-        // Додаємо кількість користувачів
-        foreach (var dto in dtos)
+        // Зберігаємо дані для аудиту - ТІЛЬКИ реальні поля Agency
+        var oldValues = new
         {
-            dto.UsersCount = await GetUsersCountAsync(dto.Id);
-        }
+            agency.Id,
+            agency.Name,
+            agency.IsActive,
+            agency.Country
+        };
 
-        return (dtos, totalCount);
+        await _repository.DeleteAsync(id);
+        await _unitOfWork.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Agency видалено. Id: {Id}, Name: {Name}",
+            id, agency.Name);
+
+        //АУДИТ В БД
+        await _auditService.LogDeleteAsync(
+            entityName: _entityName,
+            entityId: id,
+            oldValues: oldValues,
+            userId: userId,
+            userName: userName,
+            ipAddress: ipAddress,
+            userAgent: userAgent);
     }
 }

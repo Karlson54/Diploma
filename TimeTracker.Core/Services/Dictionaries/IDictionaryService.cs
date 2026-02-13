@@ -13,13 +13,43 @@ public interface IDictionaryService<TDto, TCreateDto, TUpdateDto>
     Task<IEnumerable<TDto>> GetAllAsync();
     Task<IEnumerable<TDto>> GetActiveAsync();
     
-    Task<TDto> CreateAsync(TCreateDto dto);
-    Task<TDto> UpdateAsync(long id, TUpdateDto dto);
-    Task DeleteAsync(long id);
+    // CRUD з аудитом
+    Task<TDto> CreateAsync(
+        TCreateDto dto, 
+        long userId, 
+        string userName, 
+        string ipAddress, 
+        string userAgent);
     
-    // Soft Delete операції
-    Task ActivateAsync(long id);
-    Task DeactivateAsync(long id);
+    Task<TDto> UpdateAsync(
+        long id, 
+        TUpdateDto dto, 
+        long userId, 
+        string userName, 
+        string ipAddress, 
+        string userAgent);
+    
+    Task DeleteAsync(
+        long id, 
+        long userId, 
+        string userName, 
+        string ipAddress, 
+        string userAgent);
+    
+    // Soft Delete операції з аудитом - додано параметри
+    Task ActivateAsync(
+        long id, 
+        long userId, 
+        string userName, 
+        string ipAddress, 
+        string userAgent);
+    
+    Task DeactivateAsync(
+        long id, 
+        long userId, 
+        string userName, 
+        string ipAddress, 
+        string userAgent);
     
     // Валідація
     Task<bool> IsNameExistsAsync(string name, long? excludeId = null);

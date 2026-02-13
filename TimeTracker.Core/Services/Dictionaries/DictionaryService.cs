@@ -2,6 +2,7 @@ using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using TimeTracker.Core.DTOs.Dictionaries;
+using TimeTracker.Core.Services.Audit;
 using TimeTracker.Data.Entities;
 using TimeTracker.Data.Repositories.Dictionaries;
 using TimeTracker.Data.UnitOfWork;
@@ -19,18 +20,21 @@ public class DictionaryService<TEntity, TDto, TCreateDto, TUpdateDto>
     protected readonly IUnitOfWork _unitOfWork;
     protected readonly IMapper _mapper;
     protected readonly ILogger _logger;
+    protected readonly IAuditService _auditService;
     protected readonly string _entityName;
 
     public DictionaryService(
         IDictionaryRepository<TEntity> repository,
         IUnitOfWork unitOfWork,
         IMapper mapper,
-        ILogger logger)
+        ILogger logger,
+        IAuditService auditService)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _logger = logger;
+        _auditService = auditService;
         _entityName = typeof(TEntity).Name;
     }
 
@@ -61,11 +65,16 @@ public class DictionaryService<TEntity, TDto, TCreateDto, TUpdateDto>
         return _mapper.Map<IEnumerable<TDto>>(entities);
     }
 
-    public virtual async Task<TDto> CreateAsync(TCreateDto dto)
+    public virtual async Task<TDto> CreateAsync(
+        TCreateDto dto,
+        long userId,
+        string userName,
+        string ipAddress,
+        string userAgent)
     {
         var entity = _mapper.Map<TEntity>(dto);
 
-        // Перевірка унікальності назви
+        // Перевірка унікальності назви - логуємо в консоль
         if (await _repository.IsNameExistsAsync(entity.Name))
         {
             _logger.LogWarning(
@@ -83,25 +92,51 @@ public class DictionaryService<TEntity, TDto, TCreateDto, TUpdateDto>
             "{EntityName} створено успішно. Id: {Id}, Name: {Name}",
             _entityName, entity.Id, entity.Name);
 
+        //АУДИТ В БД - бізнес-логіка
+        await _auditService.LogDictionaryCreatedAsync(
+            dictionaryType: _entityName,
+            dictionaryId: entity.Id,
+            dictionaryName: entity.Name,
+            newValues: entity,
+            userId: userId,
+            userName: userName,
+            ipAddress: ipAddress,
+            userAgent: userAgent);
+
         return _mapper.Map<TDto>(entity);
     }
 
-    public virtual async Task<TDto> UpdateAsync(long id, TUpdateDto dto)
+    public virtual async Task<TDto> UpdateAsync(
+        long id,
+        TUpdateDto dto,
+        long userId,
+        string userName,
+        string ipAddress,
+        string userAgent)
     {
         var entity = await _repository.GetByIdAsync(id);
         if (entity == null)
         {
+            _logger.LogWarning(
+                "Спроба оновлення неіснуючого {EntityName} з ID {Id}",
+                _entityName, id);
             throw new KeyNotFoundException($"{_entityName} з ID {id} не знайдено");
         }
 
-        // Зберігаємо стару назву для логування
-        var oldName = entity.Name;
+        // Зберігаємо старі значення для аудиту
+        var oldValues = new
+        {
+            entity.Id,
+            entity.Name,
+            entity.IsActive
+        };
 
-        // Мапимо нові дані
+        // Оновлюємо entity
         _mapper.Map(dto, entity);
 
-        // Перевірка унікальності нової назви
-        if (await _repository.IsNameExistsAsync(entity.Name, id))
+        // Перевірка унікальності назви при зміні - логуємо в консоль
+        var nameChanged = !string.Equals(oldValues.Name, entity.Name, StringComparison.OrdinalIgnoreCase);
+        if (nameChanged && await _repository.IsNameExistsAsync(entity.Name, id))
         {
             _logger.LogWarning(
                 "Спроба оновлення {EntityName} {Id} з існуючою назвою: {Name}",
@@ -110,17 +145,39 @@ public class DictionaryService<TEntity, TDto, TCreateDto, TUpdateDto>
                 $"{_entityName} з назвою '{entity.Name}' вже існує");
         }
 
-        _repository.Update(entity);
+         _repository.Update(entity);
         await _unitOfWork.SaveChangesAsync();
 
         _logger.LogInformation(
-            "{EntityName} оновлено. Id: {Id}, OldName: {OldName}, NewName: {NewName}",
-            _entityName, entity.Id, oldName, entity.Name);
+            "{EntityName} оновлено успішно. Id: {Id}, Name: {Name}",
+            _entityName, id, entity.Name);
+
+        //АУДИТ В БД - бізнес-логіка
+        await _auditService.LogDictionaryUpdatedAsync(
+            dictionaryType: _entityName,
+            dictionaryId: entity.Id,
+            dictionaryName: entity.Name,
+            oldValues: oldValues,
+            newValues: new
+            {
+                entity.Id,
+                entity.Name,
+                entity.IsActive
+            },
+            userId: userId,
+            userName: userName,
+            ipAddress: ipAddress,
+            userAgent: userAgent);
 
         return _mapper.Map<TDto>(entity);
     }
 
-    public virtual async Task DeleteAsync(long id)
+    public virtual async Task DeleteAsync(
+        long id,
+        long userId,
+        string userName,
+        string ipAddress,
+        string userAgent)
     {
         var entity = await _repository.GetByIdAsync(id);
         if (entity == null)
@@ -128,23 +185,48 @@ public class DictionaryService<TEntity, TDto, TCreateDto, TUpdateDto>
             throw new KeyNotFoundException($"{_entityName} з ID {id} не знайдено");
         }
 
-        // Перевірка чи можна видалити
+        // Перевірка можливості видалення - логуємо в консоль
         if (!await CanBeDeletedAsync(id))
         {
+            _logger.LogWarning(
+                "Спроба видалення {EntityName} '{Name}' (ID: {Id}), який використовується",
+                _entityName, entity.Name, id);
             throw new InvalidOperationException(
-                $"Неможливо видалити {_entityName} '{entity.Name}', " +
-                "оскільки він використовується в інших записах");
+                $"Неможливо видалити {_entityName} '{entity.Name}', оскільки він використовується");
         }
 
-        _repository.Delete(entity);
+        // Зберігаємо дані для аудиту
+        var oldValues = new
+        {
+            entity.Id,
+            entity.Name,
+            entity.IsActive
+        };
+
+        await _repository.DeleteAsync(id);
         await _unitOfWork.SaveChangesAsync();
 
         _logger.LogInformation(
             "{EntityName} видалено. Id: {Id}, Name: {Name}",
             _entityName, id, entity.Name);
+
+        //АУДИТ В БД - бізнес-логіка (Delete)
+        await _auditService.LogDeleteAsync(
+            entityName: _entityName,
+            entityId: id,
+            oldValues: oldValues,
+            userId: userId,
+            userName: userName,
+            ipAddress: ipAddress,
+            userAgent: userAgent);
     }
 
-    public virtual async Task ActivateAsync(long id)
+    public virtual async Task ActivateAsync(
+        long id,
+        long userId,
+        string userName,
+        string ipAddress,
+        string userAgent)
     {
         var entity = await _repository.GetByIdAsync(id);
         if (entity == null)
@@ -154,7 +236,10 @@ public class DictionaryService<TEntity, TDto, TCreateDto, TUpdateDto>
 
         if (entity.IsActive)
         {
-            throw new InvalidOperationException($"{_entityName} вже активний");
+            _logger.LogWarning(
+                "Спроба активації вже активного {EntityName} '{Name}' (ID: {Id})",
+                _entityName, entity.Name, id);
+            throw new InvalidOperationException($"{_entityName} вже активований");
         }
 
         await _repository.ActivateAsync(id);
@@ -163,9 +248,24 @@ public class DictionaryService<TEntity, TDto, TCreateDto, TUpdateDto>
         _logger.LogInformation(
             "{EntityName} активовано. Id: {Id}, Name: {Name}",
             _entityName, id, entity.Name);
+
+        //АУДИТ В БД - бізнес-логіка
+        await _auditService.LogDictionaryActivatedAsync(
+            dictionaryType: _entityName,
+            dictionaryId: id,
+            dictionaryName: entity.Name,
+            userId: userId,
+            userName: userName,
+            ipAddress: ipAddress,
+            userAgent: userAgent);
     }
 
-    public virtual async Task DeactivateAsync(long id)
+    public virtual async Task DeactivateAsync(
+        long id,
+        long userId,
+        string userName,
+        string ipAddress,
+        string userAgent)
     {
         var entity = await _repository.GetByIdAsync(id);
         if (entity == null)
@@ -175,11 +275,18 @@ public class DictionaryService<TEntity, TDto, TCreateDto, TUpdateDto>
 
         if (!entity.IsActive)
         {
+            _logger.LogWarning(
+                "Спроба деактивації вже деактивованого {EntityName} '{Name}' (ID: {Id})",
+                _entityName, entity.Name, id);
             throw new InvalidOperationException($"{_entityName} вже деактивований");
         }
 
+        // Перевірка можливості деактивації - логуємо в консоль
         if (!await CanBeDeactivatedAsync(id))
         {
+            _logger.LogWarning(
+                "Неможливо деактивувати {EntityName} '{Name}' (ID: {Id}) - використовується в активних записах",
+                _entityName, entity.Name, id);
             throw new InvalidOperationException(
                 $"Неможливо деактивувати {_entityName} '{entity.Name}', " +
                 "оскільки він використовується в активних записах");
@@ -191,6 +298,16 @@ public class DictionaryService<TEntity, TDto, TCreateDto, TUpdateDto>
         _logger.LogInformation(
             "{EntityName} деактивовано. Id: {Id}, Name: {Name}",
             _entityName, id, entity.Name);
+
+        //АУДИТ В БД - бізнес-логіка
+        await _auditService.LogDictionaryDeactivatedAsync(
+            dictionaryType: _entityName,
+            dictionaryId: id,
+            dictionaryName: entity.Name,
+            userId: userId,
+            userName: userName,
+            ipAddress: ipAddress,
+            userAgent: userAgent);
     }
 
     public virtual async Task<bool> IsNameExistsAsync(string name, long? excludeId = null)
@@ -207,6 +324,14 @@ public class DictionaryService<TEntity, TDto, TCreateDto, TUpdateDto>
     public virtual async Task<bool> CanBeDeactivatedAsync(long id)
     {
         return await _repository.CanBeDeactivatedAsync(id);
+    }
+
+    // Додаємо віртуальний метод для перевірки можливості видалення
+    protected virtual async Task<bool> CanBeDeletedAsync(long id)
+    {
+        // За замовчуванням можна видалити
+        // Кожен конкретний сервіс може перевизначити цю логіку
+        return await Task.FromResult(true);
     }
 
     public virtual async Task<int> GetActiveCountAsync()
@@ -229,6 +354,7 @@ public class DictionaryService<TEntity, TDto, TCreateDto, TUpdateDto>
         if (pageSize < 1) pageSize = 10;
         if (pageSize > 100) pageSize = 100;
 
+        // використовуємо GetQueryable() замість GetPagedAsync з параметрами
         var query = _repository.GetQueryable();
 
         // Фільтр за пошуковим терміном
@@ -256,13 +382,5 @@ public class DictionaryService<TEntity, TDto, TCreateDto, TUpdateDto>
         var dtos = _mapper.Map<IEnumerable<TDto>>(entities);
 
         return (dtos, totalCount);
-    }
-
-    protected virtual async Task<bool> CanBeDeletedAsync(long id)
-    {
-        // За замовчуванням дозволяємо видаляти
-        // Спеціалізовані сервіси переоприділять цей метод
-        await Task.CompletedTask;
-        return true;
     }
 }

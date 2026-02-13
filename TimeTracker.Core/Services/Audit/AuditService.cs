@@ -503,4 +503,167 @@ public class AuditService : IAuditService
             return obj.ToString();
         }
     }
+
+    // Добавить в конец класса AuditService, перед методом SerializeObject
+
+    public async Task LogDictionaryCreatedAsync(
+        string dictionaryType,
+        long dictionaryId,
+        string dictionaryName,
+        object newValues,
+        long userId,
+        string userName,
+        string ipAddress,
+        string userAgent)
+    {
+        try
+        {
+            var auditLog = new AuditLog
+            {
+                UserId = userId,
+                UserName = userName,
+                Action = AuditAction.Create,
+                EntityName = dictionaryType,
+                EntityId = dictionaryId,
+                NewValues = SerializeObject(newValues),
+                IpAddress = ipAddress,
+                UserAgent = userAgent,
+                Success = true
+            };
+
+            await _auditLogRepository.AddAsync(auditLog);
+            await _unitOfWork.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Audit: {Action} {EntityName} '{Name}' (ID: {EntityId}) by User {UserId}",
+                AuditAction.Create, dictionaryType, dictionaryName, dictionaryId, userId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to log audit for Create {EntityName} '{Name}' (ID: {EntityId})",
+                dictionaryType, dictionaryName, dictionaryId);
+        }
+    }
+
+    public async Task LogDictionaryUpdatedAsync(
+        string dictionaryType,
+        long dictionaryId,
+        string dictionaryName,
+        object oldValues,
+        object newValues,
+        long userId,
+        string userName,
+        string ipAddress,
+        string userAgent)
+    {
+        try
+        {
+            var auditLog = new AuditLog
+            {
+                UserId = userId,
+                UserName = userName,
+                Action = AuditAction.Update,
+                EntityName = dictionaryType,
+                EntityId = dictionaryId,
+                OldValues = SerializeObject(oldValues),
+                NewValues = SerializeObject(newValues),
+                IpAddress = ipAddress,
+                UserAgent = userAgent,
+                Success = true
+            };
+
+            await _auditLogRepository.AddAsync(auditLog);
+            await _unitOfWork.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Audit: {Action} {EntityName} '{Name}' (ID: {EntityId}) by User {UserId}",
+                AuditAction.Update, dictionaryType, dictionaryName, dictionaryId, userId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to log audit for Update {EntityName} '{Name}' (ID: {EntityId})",
+                dictionaryType, dictionaryName, dictionaryId);
+        }
+    }
+
+    public async Task LogDictionaryActivatedAsync(
+        string dictionaryType,
+        long dictionaryId,
+        string dictionaryName,
+        long userId,
+        string userName,
+        string ipAddress,
+        string userAgent)
+    {
+        try
+        {
+            var auditLog = new AuditLog
+            {
+                UserId = userId,
+                UserName = userName,
+                Action = AuditAction.DictionaryActivated,
+                EntityName = dictionaryType,
+                EntityId = dictionaryId,
+                NewValues = SerializeObject(new { Name = dictionaryName, IsActive = true }),
+                IpAddress = ipAddress,
+                UserAgent = userAgent,
+                Success = true
+            };
+
+            await _auditLogRepository.AddAsync(auditLog);
+            await _unitOfWork.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Audit: {Action} {EntityName} '{Name}' (ID: {EntityId}) by User {UserId}",
+                AuditAction.DictionaryActivated, dictionaryType, dictionaryName, dictionaryId, userId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to log audit for Activate {EntityName} '{Name}' (ID: {EntityId})",
+                dictionaryType, dictionaryName, dictionaryId);
+        }
+    }
+
+    public async Task LogDictionaryDeactivatedAsync(
+        string dictionaryType,
+        long dictionaryId,
+        string dictionaryName,
+        long userId,
+        string userName,
+        string ipAddress,
+        string userAgent)
+    {
+        try
+        {
+            var auditLog = new AuditLog
+            {
+                UserId = userId,
+                UserName = userName,
+                Action = AuditAction.DictionaryDeactivated,
+                EntityName = dictionaryType,
+                EntityId = dictionaryId,
+                OldValues = SerializeObject(new { Name = dictionaryName, IsActive = true }),
+                NewValues = SerializeObject(new { Name = dictionaryName, IsActive = false }),
+                IpAddress = ipAddress,
+                UserAgent = userAgent,
+                Success = true
+            };
+
+            await _auditLogRepository.AddAsync(auditLog);
+            await _unitOfWork.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Audit: {Action} {EntityName} '{Name}' (ID: {EntityId}) by User {UserId}",
+                AuditAction.DictionaryDeactivated, dictionaryType, dictionaryName, dictionaryId, userId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to log audit for Deactivate {EntityName} '{Name}' (ID: {EntityId})",
+                dictionaryType, dictionaryName, dictionaryId);
+        }
+    }
 }

@@ -2,6 +2,7 @@ using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using TimeTracker.Core.DTOs.Dictionaries.Clients;
+using TimeTracker.Core.Services.Audit;
 using TimeTracker.Data.Entities;
 using TimeTracker.Data.Repositories.Dictionaries;
 using TimeTracker.Data.UnitOfWork;
@@ -14,14 +15,20 @@ public class ClientService : DictionaryService<Client, ClientDto, CreateClientDt
         IDictionaryRepository<Client> repository,
         IUnitOfWork unitOfWork,
         IMapper mapper,
-        ILogger<ClientService> logger)
-        : base(repository, unitOfWork, mapper, logger)
+        ILogger<ClientService> logger,
+        IAuditService auditService)
+        : base(repository, unitOfWork, mapper, logger, auditService)
     {
     }
 
-    public override async Task<ClientDto> CreateAsync(CreateClientDto dto)
+    public override async Task<ClientDto> CreateAsync(
+        CreateClientDto dto,
+        long userId,
+        string userName,
+        string ipAddress,
+        string userAgent)
     {
-        // Перевірка унікальності email якщо він вказаний
+        // Перевірка унікальності email якщо він вказаний - логуємо в консоль
         if (!string.IsNullOrWhiteSpace(dto.Email))
         {
             if (await IsEmailExistsAsync(dto.Email))
@@ -34,10 +41,16 @@ public class ClientService : DictionaryService<Client, ClientDto, CreateClientDt
             }
         }
 
-        return await base.CreateAsync(dto);
+        return await base.CreateAsync(dto, userId, userName, ipAddress, userAgent);
     }
 
-    public override async Task<ClientDto> UpdateAsync(long id, UpdateClientDto dto)
+    public override async Task<ClientDto> UpdateAsync(
+        long id,
+        UpdateClientDto dto,
+        long userId,
+        string userName,
+        string ipAddress,
+        string userAgent)
     {
         var client = await _repository.GetByIdAsync(id);
         if (client == null)
@@ -45,7 +58,7 @@ public class ClientService : DictionaryService<Client, ClientDto, CreateClientDt
             throw new KeyNotFoundException($"Client з ID {id} не знайдено");
         }
 
-        // Перевірка унікальності email якщо він змінюється
+        // Перевірка унікальності email якщо він змінюється - логуємо в консоль
         if (!string.IsNullOrWhiteSpace(dto.Email) && 
             !string.Equals(client.Email, dto.Email, StringComparison.OrdinalIgnoreCase))
         {
@@ -59,7 +72,7 @@ public class ClientService : DictionaryService<Client, ClientDto, CreateClientDt
             }
         }
 
-        return await base.UpdateAsync(id, dto);
+        return await base.UpdateAsync(id, dto, userId, userName, ipAddress, userAgent);
     }
 
     public async Task<ClientDto?> GetByEmailAsync(string email)
@@ -135,6 +148,120 @@ public class ClientService : DictionaryService<Client, ClientDto, CreateClientDt
             .AnyAsync(te => te.ClientId == id);
 
         return !hasActiveTimeEntries;
+    }
+
+    //DeleteAsync для детальних помилок
+    public override async Task DeleteAsync(
+        long id,
+        long userId,
+        string userName,
+        string ipAddress,
+        string userAgent)
+    {
+        var client = await _repository.GetByIdAsync(id);
+        if (client == null)
+        {
+            throw new KeyNotFoundException($"Client з ID {id} не знайдено");
+        }
+
+        // Перевірка наявності TimeEntries
+        var timeEntriesCount = await GetTimeEntriesCountAsync(id);
+        
+        if (timeEntriesCount > 0)
+        {
+            _logger.LogWarning(
+                "Спроба видалення Client '{Name}' (ID: {Id}), який має {Count} TimeEntries",
+                client.Name, id, timeEntriesCount);
+            
+            throw new InvalidOperationException(
+                $"Неможливо видалити Client '{client.Name}', " +
+                $"оскільки до нього прив'язано {timeEntriesCount} записів часу. " +
+                "Спочатку видаліть або змініть всі пов'язані записи.");
+        }
+
+        // Зберігаємо дані для аудиту
+        var oldValues = new
+        {
+            client.Id,
+            client.Name,
+            client.IsActive,
+            client.Email,
+            client.Phone
+        };
+
+        await _repository.DeleteAsync(id);
+        await _unitOfWork.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Client видалено. Id: {Id}, Name: {Name}",
+            id, client.Name);
+
+        //АУДИТ В БД
+        await _auditService.LogDeleteAsync(
+            entityName: _entityName,
+            entityId: id,
+            oldValues: oldValues,
+            userId: userId,
+            userName: userName,
+            ipAddress: ipAddress,
+            userAgent: userAgent);
+    }
+
+    //DeactivateAsync для детальних помилок
+    public override async Task DeactivateAsync(
+        long id,
+        long userId,
+        string userName,
+        string ipAddress,
+        string userAgent)
+    {
+        var client = await _repository.GetByIdAsync(id);
+        if (client == null)
+        {
+            throw new KeyNotFoundException($"Client з ID {id} не знайдено");
+        }
+
+        if (!client.IsActive)
+        {
+            _logger.LogWarning(
+                "Спроба деактивації вже деактивованого Client '{Name}' (ID: {Id})",
+                client.Name, id);
+            throw new InvalidOperationException("Client вже деактивований");
+        }
+
+        // Перевірка активних TimeEntries
+        var activeTimeEntriesCount = await _unitOfWork.TimeEntries
+            .GetQueryable()
+            .CountAsync(te => te.ClientId == id);
+
+        if (activeTimeEntriesCount > 0)
+        {
+            _logger.LogWarning(
+                "Неможливо деактивувати Client '{Name}' (ID: {Id}) - є {Count} записів часу",
+                client.Name, id, activeTimeEntriesCount);
+            
+            throw new InvalidOperationException(
+                $"Неможливо деактивувати Client '{client.Name}', " +
+                $"оскільки до нього прив'язано {activeTimeEntriesCount} записів часу. " +
+                "Спочатку видаліть або змініть всі пов'язані записи.");
+        }
+
+        await _repository.DeactivateAsync(id);
+        await _unitOfWork.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Client деактивовано. Id: {Id}, Name: {Name}",
+            id, client.Name);
+
+        //АУДИТ В БД
+        await _auditService.LogDictionaryDeactivatedAsync(
+            dictionaryType: _entityName,
+            dictionaryId: id,
+            dictionaryName: client.Name,
+            userId: userId,
+            userName: userName,
+            ipAddress: ipAddress,
+            userAgent: userAgent);
     }
 
     public override async Task<(IEnumerable<ClientDto> Items, int TotalCount)> GetPagedAsync(
