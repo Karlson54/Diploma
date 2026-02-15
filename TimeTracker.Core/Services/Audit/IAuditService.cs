@@ -156,4 +156,50 @@ public interface IAuditService
         string userName,
         string ipAddress,
         string userAgent);
+
+    // User Management
+    Task LogUserCreatedAsync(
+        long userId,
+        string userName,
+        string email,
+        long agencyId,
+        long createdByUserId,
+        string createdByUserName,
+        string ipAddress,
+        string userAgent);
+
+    Task LogUserUpdatedAsync(
+        long userId,
+        string userName,
+        object oldValues,
+        object newValues,
+        long updatedByUserId,
+        string updatedByUserName,
+        string ipAddress,
+        string userAgent);
+
+    Task LogUserActivatedAsync(
+        long userId,
+        string userName,
+        long activatedByUserId,
+        string activatedByUserName,
+        string ipAddress,
+        string userAgent);
+
+    Task LogUserDeactivatedAsync(
+        long userId,
+        string userName,
+        long deactivatedByUserId,
+        string deactivatedByUserName,
+        string ipAddress,
+        string userAgent);
+
+    Task LogUserPasswordChangedAsync(
+        long userId,
+        string userName,
+        long changedByUserId,
+        string changedByUserName,
+        bool isSelfChange,
+        string ipAddress,
+        string userAgent);
 }

@@ -11,10 +11,14 @@ namespace TimeTracker.API.Controllers.Users;
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
+    private readonly ILogger<UsersController> _logger;
 
-    public UsersController(IUserService userService)
+    public UsersController(
+        IUserService userService,
+        ILogger<UsersController> logger)
     {
         _userService = userService;
+        _logger = logger;
     }
 
     [HttpGet("{id}")]
@@ -31,6 +35,7 @@ public class UsersController : ControllerBase
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Помилка при отриманні користувача {UserId}", id);
             return BadRequest(new { Message = ex.Message });
         }
     }
@@ -46,6 +51,7 @@ public class UsersController : ControllerBase
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Помилка при отриманні списку користувачів");
             return BadRequest(new { Message = ex.Message });
         }
     }
@@ -61,6 +67,7 @@ public class UsersController : ControllerBase
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Помилка при отриманні активних користувачів");
             return BadRequest(new { Message = ex.Message });
         }
     }
@@ -90,6 +97,7 @@ public class UsersController : ControllerBase
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Помилка при отриманні сторінки користувачів");
             return BadRequest(new { Message = ex.Message });
         }
     }
@@ -98,9 +106,29 @@ public class UsersController : ControllerBase
     [Authorize(Policy = "CanManageUsers")]
     public async Task<IActionResult> Create([FromBody] CreateUserDto dto)
     {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
         try
         {
-            var user = await _userService.CreateAsync(dto);
+            // Отримуємо контекст запиту для аудиту
+            var requestingUserId = GetCurrentUserId();
+            var requestingUserName = GetCurrentUserName();
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
+            // Передаємо параметри аудиту
+            var user = await _userService.CreateAsync(
+                dto,
+                requestingUserId,
+                requestingUserName,
+                ipAddress,
+                userAgent);
+
+            _logger.LogInformation(
+                "Користувача {UserId} створено користувачем {RequestingUserId}",
+                user.Id, requestingUserId);
+
             return CreatedAtAction(nameof(GetById), new { id = user.Id }, user);
         }
         catch (ArgumentException ex)
@@ -109,11 +137,17 @@ public class UsersController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
+            _logger.LogWarning(ex, "Конфлікт при створенні користувача");
             return Conflict(new { Message = ex.Message });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { Message = ex.Message });
         }
         catch (Exception ex)
         {
-            return BadRequest(new { Message = ex.Message });
+            _logger.LogError(ex, "Помилка при створенні користувача");
+            return StatusCode(500, new { Message = "Внутрішня помилка сервера" });
         }
     }
 
@@ -121,9 +155,30 @@ public class UsersController : ControllerBase
     [Authorize(Policy = "CanManageUsers")]
     public async Task<IActionResult> Update(long id, [FromBody] UpdateUserDto dto)
     {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
         try
         {
-            var user = await _userService.UpdateAsync(id, dto);
+            // Отримуємо контекст запиту для аудиту
+            var requestingUserId = GetCurrentUserId();
+            var requestingUserName = GetCurrentUserName();
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
+            // Передаємо параметри аудиту
+            var user = await _userService.UpdateAsync(
+                id,
+                dto,
+                requestingUserId,
+                requestingUserName,
+                ipAddress,
+                userAgent);
+
+            _logger.LogInformation(
+                "Користувача {UserId} оновлено користувачем {RequestingUserId}",
+                id, requestingUserId);
+
             return Ok(user);
         }
         catch (KeyNotFoundException ex)
@@ -136,11 +191,13 @@ public class UsersController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
+            _logger.LogWarning(ex, "Конфлікт при оновленні користувача {UserId}", id);
             return Conflict(new { Message = ex.Message });
         }
         catch (Exception ex)
         {
-            return BadRequest(new { Message = ex.Message });
+            _logger.LogError(ex, "Помилка при оновленні користувача {UserId}", id);
+            return StatusCode(500, new { Message = "Внутрішня помилка сервера" });
         }
     }
 
@@ -150,7 +207,24 @@ public class UsersController : ControllerBase
     {
         try
         {
-            await _userService.ActivateAsync(id);
+            // Отримуємо контекст запиту для аудиту
+            var requestingUserId = GetCurrentUserId();
+            var requestingUserName = GetCurrentUserName();
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
+            // Передаємо параметри аудиту
+            await _userService.ActivateAsync(
+                id,
+                requestingUserId,
+                requestingUserName,
+                ipAddress,
+                userAgent);
+
+            _logger.LogInformation(
+                "Користувача {UserId} активовано користувачем {RequestingUserId}",
+                id, requestingUserId);
+
             return Ok(new { Message = "Користувача активовано" });
         }
         catch (KeyNotFoundException ex)
@@ -163,7 +237,8 @@ public class UsersController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(new { Message = ex.Message });
+            _logger.LogError(ex, "Помилка при активації користувача {UserId}", id);
+            return StatusCode(500, new { Message = "Внутрішня помилка сервера" });
         }
     }
 
@@ -173,7 +248,24 @@ public class UsersController : ControllerBase
     {
         try
         {
-            await _userService.DeactivateAsync(id);
+            // Отримуємо контекст запиту для аудиту
+            var requestingUserId = GetCurrentUserId();
+            var requestingUserName = GetCurrentUserName();
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
+            // Передаємо параметри аудиту
+            await _userService.DeactivateAsync(
+                id,
+                requestingUserId,
+                requestingUserName,
+                ipAddress,
+                userAgent);
+
+            _logger.LogInformation(
+                "Користувача {UserId} деактивовано користувачем {RequestingUserId}",
+                id, requestingUserId);
+
             return Ok(new { Message = "Користувача деактивовано" });
         }
         catch (KeyNotFoundException ex)
@@ -186,7 +278,8 @@ public class UsersController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(new { Message = ex.Message });
+            _logger.LogError(ex, "Помилка при деактивації користувача {UserId}", id);
+            return StatusCode(500, new { Message = "Внутрішня помилка сервера" });
         }
     }
 
@@ -194,13 +287,40 @@ public class UsersController : ControllerBase
     [Authorize]
     public async Task<IActionResult> ChangePassword(long id, [FromBody] ChangePasswordDto dto)
     {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
         try
         {
-            var currentUserId = long.Parse(User.FindFirst("userId")?.Value ?? "0");
-            if (currentUserId != id && !User.IsInRole("Admin"))
-                return Forbid();
+            var currentUserId = GetCurrentUserId();
+            var currentUserName = GetCurrentUserName();
 
-            await _userService.ChangePasswordAsync(id, dto);
+            // Перевірка прав: тільки сам користувач або Admin
+            if (currentUserId != id && !User.IsInRole("Admin"))
+            {
+                _logger.LogWarning(
+                    "Користувач {RequestingUserId} намагається змінити пароль користувача {TargetUserId}",
+                    currentUserId, id);
+                return Forbid();
+            }
+
+            // Отримуємо контекст запиту для аудиту
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
+            // Передаємо параметри аудиту
+            await _userService.ChangePasswordAsync(
+                id,
+                dto,
+                currentUserId,
+                currentUserName,
+                ipAddress,
+                userAgent);
+
+            _logger.LogInformation(
+                "Пароль користувача {UserId} змінено користувачем {RequestingUserId}",
+                id, currentUserId);
+
             return Ok(new { Message = "Пароль успішно змінено" });
         }
         catch (KeyNotFoundException ex)
@@ -217,7 +337,8 @@ public class UsersController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(new { Message = ex.Message });
+            _logger.LogError(ex, "Помилка при зміні пароля користувача {UserId}", id);
+            return StatusCode(500, new { Message = "Внутрішня помилка сервера" });
         }
     }
 
@@ -235,5 +356,72 @@ public class UsersController : ControllerBase
     {
         var exists = await _userService.IsLoginExistsAsync(login, excludeUserId);
         return Ok(new { Exists = exists });
+    }
+
+    // ==================== HELPER METHODS ====================
+
+    private long GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirst("userId")?.Value;
+
+        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
+        {
+            _logger.LogWarning("Невалідний токен: не вдалося отримати userId");
+            throw new UnauthorizedAccessException("Невалідний токен");
+        }
+
+        return userId;
+    }
+
+    private string GetCurrentUserName()
+    {
+        var userName = User.FindFirst("userName")?.Value;
+
+        if (string.IsNullOrEmpty(userName))
+        {
+            _logger.LogWarning("Невалідний токен: не вдалося отримати userName");
+            return "Unknown";
+        }
+
+        return userName;
+    }
+
+    private string GetIpAddress()
+    {
+        // Перевіряємо X-Forwarded-For (якщо за proxy/load balancer)
+        var forwardedFor = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(forwardedFor))
+        {
+            var ips = forwardedFor.Split(',', StringSplitOptions.RemoveEmptyEntries);
+            if (ips.Length > 0)
+            {
+                return ips[0].Trim();
+            }
+        }
+
+        // Перевіряємо X-Real-IP
+        var realIp = HttpContext.Request.Headers["X-Real-IP"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(realIp))
+        {
+            return realIp.Trim();
+        }
+
+        // Використовуємо RemoteIpAddress
+        return HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+    }
+
+    private string GetUserAgent()
+    {
+        var userAgent = HttpContext.Request.Headers["User-Agent"].FirstOrDefault();
+
+        if (string.IsNullOrEmpty(userAgent))
+        {
+            return "Unknown";
+        }
+
+        // Обмежуємо розмір (БД constraint 500 символів)
+        return userAgent.Length > 500
+            ? userAgent.Substring(0, 500)
+            : userAgent;
     }
 }

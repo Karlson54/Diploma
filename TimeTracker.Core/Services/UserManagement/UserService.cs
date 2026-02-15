@@ -1,7 +1,9 @@
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using TimeTracker.Core.Common;
 using TimeTracker.Core.DTOs.Users;
+using TimeTracker.Core.Services.Audit;
 using TimeTracker.Data.Entities;
 using TimeTracker.Data.Repositories.Users;
 using TimeTracker.Data.UnitOfWork;
@@ -13,15 +15,21 @@ public class UserService : IUserService
     private readonly IUserRepository _userRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly IAuditService _auditService;
+    private readonly ILogger<UserService> _logger;
 
     public UserService(
         IUserRepository userRepository,
         IUnitOfWork unitOfWork,
-        IMapper mapper)
+        IMapper mapper,
+        IAuditService auditService,
+        ILogger<UserService> logger)
     {
         _userRepository = userRepository;
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _auditService = auditService;
+        _logger = logger;
     }
 
     public async Task<UserDetailDto?> GetByIdAsync(long id)
@@ -109,20 +117,46 @@ public class UserService : IUserService
         return (userDtos, totalCount);
     }
 
-    public async Task<UserDto> CreateAsync(CreateUserDto dto)
+    public async Task<UserDto> CreateAsync(
+        CreateUserDto dto,
+        long requestingUserId,
+        string requestingUserName,
+        string ipAddress,
+        string userAgent)
     {
+        // Валідація - логуємо в консоль
         if (await _userRepository.IsEmailExistsAsync(dto.Email))
+        {
+            _logger.LogWarning(
+                "Спроба створення користувача з існуючим email: {Email} користувачем {UserId}",
+                dto.Email, requestingUserId);
             throw new InvalidOperationException("Email вже використовується");
+        }
 
         if (await _userRepository.IsLoginExistsAsync(dto.Login))
+        {
+            _logger.LogWarning(
+                "Спроба створення користувача з існуючим login: {Login} користувачем {UserId}",
+                dto.Login, requestingUserId);
             throw new InvalidOperationException("Login вже використовується");
+        }
 
         var agency = await _unitOfWork.Agencies.GetByIdAsync(dto.AgencyId);
         if (agency == null)
+        {
+            _logger.LogWarning(
+                "Спроба створення користувача з неіснуючим Agency ID: {AgencyId}",
+                dto.AgencyId);
             throw new KeyNotFoundException($"Agency з ID {dto.AgencyId} не знайдено");
+        }
 
         if (!agency.IsActive)
+        {
+            _logger.LogWarning(
+                "Спроба створення користувача для неактивного Agency ID: {AgencyId}",
+                dto.AgencyId);
             throw new InvalidOperationException("Неможливо створити користувача для неактивного Agency");
+        }
 
         List<long> roleIdsToAssign;
 
@@ -133,7 +167,10 @@ public class UserService : IUserService
                 .FirstOrDefaultAsync(r => r.Name == SystemRoles.Employee && r.IsActive);
 
             if (employeeRole == null)
+            {
+                _logger.LogError("Роль Employee не знайдена в системі");
                 throw new InvalidOperationException("Роль Employee не знайдена");
+            }
 
             roleIdsToAssign = new List<long> { employeeRole.Id };
         }
@@ -148,6 +185,9 @@ public class UserService : IUserService
             {
                 var foundIds = roles.Select(r => r.Id);
                 var missingIds = dto.RoleId.Except(foundIds);
+                _logger.LogWarning(
+                    "Ролі з ID {MissingIds} не знайдено або неактивні",
+                    string.Join(", ", missingIds));
                 throw new KeyNotFoundException(
                     $"Ролі з ID {string.Join(", ", missingIds)} не знайдено або неактивні");
             }
@@ -173,6 +213,17 @@ public class UserService : IUserService
 
         await _unitOfWork.SaveChangesAsync();
 
+        //АУДИТ - записуємо в БД 
+        await _auditService.LogUserCreatedAsync(
+            userId: user.Id,
+            userName: user.Name,
+            email: user.Email,
+            agencyId: user.AgencyId,
+            createdByUserId: requestingUserId,
+            createdByUserName: requestingUserName,
+            ipAddress: ipAddress,
+            userAgent: userAgent);
+
         var createdUser = await _userRepository
             .GetQueryable()
             .Include(u => u.Agency)
@@ -181,78 +232,217 @@ public class UserService : IUserService
         return _mapper.Map<UserDto>(createdUser);
     }
 
-    public async Task<UserDto> UpdateAsync(long id, UpdateUserDto dto)
+    public async Task<UserDto> UpdateAsync(
+        long id,
+        UpdateUserDto dto,
+        long requestingUserId,
+        string requestingUserName,
+        string ipAddress,
+        string userAgent)
     {
         var user = await _userRepository.GetByIdAsync(id);
         if (user == null)
+        {
+            _logger.LogWarning(
+                "Спроба оновлення неіснуючого користувача ID: {UserId}",
+                id);
             throw new KeyNotFoundException($"Користувача з ID {id} не знайдено");
+        }
 
+        // Валідація - логуємо в консоль
         if (await _userRepository.IsEmailExistsAsync(dto.Email, id))
+        {
+            _logger.LogWarning(
+                "Спроба зміни email на вже існуючий: {Email} для користувача ID: {UserId}",
+                dto.Email, id);
             throw new InvalidOperationException("Email вже використовується іншим користувачем");
+        }
 
         var agency = await _unitOfWork.Agencies.GetByIdAsync(dto.AgencyId);
         if (agency == null)
+        {
+            _logger.LogWarning(
+                "Спроба призначення неіснуючого Agency ID: {AgencyId} для користувача ID: {UserId}",
+                dto.AgencyId, id);
             throw new KeyNotFoundException($"Agency з ID {dto.AgencyId} не знайдено");
+        }
 
         if (!agency.IsActive)
+        {
+            _logger.LogWarning(
+                "Спроба призначення неактивного Agency ID: {AgencyId} для користувача ID: {UserId}",
+                dto.AgencyId, id);
             throw new InvalidOperationException("Неможливо призначити користувача до неактивного Agency");
+        }
 
+        // Зберігаємо старі значення для аудиту
+        var oldValues = new
+        {
+            Email = user.Email,
+            Name = user.Name,
+            AgencyId = user.AgencyId
+        };
+
+        // Оновлюємо дані
         user.Email = dto.Email.Trim();
         user.Name = dto.Name.Trim();
         user.AgencyId = dto.AgencyId;
 
+        var newValues = new
+        {
+            Email = user.Email,
+            Name = user.Name,
+            AgencyId = user.AgencyId
+        };
+
         _userRepository.Update(user);
         await _unitOfWork.SaveChangesAsync();
+
+        //АУДИТ - записуємо в БД 
+        await _auditService.LogUserUpdatedAsync(
+            userId: user.Id,
+            userName: user.Name,
+            oldValues: oldValues,
+            newValues: newValues,
+            updatedByUserId: requestingUserId,
+            updatedByUserName: requestingUserName,
+            ipAddress: ipAddress,
+            userAgent: userAgent);
 
         return _mapper.Map<UserDto>(user);
     }
 
-    public async Task ActivateAsync(long id)
+    public async Task ActivateAsync(
+        long id,
+        long requestingUserId,
+        string requestingUserName,
+        string ipAddress,
+        string userAgent)
     {
         var user = await _userRepository.GetByIdAsync(id);
         if (user == null)
+        {
+            _logger.LogWarning(
+                "Спроба активації неіснуючого користувача ID: {UserId}",
+                id);
             throw new KeyNotFoundException($"Користувача з ID {id} не знайдено");
+        }
 
         if (user.IsActive)
+        {
+            _logger.LogInformation(
+                "Користувач ID: {UserId} вже активний",
+                id);
             throw new InvalidOperationException("Користувач вже активний");
+        }
 
         user.IsActive = true;
         _userRepository.Update(user);
         await _unitOfWork.SaveChangesAsync();
+
+        //АУДИТ - записуємо в БД 
+        await _auditService.LogUserActivatedAsync(
+            userId: user.Id,
+            userName: user.Name,
+            activatedByUserId: requestingUserId,
+            activatedByUserName: requestingUserName,
+            ipAddress: ipAddress,
+            userAgent: userAgent);
     }
 
-    public async Task DeactivateAsync(long id)
+    public async Task DeactivateAsync(
+        long id,
+        long requestingUserId,
+        string requestingUserName,
+        string ipAddress,
+        string userAgent)
     {
         var user = await _userRepository.GetByIdAsync(id);
         if (user == null)
+        {
+            _logger.LogWarning(
+                "Спроба деактивації неіснуючого користувача ID: {UserId}",
+                id);
             throw new KeyNotFoundException($"Користувача з ID {id} не знайдено");
+        }
 
         if (!user.IsActive)
+        {
+            _logger.LogInformation(
+                "Користувач ID: {UserId} вже деактивований",
+                id);
             throw new InvalidOperationException("Користувач вже деактивований");
+        }
 
         user.IsActive = false;
         _userRepository.Update(user);
         await _unitOfWork.SaveChangesAsync();
+
+        //АУДИТ - записуємо в БД 
+        await _auditService.LogUserDeactivatedAsync(
+            userId: user.Id,
+            userName: user.Name,
+            deactivatedByUserId: requestingUserId,
+            deactivatedByUserName: requestingUserName,
+            ipAddress: ipAddress,
+            userAgent: userAgent);
     }
 
-    public async Task ChangePasswordAsync(long userId, ChangePasswordDto dto)
+    public async Task ChangePasswordAsync(
+        long userId,
+        ChangePasswordDto dto,
+        long requestingUserId,
+        string requestingUserName,
+        string ipAddress,
+        string userAgent)
     {
         var user = await _userRepository.GetByIdAsync(userId);
         if (user == null)
+        {
+            _logger.LogWarning(
+                "Спроба зміни пароля для неіснуючого користувача ID: {UserId}",
+                userId);
             throw new KeyNotFoundException($"Користувача з ID {userId} не знайдено");
+        }
 
         if (!user.IsActive)
+        {
+            _logger.LogWarning(
+                "Спроба зміни пароля для неактивного користувача ID: {UserId}",
+                userId);
             throw new InvalidOperationException("Неможливо змінити пароль неактивного користувача");
+        }
 
         if (!BCrypt.Net.BCrypt.Verify(dto.CurrentPassword, user.PasswordHash))
+        {
+            _logger.LogWarning(
+                "Невдала спроба зміни пароля: невірний поточний пароль для користувача ID: {UserId}",
+                userId);
             throw new UnauthorizedAccessException("Поточний пароль невірний");
+        }
 
         if (BCrypt.Net.BCrypt.Verify(dto.NewPassword, user.PasswordHash))
+        {
+            _logger.LogWarning(
+                "Спроба встановити однаковий пароль для користувача ID: {UserId}",
+                userId);
             throw new InvalidOperationException("Новий пароль не може співпадати зі старим");
+        }
 
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
         _userRepository.Update(user);
         await _unitOfWork.SaveChangesAsync();
+
+        //АУДИТ - записуємо в БД 
+        bool isSelfChange = userId == requestingUserId;
+        await _auditService.LogUserPasswordChangedAsync(
+            userId: user.Id,
+            userName: user.Name,
+            changedByUserId: requestingUserId,
+            changedByUserName: requestingUserName,
+            isSelfChange: isSelfChange,
+            ipAddress: ipAddress,
+            userAgent: userAgent);
     }
 
     public async Task<bool> IsEmailExistsAsync(string email, long? excludeUserId = null)

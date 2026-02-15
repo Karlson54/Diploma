@@ -504,8 +504,6 @@ public class AuditService : IAuditService
         }
     }
 
-    // Добавить в конец класса AuditService, перед методом SerializeObject
-
     public async Task LogDictionaryCreatedAsync(
         string dictionaryType,
         long dictionaryId,
@@ -664,6 +662,240 @@ public class AuditService : IAuditService
             _logger.LogError(ex,
                 "Failed to log audit for Deactivate {EntityName} '{Name}' (ID: {EntityId})",
                 dictionaryType, dictionaryName, dictionaryId);
+        }
+    }
+
+    public async Task LogUserCreatedAsync(
+        long userId,
+        string userName,
+        string email,
+        long agencyId,
+        long createdByUserId,
+        string createdByUserName,
+        string ipAddress,
+        string userAgent)
+    {
+        try
+        {
+            var newValues = new
+            {
+                UserId = userId,
+                UserName = userName,
+                Email = email,
+                AgencyId = agencyId
+            };
+
+            var auditLog = new AuditLog
+            {
+                UserId = createdByUserId,
+                UserName = createdByUserName,
+                Action = AuditAction.Create,
+                EntityName = "User",
+                EntityId = userId,
+                NewValues = SerializeObject(newValues),
+                IpAddress = ipAddress,
+                UserAgent = userAgent,
+                Success = true
+            };
+
+            await _auditLogRepository.AddAsync(auditLog);
+            await _unitOfWork.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Audit: User Created - ID: {UserId}, Name: '{UserName}', Email: '{Email}' by User {CreatedBy}",
+                userId, userName, email, createdByUserId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to log audit for User Creation - UserId: {UserId}, UserName: '{UserName}'",
+                userId, userName);
+        }
+    }
+
+    public async Task LogUserUpdatedAsync(
+        long userId,
+        string userName,
+        object oldValues,
+        object newValues,
+        long updatedByUserId,
+        string updatedByUserName,
+        string ipAddress,
+        string userAgent)
+    {
+        try
+        {
+            var auditLog = new AuditLog
+            {
+                UserId = updatedByUserId,
+                UserName = updatedByUserName,
+                Action = AuditAction.Update,
+                EntityName = "User",
+                EntityId = userId,
+                OldValues = SerializeObject(oldValues),
+                NewValues = SerializeObject(newValues),
+                IpAddress = ipAddress,
+                UserAgent = userAgent,
+                Success = true
+            };
+
+            await _auditLogRepository.AddAsync(auditLog);
+            await _unitOfWork.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Audit: User Updated - ID: {UserId}, Name: '{UserName}' by User {UpdatedBy}",
+                userId, userName, updatedByUserId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to log audit for User Update - UserId: {UserId}",
+                userId);
+        }
+    }
+
+    public async Task LogUserActivatedAsync(
+        long userId,
+        string userName,
+        long activatedByUserId,
+        string activatedByUserName,
+        string ipAddress,
+        string userAgent)
+    {
+        try
+        {
+            var newValues = new
+            {
+                UserId = userId,
+                UserName = userName,
+                IsActive = true
+            };
+
+            var auditLog = new AuditLog
+            {
+                UserId = activatedByUserId,
+                UserName = activatedByUserName,
+                Action = AuditAction.UserActivated,
+                EntityName = "User",
+                EntityId = userId,
+                NewValues = SerializeObject(newValues),
+                IpAddress = ipAddress,
+                UserAgent = userAgent,
+                Success = true
+            };
+
+            await _auditLogRepository.AddAsync(auditLog);
+            await _unitOfWork.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Audit: User Activated - ID: {UserId}, Name: '{UserName}' by User {ActivatedBy}",
+                userId, userName, activatedByUserId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to log audit for User Activation - UserId: {UserId}",
+                userId);
+        }
+    }
+
+    public async Task LogUserDeactivatedAsync(
+        long userId,
+        string userName,
+        long deactivatedByUserId,
+        string deactivatedByUserName,
+        string ipAddress,
+        string userAgent)
+    {
+        try
+        {
+            var oldValues = new
+            {
+                UserId = userId,
+                UserName = userName,
+                IsActive = true
+            };
+
+            var newValues = new
+            {
+                UserId = userId,
+                UserName = userName,
+                IsActive = false
+            };
+
+            var auditLog = new AuditLog
+            {
+                UserId = deactivatedByUserId,
+                UserName = deactivatedByUserName,
+                Action = AuditAction.UserDeactivated,
+                EntityName = "User",
+                EntityId = userId,
+                OldValues = SerializeObject(oldValues),
+                NewValues = SerializeObject(newValues),
+                IpAddress = ipAddress,
+                UserAgent = userAgent,
+                Success = true
+            };
+
+            await _auditLogRepository.AddAsync(auditLog);
+            await _unitOfWork.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Audit: User Deactivated - ID: {UserId}, Name: '{UserName}' by User {DeactivatedBy}",
+                userId, userName, deactivatedByUserId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to log audit for User Deactivation - UserId: {UserId}",
+                userId);
+        }
+    }
+
+    public async Task LogUserPasswordChangedAsync(
+        long userId,
+        string userName,
+        long changedByUserId,
+        string changedByUserName,
+        bool isSelfChange,
+        string ipAddress,
+        string userAgent)
+    {
+        try
+        {
+            var newValues = new
+            {
+                UserId = userId,
+                UserName = userName,
+                IsSelfChange = isSelfChange,
+                ChangedBy = changedByUserId
+            };
+
+            var auditLog = new AuditLog
+            {
+                UserId = changedByUserId,
+                UserName = changedByUserName,
+                Action = AuditAction.PasswordChanged,
+                EntityName = "User",
+                EntityId = userId,
+                NewValues = SerializeObject(newValues),
+                IpAddress = ipAddress,
+                UserAgent = userAgent,
+                Success = true
+            };
+
+            await _auditLogRepository.AddAsync(auditLog);
+            await _unitOfWork.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Audit: User Password Changed - ID: {UserId}, Name: '{UserName}', IsSelfChange: {IsSelfChange}, ChangedBy: {ChangedBy}",
+                userId, userName, isSelfChange, changedByUserId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to log audit for User Password Change - UserId: {UserId}",
+                userId);
         }
     }
 }
