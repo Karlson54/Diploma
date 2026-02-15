@@ -65,7 +65,11 @@ public static class AuthorizationExtensions
                 policy.RequireAuthenticatedUser()
                     .RequireClaim("IsActive", "True"))
             .AddPolicy("CanEditOwnTimeEntry", policy =>
-                policy.RequireAuthenticatedUser())
+                policy.RequireAuthenticatedUser()
+                    .RequireClaim("IsActive", "True"))
+            .AddPolicy("CanDeleteOwnTimeEntry", policy =>
+                policy.RequireAuthenticatedUser()
+                    .RequireClaim("IsActive", "True"))
             .AddPolicy("CanEditAnyTimeEntry", policy =>
                 policy.RequireRole("Manager", "Admin"));
     }

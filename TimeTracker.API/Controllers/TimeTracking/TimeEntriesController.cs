@@ -61,8 +61,8 @@ public class TimeEntriesController : ControllerBase
         {
             var currentUserId = GetCurrentUserId();
             var entries = await _timeEntryService.GetUserEntriesAsync(
-                currentUserId, 
-                fromDate, 
+                currentUserId,
+                fromDate,
                 toDate);
 
             return Ok(entries);
@@ -86,8 +86,8 @@ public class TimeEntriesController : ControllerBase
         try
         {
             var entries = await _timeEntryService.GetUserEntriesAsync(
-                userId, 
-                fromDate, 
+                userId,
+                fromDate,
                 toDate);
 
             return Ok(entries);
@@ -112,22 +112,28 @@ public class TimeEntriesController : ControllerBase
         try
         {
             var currentUserId = GetCurrentUserId();
-            
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
             // Якщо UserId не вказаний або користувач намагається створити запис для себе
             if (dto.UserId == 0 || dto.UserId == currentUserId)
             {
                 dto.UserId = currentUserId;
             }
 
-            var entry = await _timeEntryService.CreateAsync(dto, currentUserId);
-            
+            var entry = await _timeEntryService.CreateAsync(
+                dto,
+                currentUserId,
+                ipAddress,
+                userAgent);
+
             _logger.LogInformation(
                 "TimeEntry створено успішно. Id: {Id}, UserId: {UserId}, Date: {Date}",
                 entry.Id, entry.UserId, entry.EntryDate);
 
             return CreatedAtAction(
-                nameof(GetById), 
-                new { id = entry.Id }, 
+                nameof(GetById),
+                new { id = entry.Id },
                 entry);
         }
         catch (UnauthorizedAccessException ex)
@@ -141,6 +147,144 @@ public class TimeEntriesController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Помилка при створенні запису часу");
+            return BadRequest(new { Message = ex.Message });
+        }
+    }
+
+    [HttpPost("bulk")]
+    [Authorize(Policy = "CanCreateTimeEntry")]
+    [ProducesResponseType(typeof(IEnumerable<TimeEntryDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateBulk([FromBody] IEnumerable<CreateTimeEntryDto> dtos)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        try
+        {
+            var currentUserId = GetCurrentUserId();
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
+            var entries = await _timeEntryService.CreateBulkAsync(
+                dtos,
+                currentUserId,
+                ipAddress,
+                userAgent);
+
+            _logger.LogInformation(
+                "TimeEntries створено масово. Кількість: {Count}",
+                entries.Count());
+
+            return CreatedAtAction(
+                nameof(GetMyEntries),
+                entries);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { Message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Помилка при масовому створенні записів часу");
+            return BadRequest(new { Message = ex.Message });
+        }
+    }
+
+    [HttpPost("copy-day")]
+    [Authorize(Policy = "CanCreateTimeEntry")]
+    [ProducesResponseType(typeof(IEnumerable<TimeEntryDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CopyDay(
+        [FromQuery] long userId,
+        [FromQuery] DateTime sourceDate,
+        [FromQuery] DateTime targetDate)
+    {
+        try
+        {
+            var currentUserId = GetCurrentUserId();
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
+            var entries = await _timeEntryService.CopyDayEntriesAsync(
+                userId,
+                sourceDate,
+                targetDate,
+                currentUserId,
+                ipAddress,
+                userAgent);
+
+            _logger.LogInformation(
+                "TimeEntries скопійовано за день. UserId: {UserId}, From: {SourceDate}, To: {TargetDate}, Count: {Count}",
+                userId, sourceDate, targetDate, entries.Count());
+
+            return CreatedAtAction(
+                nameof(GetUserEntries),
+                new { userId },
+                entries);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { Message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Помилка при копіюванні записів за день");
+            return BadRequest(new { Message = ex.Message });
+        }
+    }
+
+    [HttpPost("copy-week")]
+    [Authorize(Policy = "CanCreateTimeEntry")]
+    [ProducesResponseType(typeof(IEnumerable<TimeEntryDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CopyWeek(
+        [FromQuery] long userId,
+        [FromQuery] DateTime sourceWeekStart,
+        [FromQuery] DateTime targetWeekStart)
+    {
+        try
+        {
+            var currentUserId = GetCurrentUserId();
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
+            var entries = await _timeEntryService.CopyWeekEntriesAsync(
+                userId,
+                sourceWeekStart,
+                targetWeekStart,
+                currentUserId,
+                ipAddress,
+                userAgent);
+
+            _logger.LogInformation(
+                "TimeEntries скопійовано за тиждень. UserId: {UserId}, From: {SourceWeekStart}, To: {TargetWeekStart}, Count: {Count}",
+                userId, sourceWeekStart, targetWeekStart, entries.Count());
+
+            return CreatedAtAction(
+                nameof(GetUserEntries),
+                new { userId },
+                entries);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { Message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Помилка при копіюванні записів за тиждень");
             return BadRequest(new { Message = ex.Message });
         }
     }
@@ -159,11 +303,19 @@ public class TimeEntriesController : ControllerBase
         try
         {
             var currentUserId = GetCurrentUserId();
-            var entry = await _timeEntryService.UpdateAsync(id, dto, currentUserId);
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
+            var entry = await _timeEntryService.UpdateAsync(
+                id,
+                dto,
+                currentUserId,
+                ipAddress,
+                userAgent);
 
             _logger.LogInformation(
                 "TimeEntry оновлено. Id: {Id}, UserId: {UserId}",
-                entry.Id, entry.UserId);
+                id, entry.UserId);
 
             return Ok(entry);
         }
@@ -181,13 +333,59 @@ public class TimeEntriesController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Помилка при оновленні запису {Id}", id);
+            _logger.LogError(ex, "Помилка при оновленні запису часу {Id}", id);
+            return BadRequest(new { Message = ex.Message });
+        }
+    }
+
+    [HttpPut("bulk")]
+    [Authorize(Policy = "CanEditOwnTimeEntry")]
+    [ProducesResponseType(typeof(IEnumerable<TimeEntryDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UpdateBulk([FromBody] IEnumerable<(long Id, UpdateTimeEntryDto Dto)> updates)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        try
+        {
+            var currentUserId = GetCurrentUserId();
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
+            var entries = await _timeEntryService.UpdateBulkAsync(
+                updates,
+                currentUserId,
+                ipAddress,
+                userAgent);
+
+            _logger.LogInformation(
+                "TimeEntries оновлено масово. Кількість: {Count}",
+                entries.Count());
+
+            return Ok(entries);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { Message = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Помилка при масовому оновленні записів часу");
             return BadRequest(new { Message = ex.Message });
         }
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Policy = "CanEditOwnTimeEntry")]
+    [Authorize(Policy = "CanDeleteOwnTimeEntry")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -196,7 +394,14 @@ public class TimeEntriesController : ControllerBase
         try
         {
             var currentUserId = GetCurrentUserId();
-            await _timeEntryService.DeleteAsync(id, currentUserId);
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
+            await _timeEntryService.DeleteAsync(
+                id,
+                currentUserId,
+                ipAddress,
+                userAgent);
 
             _logger.LogInformation("TimeEntry видалено. Id: {Id}", id);
 
@@ -217,164 +422,8 @@ public class TimeEntriesController : ControllerBase
         }
     }
 
-    [HttpGet("paged")]
-    [Authorize(Policy = "CanCreateTimeEntry")]
-    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetPaged(
-        [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 20,
-        [FromQuery] long? userId = null,
-        [FromQuery] long? agencyId = null,
-        [FromQuery] long? clientId = null,
-        [FromQuery] DateTime? fromDate = null,
-        [FromQuery] DateTime? toDate = null)
-    {
-        try
-        {
-            var currentUserId = GetCurrentUserId();
-            
-            // Якщо userId не вказаний - показуємо записи поточного користувача
-            var targetUserId = userId ?? currentUserId;
-
-            var (entries, totalCount) = await _timeEntryService.GetPagedAsync(
-                pageNumber,
-                pageSize,
-                targetUserId,
-                agencyId,
-                clientId,
-                fromDate,
-                toDate,
-                currentUserId);
-
-            return Ok(new
-            {
-                Data = entries,
-                TotalCount = totalCount,
-                PageNumber = pageNumber,
-                PageSize = pageSize,
-                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
-                Filters = new
-                {
-                    UserId = targetUserId,
-                    AgencyId = agencyId,
-                    ClientId = clientId,
-                    FromDate = fromDate,
-                    ToDate = toDate
-                }
-            });
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Forbid(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Помилка при отриманні сторінки записів");
-            return BadRequest(new { Message = ex.Message });
-        }
-    }
-
-    [HttpPost("bulk")]
-    [Authorize(Policy = "CanCreateTimeEntry")]
-    [ProducesResponseType(typeof(IEnumerable<TimeEntryDto>), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> CreateBulk([FromBody] List<CreateTimeEntryDto> dtos)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        if (!dtos.Any())
-            return BadRequest(new { Message = "Список записів порожній" });
-
-        if (dtos.Count > 100)
-            return BadRequest(new { Message = "Неможливо створити більше 100 записів за один раз" });
-
-        try
-        {
-            var currentUserId = GetCurrentUserId();
-            
-            // Встановлюємо поточного користувача для всіх записів
-            foreach (var dto in dtos)
-            {
-                if (dto.UserId == 0)
-                    dto.UserId = currentUserId;
-            }
-
-            var entries = await _timeEntryService.CreateBulkAsync(dtos, currentUserId);
-
-            _logger.LogInformation(
-                "Bulk створення завершено. Створено {Count} записів",
-                entries.Count());
-
-            return CreatedAtAction(
-                nameof(GetPaged),
-                new { pageNumber = 1, pageSize = 20 },
-                entries);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(new { Message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { Message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Помилка при bulk створенні записів");
-            return BadRequest(new { Message = ex.Message });
-        }
-    }
-
-    [HttpPut("bulk")]
-    [Authorize(Policy = "CanEditOwnTimeEntry")]
-    [ProducesResponseType(typeof(IEnumerable<TimeEntryDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> UpdateBulk([FromBody] List<BulkUpdateTimeEntryDto> updates)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        if (!updates.Any())
-            return BadRequest(new { Message = "Список оновлень порожній" });
-
-        if (updates.Count > 100)
-            return BadRequest(new { Message = "Неможливо оновити більше 100 записів за один раз" });
-
-        try
-        {
-            var currentUserId = GetCurrentUserId();
-            var updateTuples = updates.Select(u => (u.Id, u.Data)).ToList();
-            
-            var entries = await _timeEntryService.UpdateBulkAsync(updateTuples, currentUserId);
-
-            _logger.LogInformation(
-                "Bulk оновлення завершено. Оновлено {Count} записів",
-                entries.Count());
-
-            return Ok(entries);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { Message = ex.Message });
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Forbid(ex.Message);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { Message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Помилка при bulk оновленні записів");
-            return BadRequest(new { Message = ex.Message });
-        }
-    }
-
     [HttpDelete("bulk")]
-    [Authorize(Policy = "CanEditOwnTimeEntry")]
+    [Authorize(Policy = "CanDeleteOwnTimeEntry")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> DeleteBulk([FromBody] List<long> ids)
@@ -388,7 +437,14 @@ public class TimeEntriesController : ControllerBase
         try
         {
             var currentUserId = GetCurrentUserId();
-            await _timeEntryService.DeleteBulkAsync(ids, currentUserId);
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
+            await _timeEntryService.DeleteBulkAsync(
+                ids, 
+                currentUserId,
+                ipAddress,
+                userAgent);
 
             _logger.LogInformation(
                 "Bulk видалення завершено. Видалено {Count} записів",
@@ -411,226 +467,55 @@ public class TimeEntriesController : ControllerBase
         }
     }
 
-    [HttpPost("copy-day")]
-    [Authorize(Policy = "CanCreateTimeEntry")]
-    [ProducesResponseType(typeof(IEnumerable<TimeEntryDto>), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> CopyDay([FromBody] CopyDayDto dto)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        try
-        {
-            var currentUserId = GetCurrentUserId();
-            var targetUserId = dto.UserId ?? currentUserId;
-
-            var entries = await _timeEntryService.CopyDayEntriesAsync(
-                targetUserId,
-                dto.SourceDate,
-                dto.TargetDate,
-                currentUserId);
-
-            _logger.LogInformation(
-                "Копіювання дня завершено. UserId: {UserId}, Count: {Count}",
-                targetUserId, entries.Count());
-
-            return CreatedAtAction(
-                nameof(GetPaged),
-                new { pageNumber = 1, pageSize = 20 },
-                entries);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(new { Message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { Message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Помилка при копіюванні дня");
-            return BadRequest(new { Message = ex.Message });
-        }
-    }
-
-    [HttpPost("copy-week")]
-    [Authorize(Policy = "CanCreateTimeEntry")]
-    [ProducesResponseType(typeof(IEnumerable<TimeEntryDto>), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> CopyWeek([FromBody] CopyWeekDto dto)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        try
-        {
-            var currentUserId = GetCurrentUserId();
-            var targetUserId = dto.UserId ?? currentUserId;
-
-            var entries = await _timeEntryService.CopyWeekEntriesAsync(
-                targetUserId,
-                dto.SourceWeekStart,
-                dto.TargetWeekStart,
-                currentUserId);
-
-            _logger.LogInformation(
-                "Копіювання тижня завершено. UserId: {UserId}, Count: {Count}",
-                targetUserId, entries.Count());
-
-            return CreatedAtAction(
-                nameof(GetPaged),
-                new { pageNumber = 1, pageSize = 20 },
-                entries);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(new { Message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { Message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Помилка при копіюванні тижня");
-            return BadRequest(new { Message = ex.Message });
-        }
-    }
-    [HttpGet("summary/day")]
-    [Authorize(Policy = "CanCreateTimeEntry")]
-    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetDailySummary(
-        [FromQuery] DateTime date,
-        [FromQuery] long? userId = null)
-    {
-        try
-        {
-            var currentUserId = GetCurrentUserId();
-            var targetUserId = userId ?? currentUserId;
-
-            // Якщо запитують чужу статистику - перевіряємо права
-            if (targetUserId != currentUserId && 
-                !User.IsInRole("Admin") && !User.IsInRole("Manager"))
-            {
-                return Forbid();
-            }
-
-            var summary = await _timeEntryService.GetDailySummaryAsync(targetUserId, date);
-            return Ok(summary);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Помилка при отриманні денного підсумку");
-            return BadRequest(new { Message = ex.Message });
-        }
-    }
-
-    [HttpGet("summary/week")]
-    [Authorize(Policy = "CanCreateTimeEntry")]
-    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetWeeklySummary(
-        [FromQuery] DateTime weekStart,
-        [FromQuery] long? userId = null)
-    {
-        try
-        {
-            var currentUserId = GetCurrentUserId();
-            var targetUserId = userId ?? currentUserId;
-
-            if (targetUserId != currentUserId && 
-                !User.IsInRole("Admin") && !User.IsInRole("Manager"))
-            {
-                return Forbid();
-            }
-
-            var summary = await _timeEntryService.GetWeeklySummaryAsync(targetUserId, weekStart);
-            return Ok(summary);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Помилка при отриманні тижневого підсумку");
-            return BadRequest(new { Message = ex.Message });
-        }
-    }
-
-    [HttpGet("summary/month")]
-    [Authorize(Policy = "CanCreateTimeEntry")]
-    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetMonthlySummary(
-        [FromQuery] int year,
-        [FromQuery] int month,
-        [FromQuery] long? userId = null)
-    {
-        if (month < 1 || month > 12)
-            return BadRequest(new { Message = "Місяць має бути від 1 до 12" });
-
-        if (year < 2000 || year > 2100)
-            return BadRequest(new { Message = "Рік має бути від 2000 до 2100" });
-
-        try
-        {
-            var currentUserId = GetCurrentUserId();
-            var targetUserId = userId ?? currentUserId;
-
-            if (targetUserId != currentUserId && 
-                !User.IsInRole("Admin") && !User.IsInRole("Manager"))
-            {
-                return Forbid();
-            }
-
-            var summary = await _timeEntryService.GetMonthlySummaryAsync(targetUserId, year, month);
-            return Ok(summary);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Помилка при отриманні місячного підсумку");
-            return BadRequest(new { Message = ex.Message });
-        }
-    }
-
-    [HttpGet("remaining-hours")]
-    [Authorize(Policy = "CanCreateTimeEntry")]
-    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetRemainingHours(
-        [FromQuery] DateTime date,
-        [FromQuery] long? excludeEntryId = null)
-    {
-        try
-        {
-            var currentUserId = GetCurrentUserId();
-            var remainingMs = await _timeEntryService.GetRemainingHoursForDayAsync(
-                currentUserId, 
-                date, 
-                excludeEntryId);
-
-            return Ok(new
-            {
-                Date = date.Date,
-                RemainingHoursMs = remainingMs,
-                RemainingHours = TimeSpan.FromMilliseconds(remainingMs).ToString(@"hh\:mm"),
-                MaxDailyHoursMs = Core.Common.ValidationConstants.MaxHoursPerDayMs,
-                MaxDailyHours = "24:00"
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Помилка при отриманні залишку годин");
-            return BadRequest(new { Message = ex.Message });
-        }
-    }
-
     private long GetCurrentUserId()
     {
         var userIdClaim = User.FindFirst("userId")?.Value;
-        
+
         if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
         {
-            _logger.LogError("Не вдалося отримати userId з токена");
+            _logger.LogWarning("Невалідний токен: не вдалося отримати userId");
             throw new UnauthorizedAccessException("Невалідний токен");
         }
 
         return userId;
+    }
+
+    private string GetIpAddress()
+    {
+        // Перевіряємо X-Forwarded-For (якщо за proxy/load balancer)
+        var forwardedFor = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(forwardedFor))
+        {
+            var ips = forwardedFor.Split(',', StringSplitOptions.RemoveEmptyEntries);
+            if (ips.Length > 0)
+            {
+                return ips[0].Trim();
+            }
+        }
+
+        // Перевіряємо X-Real-IP
+        var realIp = HttpContext.Request.Headers["X-Real-IP"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(realIp))
+        {
+            return realIp.Trim();
+        }
+
+        // Використовуємо RemoteIpAddress
+        return HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+    }
+
+    private string GetUserAgent()
+    {
+        var userAgent = HttpContext.Request.Headers["User-Agent"].FirstOrDefault();
+
+        if (string.IsNullOrEmpty(userAgent))
+        {
+            return "Unknown";
+        }
+
+        // Обмежуємо розмір (БД constraint 500 символів)
+        return userAgent.Length > 500
+            ? userAgent.Substring(0, 500)
+            : userAgent;
     }
 }

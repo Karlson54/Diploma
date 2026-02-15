@@ -6,14 +6,30 @@ public interface ITimeEntryService
 {
     // Базовые CRUD операции
     Task<TimeEntryDetailDto?> GetByIdAsync(long id, long requestingUserId);
+    
     Task<IEnumerable<TimeEntryListItemDto>> GetUserEntriesAsync(
         long userId, 
         DateTime? fromDate = null, 
         DateTime? toDate = null);
     
-    Task<TimeEntryDto> CreateAsync(CreateTimeEntryDto dto, long requestingUserId);
-    Task<TimeEntryDto> UpdateAsync(long id, UpdateTimeEntryDto dto, long requestingUserId);
-    Task DeleteAsync(long id, long requestingUserId);
+    Task<TimeEntryDto> CreateAsync(
+        CreateTimeEntryDto dto, 
+        long requestingUserId,
+        string ipAddress,
+        string userAgent);
+    
+    Task<TimeEntryDto> UpdateAsync(
+        long id, 
+        UpdateTimeEntryDto dto, 
+        long requestingUserId,
+        string ipAddress,
+        string userAgent);
+    
+    Task DeleteAsync(
+        long id, 
+        long requestingUserId,
+        string ipAddress,
+        string userAgent);
     
     // Пагинация
     Task<(IEnumerable<TimeEntryListItemDto> Entries, int TotalCount)> GetPagedAsync(
@@ -29,26 +45,38 @@ public interface ITimeEntryService
     // Bulk операции
     Task<IEnumerable<TimeEntryDto>> CreateBulkAsync(
         IEnumerable<CreateTimeEntryDto> dtos, 
-        long requestingUserId);
+        long requestingUserId,
+        string ipAddress,
+        string userAgent);
     
     Task<IEnumerable<TimeEntryDto>> UpdateBulkAsync(
         IEnumerable<(long Id, UpdateTimeEntryDto Dto)> updates,
-        long requestingUserId);
+        long requestingUserId,
+        string ipAddress,
+        string userAgent);
     
-    Task DeleteBulkAsync(IEnumerable<long> ids, long requestingUserId);
+    Task DeleteBulkAsync(
+        IEnumerable<long> ids, 
+        long requestingUserId,
+        string ipAddress,
+        string userAgent);
     
     // Копирование записей
     Task<IEnumerable<TimeEntryDto>> CopyDayEntriesAsync(
         long userId,
         DateTime sourceDate,
         DateTime targetDate,
-        long requestingUserId);
+        long requestingUserId,
+        string ipAddress,
+        string userAgent);
     
     Task<IEnumerable<TimeEntryDto>> CopyWeekEntriesAsync(
         long userId,
         DateTime sourceWeekStart,
         DateTime targetWeekStart,
-        long requestingUserId);
+        long requestingUserId,
+        string ipAddress,
+        string userAgent);
     
     // Статистика и аналитика
     Task<object> GetDailySummaryAsync(long userId, DateTime date);

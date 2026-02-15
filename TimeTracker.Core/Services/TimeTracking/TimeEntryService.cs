@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using TimeTracker.Core.Common;
 using TimeTracker.Core.DTOs.TimeEntries;
+using TimeTracker.Core.Services.Audit;
 using TimeTracker.Data.Entities;
 using TimeTracker.Data.Repositories.TimeEntries;
 using TimeTracker.Data.Repositories.Users;
@@ -18,6 +19,7 @@ public class TimeEntryService : ITimeEntryService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly ILogger<TimeEntryService> _logger;
+    private readonly IAuditService _auditService;
 
     public TimeEntryService(
         ITimeEntryRepository timeEntryRepository,
@@ -25,7 +27,9 @@ public class TimeEntryService : ITimeEntryService
         ITimeValidationService validationService,
         IUnitOfWork unitOfWork,
         IMapper mapper,
-        ILogger<TimeEntryService> logger)
+        ILogger<TimeEntryService> logger,
+        IAuditService auditService)
+
     {
         _timeEntryRepository = timeEntryRepository;
         _userRepository = userRepository;
@@ -33,6 +37,7 @@ public class TimeEntryService : ITimeEntryService
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _logger = logger;
+        _auditService = auditService;
     }
 
     public async Task<TimeEntryDetailDto?> GetByIdAsync(long id, long requestingUserId)
@@ -83,7 +88,11 @@ public class TimeEntryService : ITimeEntryService
         return _mapper.Map<IEnumerable<TimeEntryListItemDto>>(entriesWithDetails);
     }
 
-    public async Task<TimeEntryDto> CreateAsync(CreateTimeEntryDto dto, long requestingUserId)
+    public async Task<TimeEntryDto> CreateAsync(
+        CreateTimeEntryDto dto,
+        long requestingUserId,
+        string ipAddress,
+        string userAgent)
     {
         // 1. Валідація прав користувача
         var userPermissionResult = await _validationService.ValidateUserPermissionsAsync(
@@ -92,6 +101,9 @@ public class TimeEntryService : ITimeEntryService
 
         if (!userPermissionResult.IsValid)
         {
+            _logger.LogWarning(
+                "Користувач {RequestingUserId} намагався створити TimeEntry для UserId {TargetUserId}. Errors: {Errors}",
+                requestingUserId, dto.UserId, string.Join("; ", userPermissionResult.Errors));
             throw new UnauthorizedAccessException(
                 string.Join("; ", userPermissionResult.Errors));
         }
@@ -104,6 +116,9 @@ public class TimeEntryService : ITimeEntryService
 
         if (!createValidationResult.IsValid)
         {
+            _logger.LogWarning(
+                "Валідація створення TimeEntry для UserId {UserId} не пройдена. Errors: {Errors}",
+                dto.UserId, string.Join("; ", createValidationResult.Errors));
             throw new InvalidOperationException(
                 string.Join("; ", createValidationResult.Errors));
         }
@@ -120,6 +135,9 @@ public class TimeEntryService : ITimeEntryService
 
         if (!referencesValidationResult.IsValid)
         {
+            _logger.LogWarning(
+                "Валідація посилань для TimeEntry не пройдена. Errors: {Errors}",
+                string.Join("; ", referencesValidationResult.Errors));
             throw new InvalidOperationException(
                 string.Join("; ", referencesValidationResult.Errors));
         }
@@ -130,59 +148,122 @@ public class TimeEntryService : ITimeEntryService
         await _timeEntryRepository.AddAsync(timeEntry);
         await _unitOfWork.SaveChangesAsync();
 
+        // Логування в консоль - менее важная информация
         _logger.LogInformation(
             "TimeEntry створено. Id: {Id}, UserId: {UserId}, Date: {Date}, Hours: {Hours}",
             timeEntry.Id, timeEntry.UserId, timeEntry.EntryDate,
             TimeHelper.FormatHours(timeEntry.HoursMilliseconds));
 
-        // 5. Завантажуємо створений запис з усіма зв'язками
-        var createdEntry = await _timeEntryRepository
-            .GetQueryable()
-            .Include(te => te.User)
-            .Include(te => te.Agency)
-            .Include(te => te.Market)
-            .Include(te => te.ContractingAgency)
-            .Include(te => te.Client)
-            .Include(te => te.ProjectBrand)
-            .Include(te => te.Media)
-            .Include(te => te.JobType)
-            .FirstOrDefaultAsync(te => te.Id == timeEntry.Id);
+        // 5. АУДИТ В БД - бізнес-логіка
+        var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
+        var targetUser = await _userRepository.GetByIdAsync(dto.UserId);
 
-        return _mapper.Map<TimeEntryDto>(createdEntry!);
+        if (requestingUser != null && targetUser != null)
+        {
+            var entryDetails = new
+            {
+                dto.AgencyId,
+                dto.MarketId,
+                dto.ContractingAgencyId,
+                dto.ClientId,
+                dto.ProjectBrandId,
+                dto.MediaId,
+                dto.JobTypeId,
+                dto.Comments
+            };
+
+            await _auditService.LogTimeEntryCreatedAsync(
+                timeEntryId: timeEntry.Id,
+                userId: timeEntry.UserId,
+                userName: targetUser.Name,
+                entryDate: timeEntry.EntryDate,
+                hoursMilliseconds: timeEntry.HoursMilliseconds,
+                entryDetails: entryDetails,
+                createdByUserId: requestingUserId,
+                createdByUserName: requestingUser.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent);
+        }
+        else
+        {
+            _logger.LogWarning(
+                "Не вдалося знайти користувачів для аудиту створення TimeEntry. RequestingUserId: {RequestingUserId}, TargetUserId: {TargetUserId}",
+                requestingUserId, dto.UserId);
+        }
+
+        return _mapper.Map<TimeEntryDto>(timeEntry);
     }
 
-    public async Task<TimeEntryDto> UpdateAsync(long id, UpdateTimeEntryDto dto, long requestingUserId)
+    public async Task<TimeEntryDto> UpdateAsync(
+        long id,
+        UpdateTimeEntryDto dto,
+        long requestingUserId,
+        string ipAddress,
+        string userAgent)
     {
-        // 1. Отримуємо існуючий запис
-        var existingEntry = await _timeEntryRepository.GetByIdAsync(id);
-        if (existingEntry == null)
+        // 1. Получаем запись с включением связанных данных
+        var timeEntry = await _timeEntryRepository
+            .GetQueryable()
+            .Include(te => te.User)
+            .FirstOrDefaultAsync(te => te.Id == id);
+
+        if (timeEntry == null)
         {
+            _logger.LogWarning(
+                "Спроба оновлення неіснуючого TimeEntry з ID {Id}",
+                id);
             throw new KeyNotFoundException($"TimeEntry з ID {id} не знайдено");
         }
 
-        // 2. Перевіряємо права доступу
-        if (!await CanUserEditEntryAsync(id, requestingUserId))
+        // 2. Валідація прав користувача
+        var userPermissionResult = await _validationService.ValidateUserPermissionsAsync(
+            requestingUserId,
+            timeEntry.UserId);
+
+        if (!userPermissionResult.IsValid)
         {
             _logger.LogWarning(
-                "Користувач {RequestingUserId} намагався редагувати запис {EntryId}, який йому не належить",
-                requestingUserId, id);
-            throw new UnauthorizedAccessException("Ви не маєте прав редагувати цей запис");
+                "Користувач {RequestingUserId} намагався оновити TimeEntry {EntryId}, який не належить йому. Errors: {Errors}",
+                requestingUserId, id, string.Join("; ", userPermissionResult.Errors));
+            throw new UnauthorizedAccessException(
+                string.Join("; ", userPermissionResult.Errors));
         }
 
-        // 3. Валідація оновлення
+        // 3. Зберігаємо старі значення для аудиту
+        var oldValues = new
+        {
+            timeEntry.Id,
+            timeEntry.UserId,
+            UserName = timeEntry.User.Name,
+            timeEntry.EntryDate,
+            timeEntry.HoursMilliseconds,
+            timeEntry.AgencyId,
+            timeEntry.MarketId,
+            timeEntry.ContractingAgencyId,
+            timeEntry.ClientId,
+            timeEntry.ProjectBrandId,
+            timeEntry.MediaId,
+            timeEntry.JobTypeId,
+            timeEntry.Comments
+        };
+
+        // 4. Валідація даних оновлення
         var updateValidationResult = await _validationService.ValidateUpdateAsync(
             id,
-            existingEntry.UserId,
+            timeEntry.UserId,
             dto.EntryDate,
             dto.HoursMilliseconds);
 
         if (!updateValidationResult.IsValid)
         {
+            _logger.LogWarning(
+                "Валідація оновлення TimeEntry {Id} не пройдена. Errors: {Errors}",
+                id, string.Join("; ", updateValidationResult.Errors));
             throw new InvalidOperationException(
                 string.Join("; ", updateValidationResult.Errors));
         }
 
-        // 4. Валідація зовнішніх ключів
+        // 5. Валідація зовнішніх ключів
         var referencesValidationResult = await _validationService.ValidateReferencesAsync(
             dto.AgencyId,
             dto.MarketId,
@@ -194,65 +275,156 @@ public class TimeEntryService : ITimeEntryService
 
         if (!referencesValidationResult.IsValid)
         {
+            _logger.LogWarning(
+                "Валідація посилань для TimeEntry {Id} не пройдена. Errors: {Errors}",
+                id, string.Join("; ", referencesValidationResult.Errors));
             throw new InvalidOperationException(
                 string.Join("; ", referencesValidationResult.Errors));
         }
 
-        // 5. Оновлюємо дані
-        var oldDate = existingEntry.EntryDate;
-        var oldHours = existingEntry.HoursMilliseconds;
+        // 6. Оновлення entity
+        _mapper.Map(dto, timeEntry);
 
-        _mapper.Map(dto, existingEntry);
-
-        _timeEntryRepository.Update(existingEntry);
+        _timeEntryRepository.Update(timeEntry);
         await _unitOfWork.SaveChangesAsync();
 
+        // Логування в консоль - менее важная информация
         _logger.LogInformation(
-            "TimeEntry оновлено. Id: {Id}, UserId: {UserId}, " +
-            "OldDate: {OldDate} -> NewDate: {NewDate}, " +
-            "OldHours: {OldHours} -> NewHours: {NewHours}",
-            id, existingEntry.UserId,
-            oldDate, existingEntry.EntryDate,
-            TimeHelper.FormatHours(oldHours), TimeHelper.FormatHours(existingEntry.HoursMilliseconds));
+            "TimeEntry оновлено. Id: {Id}, UserId: {UserId}, Date: {Date}, Hours: {Hours}",
+            timeEntry.Id, timeEntry.UserId, timeEntry.EntryDate,
+            TimeHelper.FormatHours(timeEntry.HoursMilliseconds));
 
-        // 6. Завантажуємо оновлений запис
-        var updatedEntry = await _timeEntryRepository
-            .GetQueryable()
-            .Include(te => te.User)
-            .Include(te => te.Agency)
-            .Include(te => te.Market)
-            .Include(te => te.ContractingAgency)
-            .Include(te => te.Client)
-            .Include(te => te.ProjectBrand)
-            .Include(te => te.Media)
-            .Include(te => te.JobType)
-            .FirstOrDefaultAsync(te => te.Id == id);
+        // 7. АУДИТ В БД - бізнес-логіка
+        var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
+        var targetUser = await _userRepository.GetByIdAsync(timeEntry.UserId);
 
-        return _mapper.Map<TimeEntryDto>(updatedEntry!);
+        if (requestingUser != null && targetUser != null)
+        {
+            var newValues = new
+            {
+                timeEntry.Id,
+                timeEntry.UserId,
+                UserName = targetUser.Name,
+                timeEntry.EntryDate,
+                timeEntry.HoursMilliseconds,
+                timeEntry.AgencyId,
+                timeEntry.MarketId,
+                timeEntry.ContractingAgencyId,
+                timeEntry.ClientId,
+                timeEntry.ProjectBrandId,
+                timeEntry.MediaId,
+                timeEntry.JobTypeId,
+                timeEntry.Comments,
+                UpdatedBy = requestingUser.Name
+            };
+
+            await _auditService.LogTimeEntryUpdatedAsync(
+                timeEntryId: timeEntry.Id,
+                userId: timeEntry.UserId,
+                userName: targetUser.Name,
+                oldValues: oldValues,
+                newValues: newValues,
+                updatedByUserId: requestingUserId,
+                updatedByUserName: requestingUser.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent);
+        }
+        else
+        {
+            _logger.LogWarning(
+                "Не вдалося знайти користувачів для аудиту оновлення TimeEntry. RequestingUserId: {RequestingUserId}, TargetUserId: {TargetUserId}",
+                requestingUserId, timeEntry.UserId);
+        }
+
+        return _mapper.Map<TimeEntryDto>(timeEntry);
     }
 
-    public async Task DeleteAsync(long id, long requestingUserId)
+    public async Task DeleteAsync(
+        long id,
+        long requestingUserId,
+        string ipAddress,
+        string userAgent)
     {
-        var entry = await _timeEntryRepository.GetByIdAsync(id);
-        if (entry == null)
+        // 1. Получаем запись с включением связанных данных
+        var timeEntry = await _timeEntryRepository
+            .GetQueryable()
+            .Include(te => te.User)
+            .FirstOrDefaultAsync(te => te.Id == id);
+
+        if (timeEntry == null)
         {
+            _logger.LogWarning(
+                "Спроба видалення неіснуючого TimeEntry з ID {Id}",
+                id);
             throw new KeyNotFoundException($"TimeEntry з ID {id} не знайдено");
         }
 
-        if (!await CanUserEditEntryAsync(id, requestingUserId))
+        // 2. Валідація прав користувача
+        var userPermissionResult = await _validationService.ValidateUserPermissionsAsync(
+            requestingUserId,
+            timeEntry.UserId);
+
+        if (!userPermissionResult.IsValid)
         {
             _logger.LogWarning(
-                "Користувач {RequestingUserId} намагався видалити запис {EntryId}, який йому не належить",
-                requestingUserId, id);
-            throw new UnauthorizedAccessException("Ви не маєте прав видалити цей запис");
+                "Користувач {RequestingUserId} намагався видалити TimeEntry {EntryId}, який не належить йому. Errors: {Errors}",
+                requestingUserId, id, string.Join("; ", userPermissionResult.Errors));
+            throw new UnauthorizedAccessException(
+                string.Join("; ", userPermissionResult.Errors));
         }
 
-        _timeEntryRepository.Delete(entry);
+        // 3. Зберігаємо дані для аудиту перед видаленням
+        var oldValues = new
+        {
+            timeEntry.Id,
+            timeEntry.UserId,
+            UserName = timeEntry.User.Name,
+            timeEntry.EntryDate,
+            timeEntry.HoursMilliseconds,
+            timeEntry.AgencyId,
+            timeEntry.MarketId,
+            timeEntry.ContractingAgencyId,
+            timeEntry.ClientId,
+            timeEntry.ProjectBrandId,
+            timeEntry.MediaId,
+            timeEntry.JobTypeId,
+            timeEntry.Comments
+        };
+
+        // 4. Зберігаємо дані користувачів перед видаленням entity
+        var targetUserId = timeEntry.UserId;
+        var targetUserName = timeEntry.User.Name;
+
+        // 5. Видалення
+        await _timeEntryRepository.DeleteAsync(id);
         await _unitOfWork.SaveChangesAsync();
 
+        // Логування в консоль - менее важная информация
         _logger.LogInformation(
             "TimeEntry видалено. Id: {Id}, UserId: {UserId}, Date: {Date}",
-            id, entry.UserId, entry.EntryDate);
+            id, targetUserId, timeEntry.EntryDate);
+
+        // 6. АУДИТ В БД - бізнес-логіка
+        var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
+
+        if (requestingUser != null)
+        {
+            await _auditService.LogTimeEntryDeletedAsync(
+                timeEntryId: id,
+                userId: targetUserId,
+                userName: targetUserName,
+                oldValues: oldValues,
+                deletedByUserId: requestingUserId,
+                deletedByUserName: requestingUser.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent);
+        }
+        else
+        {
+            _logger.LogWarning(
+                "Не вдалося знайти користувача для аудиту видалення TimeEntry. RequestingUserId: {RequestingUserId}",
+                requestingUserId);
+        }
     }
 
     public async Task<(IEnumerable<TimeEntryListItemDto> Entries, int TotalCount)> GetPagedAsync(
@@ -306,254 +478,261 @@ public class TimeEntryService : ITimeEntryService
 
     public async Task<IEnumerable<TimeEntryDto>> CreateBulkAsync(
         IEnumerable<CreateTimeEntryDto> dtos,
-        long requestingUserId)
+        long requestingUserId,
+        string ipAddress,
+        string userAgent)
     {
         var dtosList = dtos.ToList();
 
         if (!dtosList.Any())
         {
-            return Enumerable.Empty<TimeEntryDto>();
+            _logger.LogWarning("Спроба масового створення порожнього списку TimeEntries");
+            return new List<TimeEntryDto>();
         }
 
-        if (dtosList.Count > 100)
+        // Валідація прав для кожного запису
+        foreach (var dto in dtosList)
         {
-            throw new InvalidOperationException(
-                "Неможливо створити більше 100 записів за один раз");
-        }
+            var userPermissionResult = await _validationService.ValidateUserPermissionsAsync(
+                requestingUserId,
+                dto.UserId);
 
-        var createdEntries = new List<TimeEntry>();
-
-        try
-        {
-            foreach (var dto in dtosList)
+            if (!userPermissionResult.IsValid)
             {
-                // Валідація кожного запису
-                var userPermissionResult = await _validationService.ValidateUserPermissionsAsync(
-                    requestingUserId,
-                    dto.UserId);
+                _logger.LogWarning(
+                    "Користувач {RequestingUserId} намагався масово створити TimeEntry для UserId {TargetUserId}",
+                    requestingUserId, dto.UserId);
+                throw new UnauthorizedAccessException(
+                    $"Немає прав для створення записів користувача {dto.UserId}");
+            }
+        }
 
-                if (!userPermissionResult.IsValid)
-                {
-                    throw new UnauthorizedAccessException(
-                        $"Помилка валідації для запису UserId={dto.UserId}: " +
-                        string.Join("; ", userPermissionResult.Errors));
-                }
+        // Валідація всіх записів
+        foreach (var dto in dtosList)
+        {
+            var createValidationResult = await _validationService.ValidateCreateAsync(
+                dto.UserId,
+                dto.EntryDate,
+                dto.HoursMilliseconds);
 
-                var createValidationResult = await _validationService.ValidateCreateAsync(
-                    dto.UserId,
-                    dto.EntryDate,
-                    dto.HoursMilliseconds);
-
-                if (!createValidationResult.IsValid)
-                {
-                    throw new InvalidOperationException(
-                        $"Помилка валідації для запису Date={dto.EntryDate:yyyy-MM-dd}: " +
-                        string.Join("; ", createValidationResult.Errors));
-                }
-
-                var referencesValidationResult = await _validationService.ValidateReferencesAsync(
-                    dto.AgencyId,
-                    dto.MarketId,
-                    dto.ContractingAgencyId,
-                    dto.ClientId,
-                    dto.ProjectBrandId,
-                    dto.MediaId,
-                    dto.JobTypeId);
-
-                if (!referencesValidationResult.IsValid)
-                {
-                    throw new InvalidOperationException(
-                        $"Помилка валідації довідників для запису Date={dto.EntryDate:yyyy-MM-dd}: " +
-                        string.Join("; ", referencesValidationResult.Errors));
-                }
-
-                var timeEntry = _mapper.Map<TimeEntry>(dto);
-                await _timeEntryRepository.AddAsync(timeEntry);
-                createdEntries.Add(timeEntry);
+            if (!createValidationResult.IsValid)
+            {
+                throw new InvalidOperationException(
+                    $"Валідація не пройдена для запису: {string.Join("; ", createValidationResult.Errors)}");
             }
 
-            await _unitOfWork.SaveChangesAsync();
+            var referencesValidationResult = await _validationService.ValidateReferencesAsync(
+                dto.AgencyId,
+                dto.MarketId,
+                dto.ContractingAgencyId,
+                dto.ClientId,
+                dto.ProjectBrandId,
+                dto.MediaId,
+                dto.JobTypeId);
 
-            _logger.LogInformation(
-                "Bulk створення завершено. Створено {Count} записів користувачем {RequestingUserId}",
-                createdEntries.Count, requestingUserId);
+            if (!referencesValidationResult.IsValid)
+            {
+                throw new InvalidOperationException(
+                    $"Валідація посилань не пройдена: {string.Join("; ", referencesValidationResult.Errors)}");
+            }
         }
-        catch (Exception ex)
+
+        // Створення записів
+        var timeEntries = dtosList.Select(dto => _mapper.Map<TimeEntry>(dto)).ToList();
+
+        await _timeEntryRepository.AddRangeAsync(timeEntries);
+        await _unitOfWork.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "TimeEntries створено масово. Кількість: {Count}",
+            timeEntries.Count);
+
+        // АУДИТ В БД - бізнес-логіка
+        var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
+
+        // Групуємо по UserId для аудиту
+        var groupedByUser = timeEntries.GroupBy(te => te.UserId);
+
+        foreach (var userGroup in groupedByUser)
         {
-            _logger.LogError(ex,
-                "Помилка при bulk створенні записів користувачем {RequestingUserId}",
-                requestingUserId);
-            throw;
+            var targetUser = await _userRepository.GetByIdAsync(userGroup.Key);
+
+            if (requestingUser != null && targetUser != null)
+            {
+                await _auditService.LogTimeEntriesBulkOperationAsync(
+                    operation: AuditAction.BulkCreate,
+                    userId: userGroup.Key,
+                    userName: targetUser.Name,
+                    affectedCount: userGroup.Count(),
+                    requestingUserId: requestingUserId,
+                    requestingUserName: requestingUser.Name,
+                    ipAddress: ipAddress,
+                    userAgent: userAgent);
+            }
         }
 
-        // Завантажуємо створені записи з усіма зв'язками
-        var createdIds = createdEntries.Select(e => e.Id).ToList();
-        var entriesWithDetails = await _timeEntryRepository
-            .GetQueryable()
-            .Include(te => te.User)
-            .Include(te => te.Agency)
-            .Include(te => te.Market)
-            .Include(te => te.ContractingAgency)
-            .Include(te => te.Client)
-            .Include(te => te.ProjectBrand)
-            .Include(te => te.Media)
-            .Include(te => te.JobType)
-            .Where(te => createdIds.Contains(te.Id))
-            .ToListAsync();
-
-        return _mapper.Map<IEnumerable<TimeEntryDto>>(entriesWithDetails);
+        return timeEntries.Select(te => _mapper.Map<TimeEntryDto>(te));
     }
 
     public async Task<IEnumerable<TimeEntryDto>> UpdateBulkAsync(
         IEnumerable<(long Id, UpdateTimeEntryDto Dto)> updates,
-        long requestingUserId)
+        long requestingUserId,
+        string ipAddress,
+        string userAgent)
     {
         var updatesList = updates.ToList();
 
         if (!updatesList.Any())
         {
-            return Enumerable.Empty<TimeEntryDto>();
+            _logger.LogWarning("Спроба масового оновлення порожнього списку TimeEntries");
+            return new List<TimeEntryDto>();
         }
 
-        if (updatesList.Count > 100)
-        {
-            throw new InvalidOperationException(
-                "Неможливо оновити більше 100 записів за один раз");
-        }
-
-        var updatedEntries = new List<TimeEntry>();
-
-        try
-        {
-            foreach (var (id, dto) in updatesList)
-            {
-                var existingEntry = await _timeEntryRepository.GetByIdAsync(id);
-                if (existingEntry == null)
-                {
-                    throw new KeyNotFoundException($"TimeEntry з ID {id} не знайдено");
-                }
-
-                if (!await CanUserEditEntryAsync(id, requestingUserId))
-                {
-                    throw new UnauthorizedAccessException(
-                        $"Ви не маєте прав редагувати запис ID={id}");
-                }
-
-                var updateValidationResult = await _validationService.ValidateUpdateAsync(
-                    id,
-                    existingEntry.UserId,
-                    dto.EntryDate,
-                    dto.HoursMilliseconds);
-
-                if (!updateValidationResult.IsValid)
-                {
-                    throw new InvalidOperationException(
-                        $"Помилка валідації для запису ID={id}: " +
-                        string.Join("; ", updateValidationResult.Errors));
-                }
-
-                var referencesValidationResult = await _validationService.ValidateReferencesAsync(
-                    dto.AgencyId,
-                    dto.MarketId,
-                    dto.ContractingAgencyId,
-                    dto.ClientId,
-                    dto.ProjectBrandId,
-                    dto.MediaId,
-                    dto.JobTypeId);
-
-                if (!referencesValidationResult.IsValid)
-                {
-                    throw new InvalidOperationException(
-                        $"Помилка валідації довідників для запису ID={id}: " +
-                        string.Join("; ", referencesValidationResult.Errors));
-                }
-
-                _mapper.Map(dto, existingEntry);
-                _timeEntryRepository.Update(existingEntry);
-                updatedEntries.Add(existingEntry);
-            }
-
-            await _unitOfWork.SaveChangesAsync();
-
-            _logger.LogInformation(
-                "Bulk оновлення завершено. Оновлено {Count} записів користувачем {RequestingUserId}",
-                updatedEntries.Count, requestingUserId);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex,
-                "Помилка при bulk оновленні записів користувачем {RequestingUserId}",
-                requestingUserId);
-            throw;
-        }
-
-        // Завантажуємо оновлені записи
-        var updatedIds = updatedEntries.Select(e => e.Id).ToList();
-        var entriesWithDetails = await _timeEntryRepository
+        var ids = updatesList.Select(u => u.Id).ToList();
+        var timeEntries = await _timeEntryRepository
             .GetQueryable()
-            .Include(te => te.User)
-            .Include(te => te.Agency)
-            .Include(te => te.Market)
-            .Include(te => te.ContractingAgency)
-            .Include(te => te.Client)
-            .Include(te => te.ProjectBrand)
-            .Include(te => te.Media)
-            .Include(te => te.JobType)
-            .Where(te => updatedIds.Contains(te.Id))
+            .Where(te => ids.Contains(te.Id))
             .ToListAsync();
 
-        return _mapper.Map<IEnumerable<TimeEntryDto>>(entriesWithDetails);
+        if (timeEntries.Count != updatesList.Count)
+        {
+            throw new KeyNotFoundException("Деякі TimeEntry не знайдено");
+        }
+
+        // Валідація прав для всіх записів
+        foreach (var entry in timeEntries)
+        {
+            var userPermissionResult = await _validationService.ValidateUserPermissionsAsync(
+                requestingUserId,
+                entry.UserId);
+
+            if (!userPermissionResult.IsValid)
+            {
+                throw new UnauthorizedAccessException(
+                    $"Немає прав для оновлення запису {entry.Id}");
+            }
+        }
+
+        // Оновлення записів
+        foreach (var update in updatesList)
+        {
+            var entry = timeEntries.First(te => te.Id == update.Id);
+
+            var updateValidationResult = await _validationService.ValidateUpdateAsync(
+                update.Id,
+                entry.UserId,
+                update.Dto.EntryDate,
+                update.Dto.HoursMilliseconds);
+
+            if (!updateValidationResult.IsValid)
+            {
+                throw new InvalidOperationException(
+                    $"Валідація не пройдена для запису {update.Id}");
+            }
+
+            _mapper.Map(update.Dto, entry);
+        }
+
+        _timeEntryRepository.UpdateRange(timeEntries);
+        await _unitOfWork.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "TimeEntries оновлено масово. Кількість: {Count}",
+            timeEntries.Count);
+
+        // АУДИТ В БД - бізнес-логіка
+        var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
+
+        var groupedByUser = timeEntries.GroupBy(te => te.UserId);
+
+        foreach (var userGroup in groupedByUser)
+        {
+            var targetUser = await _userRepository.GetByIdAsync(userGroup.Key);
+
+            if (requestingUser != null && targetUser != null)
+            {
+                await _auditService.LogTimeEntriesBulkOperationAsync(
+                    operation: AuditAction.BulkUpdate,
+                    userId: userGroup.Key,
+                    userName: targetUser.Name,
+                    affectedCount: userGroup.Count(),
+                    requestingUserId: requestingUserId,
+                    requestingUserName: requestingUser.Name,
+                    ipAddress: ipAddress,
+                    userAgent: userAgent);
+            }
+        }
+
+        return timeEntries.Select(te => _mapper.Map<TimeEntryDto>(te));
     }
 
-    public async Task DeleteBulkAsync(IEnumerable<long> ids, long requestingUserId)
+    public async Task DeleteBulkAsync(
+        IEnumerable<long> ids,
+        long requestingUserId,
+        string ipAddress,
+        string userAgent)
     {
         var idsList = ids.ToList();
 
         if (!idsList.Any())
         {
+            _logger.LogWarning("Спроба масового видалення порожнього списку TimeEntries");
             return;
         }
 
-        if (idsList.Count > 100)
+        var timeEntries = await _timeEntryRepository
+            .GetQueryable()
+            .Where(te => idsList.Contains(te.Id))
+            .ToListAsync();
+
+        if (timeEntries.Count != idsList.Count)
         {
-            throw new InvalidOperationException(
-                "Неможливо видалити більше 100 записів за один раз");
+            throw new KeyNotFoundException("Деякі TimeEntry не знайдено");
         }
 
-        try
+        // Валідація прав для всіх записів
+        foreach (var entry in timeEntries)
         {
-            var entriesToDelete = new List<TimeEntry>();
+            var userPermissionResult = await _validationService.ValidateUserPermissionsAsync(
+                requestingUserId,
+                entry.UserId);
 
-            foreach (var id in idsList)
+            if (!userPermissionResult.IsValid)
             {
-                var entry = await _timeEntryRepository.GetByIdAsync(id);
-                if (entry == null)
-                {
-                    throw new KeyNotFoundException($"TimeEntry з ID {id} не знайдено");
-                }
-
-                if (!await CanUserEditEntryAsync(id, requestingUserId))
-                {
-                    throw new UnauthorizedAccessException(
-                        $"Ви не маєте прав видалити запис ID={id}");
-                }
-
-                entriesToDelete.Add(entry);
+                throw new UnauthorizedAccessException(
+                    $"Немає прав для видалення запису {entry.Id}");
             }
-
-            _timeEntryRepository.DeleteRange(entriesToDelete);
-            await _unitOfWork.SaveChangesAsync();
-
-            _logger.LogInformation(
-                "Bulk видалення завершено. Видалено {Count} записів користувачем {RequestingUserId}",
-                entriesToDelete.Count, requestingUserId);
         }
-        catch (Exception ex)
+
+        // Зберігаємо інформацію для аудиту перед видаленням
+        var groupedByUser = timeEntries.GroupBy(te => te.UserId).ToList();
+
+        _timeEntryRepository.DeleteRange(timeEntries);
+        await _unitOfWork.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "TimeEntries видалено масово. Кількість: {Count}",
+            timeEntries.Count);
+
+        // АУДИТ В БД - бізнес-логіка
+        var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
+
+        foreach (var userGroup in groupedByUser)
         {
-            _logger.LogError(ex,
-                "Помилка при bulk видаленні записів користувачем {RequestingUserId}",
-                requestingUserId);
-            throw;
+            var targetUser = await _userRepository.GetByIdAsync(userGroup.Key);
+
+            if (requestingUser != null && targetUser != null)
+            {
+                await _auditService.LogTimeEntriesBulkOperationAsync(
+                    operation: AuditAction.BulkDelete,
+                    userId: userGroup.Key,
+                    userName: targetUser.Name,
+                    affectedCount: userGroup.Count(),
+                    requestingUserId: requestingUserId,
+                    requestingUserName: requestingUser.Name,
+                    ipAddress: ipAddress,
+                    userAgent: userAgent);
+            }
         }
     }
 
@@ -561,28 +740,43 @@ public class TimeEntryService : ITimeEntryService
         long userId,
         DateTime sourceDate,
         DateTime targetDate,
-        long requestingUserId)
+        long requestingUserId,
+        string ipAddress,
+        string userAgent)
     {
-        // Перевірка прав
-        var permissionResult = await _validationService.ValidateUserPermissionsAsync(
+        // 1. Валідація прав користувача
+        var userPermissionResult = await _validationService.ValidateUserPermissionsAsync(
             requestingUserId,
             userId);
 
-        if (!permissionResult.IsValid)
+        if (!userPermissionResult.IsValid)
         {
+            _logger.LogWarning(
+                "Користувач {RequestingUserId} намагався скопіювати записи для UserId {TargetUserId}",
+                requestingUserId, userId);
             throw new UnauthorizedAccessException(
-                string.Join("; ", permissionResult.Errors));
+                string.Join("; ", userPermissionResult.Errors));
         }
 
-        // Перевірка що target date не в майбутньому
-        var maxAllowedDate = DateTime.UtcNow.Date.AddDays(1);
-        if (targetDate.Date > maxAllowedDate)
+        // 2. Перевірка, що дати різні
+        if (sourceDate.Date == targetDate.Date)
         {
-            throw new InvalidOperationException(
-                ValidationConstants.NotFutureDateError);
+            _logger.LogWarning(
+                "Спроба копіювання записів на ту саму дату. UserId: {UserId}, Date: {Date}",
+                userId, sourceDate.Date);
+            throw new InvalidOperationException("Неможливо скопіювати записи на ту саму дату");
         }
 
-        // Отримуємо записи за вихідний день
+        // 3. Перевірка, що targetDate не в майбутньому
+        if (targetDate.Date > DateTime.UtcNow.Date)
+        {
+            _logger.LogWarning(
+                "Спроба копіювання записів на майбутню дату. UserId: {UserId}, TargetDate: {TargetDate}",
+                userId, targetDate.Date);
+            throw new InvalidOperationException("Неможливо скопіювати записи на майбутню дату");
+        }
+
+        // 4. Отримуємо записи з source дати
         var sourceEntries = await _timeEntryRepository
             .GetQueryable()
             .Where(te => te.UserId == userId && te.EntryDate.Date == sourceDate.Date)
@@ -591,138 +785,290 @@ public class TimeEntryService : ITimeEntryService
         if (!sourceEntries.Any())
         {
             _logger.LogInformation(
-                "Немає записів для копіювання за дату {SourceDate} для користувача {UserId}",
-                sourceDate, userId);
-            return Enumerable.Empty<TimeEntryDto>();
+                "Немає записів для копіювання. UserId: {UserId}, SourceDate: {SourceDate}",
+                userId, sourceDate.Date);
+            return new List<TimeEntryDto>();
         }
 
-        // Перевіряємо чи вистачить місця для копіювання
-        var totalHoursSource = sourceEntries.Sum(e => e.HoursMilliseconds);
-        var existingHoursTarget = await _validationService.GetTotalHoursForDayAsync(userId, targetDate);
-
-        if (existingHoursTarget + totalHoursSource > ValidationConstants.MaxHoursPerDayMs)
-        {
-            throw new InvalidOperationException(
-                $"Неможливо скопіювати записи. " +
-                $"За цільовою датою вже є {TimeHelper.FormatHours(existingHoursTarget)}, " +
-                $"копіюється {TimeHelper.FormatHours(totalHoursSource)}, " +
-                $"що перевищить ліміт 24:00");
-        }
-
-        var copiedEntries = new List<TimeEntry>();
-
-        try
-        {
-            foreach (var sourceEntry in sourceEntries)
-            {
-                var newEntry = new TimeEntry
-                {
-                    UserId = userId,
-                    EntryDate = targetDate.Date,
-                    AgencyId = sourceEntry.AgencyId,
-                    MarketId = sourceEntry.MarketId,
-                    ContractingAgencyId = sourceEntry.ContractingAgencyId,
-                    ClientId = sourceEntry.ClientId,
-                    ProjectBrandId = sourceEntry.ProjectBrandId,
-                    MediaId = sourceEntry.MediaId,
-                    JobTypeId = sourceEntry.JobTypeId,
-                    HoursMilliseconds = sourceEntry.HoursMilliseconds,
-                    Comments = $"Скопійовано з {sourceDate:yyyy-MM-dd}" +
-                               (string.IsNullOrEmpty(sourceEntry.Comments)
-                                   ? ""
-                                   : $": {sourceEntry.Comments}")
-                };
-
-                await _timeEntryRepository.AddAsync(newEntry);
-                copiedEntries.Add(newEntry);
-            }
-
-            await _unitOfWork.SaveChangesAsync();
-
-            _logger.LogInformation(
-                "Копіювання дня завершено. UserId: {UserId}, SourceDate: {SourceDate}, " +
-                "TargetDate: {TargetDate}, Count: {Count}",
-                userId, sourceDate, targetDate, copiedEntries.Count);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex,
-                "Помилка при копіюванні дня для користувача {UserId}",
-                userId);
-            throw;
-        }
-
-        // Завантажуємо скопійовані записи
-        var copiedIds = copiedEntries.Select(e => e.Id).ToList();
-        var entriesWithDetails = await _timeEntryRepository
+        // 5. Перевіряємо чи є вже записи на target дату
+        var existingEntriesOnTarget = await _timeEntryRepository
             .GetQueryable()
-            .Include(te => te.User)
-            .Include(te => te.Agency)
-            .Include(te => te.Market)
-            .Include(te => te.ContractingAgency)
-            .Include(te => te.Client)
-            .Include(te => te.ProjectBrand)
-            .Include(te => te.Media)
-            .Include(te => te.JobType)
-            .Where(te => copiedIds.Contains(te.Id))
+            .Where(te => te.UserId == userId && te.EntryDate.Date == targetDate.Date)
             .ToListAsync();
 
-        return _mapper.Map<IEnumerable<TimeEntryDto>>(entriesWithDetails);
+        if (existingEntriesOnTarget.Any())
+        {
+            _logger.LogWarning(
+                "На цільову дату вже існують записи. UserId: {UserId}, TargetDate: {TargetDate}, Count: {Count}",
+                userId, targetDate.Date, existingEntriesOnTarget.Count);
+            throw new InvalidOperationException(
+                $"На дату {targetDate.Date:yyyy-MM-dd} вже існують записи ({existingEntriesOnTarget.Count}). Спочатку видаліть їх.");
+        }
+
+        // 6. Створюємо нові записи на основі source
+        var newEntries = new List<TimeEntry>();
+
+        foreach (var sourceEntry in sourceEntries)
+        {
+            // Валідація кожного нового запису
+            var createValidationResult = await _validationService.ValidateCreateAsync(
+                userId,
+                targetDate,
+                sourceEntry.HoursMilliseconds);
+
+            if (!createValidationResult.IsValid)
+            {
+                _logger.LogWarning(
+                    "Валідація копіювання запису не пройдена. SourceEntryId: {SourceId}, Errors: {Errors}",
+                    sourceEntry.Id, string.Join("; ", createValidationResult.Errors));
+                throw new InvalidOperationException(
+                    $"Не вдалося скопіювати запис: {string.Join("; ", createValidationResult.Errors)}");
+            }
+
+            var newEntry = new TimeEntry
+            {
+                UserId = userId,
+                EntryDate = targetDate.Date,
+                AgencyId = sourceEntry.AgencyId,
+                MarketId = sourceEntry.MarketId,
+                ContractingAgencyId = sourceEntry.ContractingAgencyId,
+                ClientId = sourceEntry.ClientId,
+                ProjectBrandId = sourceEntry.ProjectBrandId,
+                MediaId = sourceEntry.MediaId,
+                JobTypeId = sourceEntry.JobTypeId,
+                HoursMilliseconds = sourceEntry.HoursMilliseconds,
+                Comments = sourceEntry.Comments
+            };
+
+            newEntries.Add(newEntry);
+        }
+
+        // 7. Зберігаємо нові записи
+        await _timeEntryRepository.AddRangeAsync(newEntries);
+        await _unitOfWork.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "TimeEntries скопійовано. UserId: {UserId}, From: {SourceDate}, To: {TargetDate}, Count: {Count}",
+            userId, sourceDate.Date, targetDate.Date, newEntries.Count);
+
+        // 8. АУДИТ В БД - бізнес-логіка
+        var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
+        var targetUser = await _userRepository.GetByIdAsync(userId);
+
+        if (requestingUser != null && targetUser != null)
+        {
+            await _auditService.LogTimeEntriesCopiedAsync(
+                userId: userId,
+                userName: targetUser.Name,
+                sourceDate: sourceDate.Date,
+                targetDate: targetDate.Date,
+                copiedCount: newEntries.Count,
+                copyType: "Day",
+                requestingUserId: requestingUserId,
+                requestingUserName: requestingUser.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent);
+        }
+        else
+        {
+            _logger.LogWarning(
+                "Не вдалося знайти користувачів для аудиту копіювання. RequestingUserId: {RequestingUserId}, TargetUserId: {TargetUserId}",
+                requestingUserId, userId);
+        }
+
+        return newEntries.Select(te => _mapper.Map<TimeEntryDto>(te));
     }
 
     public async Task<IEnumerable<TimeEntryDto>> CopyWeekEntriesAsync(
         long userId,
         DateTime sourceWeekStart,
         DateTime targetWeekStart,
-        long requestingUserId)
+        long requestingUserId,
+        string ipAddress,
+        string userAgent)
     {
-        // Перевірка прав
-        var permissionResult = await _validationService.ValidateUserPermissionsAsync(
+        // 1. Валідація прав користувача
+        var userPermissionResult = await _validationService.ValidateUserPermissionsAsync(
             requestingUserId,
             userId);
 
-        if (!permissionResult.IsValid)
+        if (!userPermissionResult.IsValid)
         {
+            _logger.LogWarning(
+                "Користувач {RequestingUserId} намагався скопіювати тижневі записи для UserId {TargetUserId}",
+                requestingUserId, userId);
             throw new UnauthorizedAccessException(
-                string.Join("; ", permissionResult.Errors));
+                string.Join("; ", userPermissionResult.Errors));
         }
 
-        // Нормалізуємо дати до понеділка
-        var sourceMonday = sourceWeekStart.Date.AddDays(-(int)sourceWeekStart.DayOfWeek + (int)DayOfWeek.Monday);
-        var targetMonday = targetWeekStart.Date.AddDays(-(int)targetWeekStart.DayOfWeek + (int)DayOfWeek.Monday);
-        var allCopiedEntries = new List<TimeEntryDto>();
+        // 2. Нормалізуємо дати до початку тижня (понеділок)
+        var normalizedSourceStart =
+            sourceWeekStart.Date.AddDays(-(int)sourceWeekStart.DayOfWeek + (int)DayOfWeek.Monday);
+        var normalizedTargetStart =
+            targetWeekStart.Date.AddDays(-(int)targetWeekStart.DayOfWeek + (int)DayOfWeek.Monday);
 
-        // Копіюємо кожен день тижня
-        for (int i = 0; i < 5; i++) // Тільки робочі дні (Пн-Пт)
+        // Якщо неділя, то це насправді попередній тиждень
+        if (sourceWeekStart.DayOfWeek == DayOfWeek.Sunday)
         {
-            var sourceDay = sourceMonday.AddDays(i);
-            var targetDay = targetMonday.AddDays(i);
+            normalizedSourceStart = normalizedSourceStart.AddDays(-7);
+        }
 
-            try
+        if (targetWeekStart.DayOfWeek == DayOfWeek.Sunday)
+        {
+            normalizedTargetStart = normalizedTargetStart.AddDays(-7);
+        }
+
+        var sourceWeekEnd = normalizedSourceStart.AddDays(6); // Неділя
+        var targetWeekEnd = normalizedTargetStart.AddDays(6);
+
+        // 3. Перевірка, що тижні різні
+        if (normalizedSourceStart == normalizedTargetStart)
+        {
+            _logger.LogWarning(
+                "Спроба копіювання записів на той самий тиждень. UserId: {UserId}, WeekStart: {WeekStart}",
+                userId, normalizedSourceStart);
+            throw new InvalidOperationException("Неможливо скопіювати записи на той самий тиждень");
+        }
+
+        // 4. Перевірка, що targetWeek не в майбутньому
+        if (normalizedTargetStart > DateTime.UtcNow.Date)
+        {
+            _logger.LogWarning(
+                "Спроба копіювання записів на майбутній тиждень. UserId: {UserId}, TargetWeekStart: {TargetWeekStart}",
+                userId, normalizedTargetStart);
+            throw new InvalidOperationException("Неможливо скопіювати записи на майбутній тиждень");
+        }
+
+        // 5. Отримуємо всі записи з source тижня
+        var sourceEntries = await _timeEntryRepository
+            .GetQueryable()
+            .Where(te => te.UserId == userId
+                         && te.EntryDate.Date >= normalizedSourceStart
+                         && te.EntryDate.Date <= sourceWeekEnd)
+            .OrderBy(te => te.EntryDate)
+            .ToListAsync();
+
+        if (!sourceEntries.Any())
+        {
+            _logger.LogInformation(
+                "Немає записів для копіювання. UserId: {UserId}, SourceWeekStart: {SourceWeekStart}",
+                userId, normalizedSourceStart);
+            return new List<TimeEntryDto>();
+        }
+
+        // 6. Перевіряємо чи є вже записи на target тиждень
+        var existingEntriesOnTarget = await _timeEntryRepository
+            .GetQueryable()
+            .Where(te => te.UserId == userId
+                         && te.EntryDate.Date >= normalizedTargetStart
+                         && te.EntryDate.Date <= targetWeekEnd)
+            .ToListAsync();
+
+        if (existingEntriesOnTarget.Any())
+        {
+            _logger.LogWarning(
+                "На цільовий тиждень вже існують записи. UserId: {UserId}, TargetWeekStart: {TargetWeekStart}, Count: {Count}",
+                userId, normalizedTargetStart, existingEntriesOnTarget.Count);
+            throw new InvalidOperationException(
+                $"На тиждень з {normalizedTargetStart:yyyy-MM-dd} вже існують записи ({existingEntriesOnTarget.Count}). Спочатку видаліть їх.");
+        }
+
+        // 7. Створюємо нові записи на основі source
+        var newEntries = new List<TimeEntry>();
+
+        foreach (var sourceEntry in sourceEntries)
+        {
+            // Вираховуємо різницю днів між source та початком source тижня
+            var dayOffset = (sourceEntry.EntryDate.Date - normalizedSourceStart).Days;
+
+            // Додаємо цю різницю до target початку тижня
+            var newEntryDate = normalizedTargetStart.AddDays(dayOffset);
+
+            // Перевіряємо, що нова дата не в майбутньому
+            if (newEntryDate > DateTime.UtcNow.Date)
             {
-                var copiedDayEntries = await CopyDayEntriesAsync(
-                    userId,
-                    sourceDay,
-                    targetDay,
-                    requestingUserId);
-
-                allCopiedEntries.AddRange(copiedDayEntries);
+                _logger.LogInformation(
+                    "Пропускаємо копіювання запису на майбутню дату. SourceEntryId: {SourceId}, TargetDate: {TargetDate}",
+                    sourceEntry.Id, newEntryDate);
+                continue; // Пропускаємо майбутні дати
             }
-            catch (InvalidOperationException ex)
+
+            // Валідація кожного нового запису
+            var createValidationResult = await _validationService.ValidateCreateAsync(
+                userId,
+                newEntryDate,
+                sourceEntry.HoursMilliseconds);
+
+            if (!createValidationResult.IsValid)
             {
                 _logger.LogWarning(
-                    "Не вдалося скопіювати день {SourceDay} -> {TargetDay}: {Error}",
-                    sourceDay, targetDay, ex.Message);
-                // Продовжуємо копіювання інших днів
+                    "Валідація копіювання запису не пройдена. SourceEntryId: {SourceId}, NewDate: {NewDate}, Errors: {Errors}",
+                    sourceEntry.Id, newEntryDate, string.Join("; ", createValidationResult.Errors));
+
+                // Для тижневого копіювання продовжуємо, але логуємо помилку
+                continue;
             }
+
+            var newEntry = new TimeEntry
+            {
+                UserId = userId,
+                EntryDate = newEntryDate,
+                AgencyId = sourceEntry.AgencyId,
+                MarketId = sourceEntry.MarketId,
+                ContractingAgencyId = sourceEntry.ContractingAgencyId,
+                ClientId = sourceEntry.ClientId,
+                ProjectBrandId = sourceEntry.ProjectBrandId,
+                MediaId = sourceEntry.MediaId,
+                JobTypeId = sourceEntry.JobTypeId,
+                HoursMilliseconds = sourceEntry.HoursMilliseconds,
+                Comments = sourceEntry.Comments
+            };
+
+            newEntries.Add(newEntry);
         }
 
-        _logger.LogInformation(
-            "Копіювання тижня завершено. UserId: {UserId}, SourceWeek: {SourceWeek}, " +
-            "TargetWeek: {TargetWeek}, TotalCopied: {Count}",
-            userId, sourceMonday, targetMonday, allCopiedEntries.Count);
+        if (!newEntries.Any())
+        {
+            _logger.LogWarning(
+                "Жоден запис не пройшов валідацію для копіювання. UserId: {UserId}",
+                userId);
+            throw new InvalidOperationException("Не вдалося скопіювати жоден запис через помилки валідації");
+        }
 
-        return allCopiedEntries;
+        // 8. Зберігаємо нові записи
+        await _timeEntryRepository.AddRangeAsync(newEntries);
+        await _unitOfWork.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "TimeEntries скопійовано (тиждень). UserId: {UserId}, From: {SourceWeekStart}, To: {TargetWeekStart}, Count: {Count}",
+            userId, normalizedSourceStart, normalizedTargetStart, newEntries.Count);
+
+        // 9. АУДИТ В БД - бізнес-логіка
+        var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
+        var targetUser = await _userRepository.GetByIdAsync(userId);
+
+        if (requestingUser != null && targetUser != null)
+        {
+            await _auditService.LogTimeEntriesCopiedAsync(
+                userId: userId,
+                userName: targetUser.Name,
+                sourceDate: normalizedSourceStart,
+                targetDate: normalizedTargetStart,
+                copiedCount: newEntries.Count,
+                copyType: "Week",
+                requestingUserId: requestingUserId,
+                requestingUserName: requestingUser.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent);
+        }
+        else
+        {
+            _logger.LogWarning(
+                "Не вдалося знайти користувачів для аудиту копіювання тижня. RequestingUserId: {RequestingUserId}, TargetUserId: {TargetUserId}",
+                requestingUserId, userId);
+        }
+
+        return newEntries.Select(te => _mapper.Map<TimeEntryDto>(te));
     }
 
     public async Task<object> GetDailySummaryAsync(long userId, DateTime date)

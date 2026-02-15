@@ -202,4 +202,60 @@ public interface IAuditService
         bool isSelfChange,
         string ipAddress,
         string userAgent);
+    
+    // TimeEntry Management
+    Task LogTimeEntryCreatedAsync(
+        long timeEntryId,
+        long userId,
+        string userName,
+        DateTime entryDate,
+        long hoursMilliseconds,
+        object entryDetails,
+        long createdByUserId,
+        string createdByUserName,
+        string ipAddress,
+        string userAgent);
+
+    Task LogTimeEntryUpdatedAsync(
+        long timeEntryId,
+        long userId,
+        string userName,
+        object oldValues,
+        object newValues,
+        long updatedByUserId,
+        string updatedByUserName,
+        string ipAddress,
+        string userAgent);
+
+    Task LogTimeEntryDeletedAsync(
+        long timeEntryId,
+        long userId,
+        string userName,
+        object oldValues,
+        long deletedByUserId,
+        string deletedByUserName,
+        string ipAddress,
+        string userAgent);
+
+    Task LogTimeEntriesCopiedAsync(
+        long userId,
+        string userName,
+        DateTime sourceDate,
+        DateTime targetDate,
+        int copiedCount,
+        string copyType, // "Day" или "Week"
+        long requestingUserId,
+        string requestingUserName,
+        string ipAddress,
+        string userAgent);
+
+    Task LogTimeEntriesBulkOperationAsync(
+        string operation, // "BulkCreate", "BulkUpdate", "BulkDelete"
+        long userId,
+        string userName,
+        int affectedCount,
+        long requestingUserId,
+        string requestingUserName,
+        string ipAddress,
+        string userAgent);
 }

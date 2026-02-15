@@ -504,6 +504,243 @@ public class AuditService : IAuditService
         }
     }
 
+    public async Task LogTimeEntryCreatedAsync(
+        long timeEntryId,
+        long userId,
+        string userName,
+        DateTime entryDate,
+        long hoursMilliseconds,
+        object entryDetails,
+        long createdByUserId,
+        string createdByUserName,
+        string ipAddress,
+        string userAgent)
+    {
+        try
+        {
+            var newValues = new
+            {
+                TimeEntryId = timeEntryId,
+                UserId = userId,
+                UserName = userName,
+                EntryDate = entryDate,
+                HoursMilliseconds = hoursMilliseconds,
+                Details = entryDetails,
+                CreatedBy = createdByUserName
+            };
+
+            var auditLog = new AuditLog
+            {
+                UserId = createdByUserId,
+                UserName = createdByUserName,
+                Action = AuditAction.Create,
+                EntityName = "TimeEntry",
+                EntityId = timeEntryId,
+                NewValues = SerializeObject(newValues),
+                IpAddress = ipAddress,
+                UserAgent = userAgent,
+                Success = true
+            };
+
+            await _auditLogRepository.AddAsync(auditLog);
+            await _unitOfWork.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Audit: TimeEntry Created - ID: {TimeEntryId}, User: {UserId} ({UserName}), Date: {Date}, Hours: {Hours}ms by {CreatedBy}",
+                timeEntryId, userId, userName, entryDate, hoursMilliseconds, createdByUserName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to log audit for TimeEntry Creation - TimeEntryId: {TimeEntryId}, UserId: {UserId}",
+                timeEntryId, userId);
+        }
+    }
+
+    public async Task LogTimeEntryUpdatedAsync(
+        long timeEntryId,
+        long userId,
+        string userName,
+        object oldValues,
+        object newValues,
+        long updatedByUserId,
+        string updatedByUserName,
+        string ipAddress,
+        string userAgent)
+    {
+        try
+        {
+            var auditLog = new AuditLog
+            {
+                UserId = updatedByUserId,
+                UserName = updatedByUserName,
+                Action = AuditAction.Update,
+                EntityName = "TimeEntry",
+                EntityId = timeEntryId,
+                OldValues = SerializeObject(oldValues),
+                NewValues = SerializeObject(newValues),
+                IpAddress = ipAddress,
+                UserAgent = userAgent,
+                Success = true
+            };
+
+            await _auditLogRepository.AddAsync(auditLog);
+            await _unitOfWork.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Audit: TimeEntry Updated - ID: {TimeEntryId}, User: {UserId} ({UserName}) by {UpdatedBy}",
+                timeEntryId, userId, userName, updatedByUserName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to log audit for TimeEntry Update - TimeEntryId: {TimeEntryId}",
+                timeEntryId);
+        }
+    }
+
+    public async Task LogTimeEntryDeletedAsync(
+        long timeEntryId,
+        long userId,
+        string userName,
+        object oldValues,
+        long deletedByUserId,
+        string deletedByUserName,
+        string ipAddress,
+        string userAgent)
+    {
+        try
+        {
+            var auditLog = new AuditLog
+            {
+                UserId = deletedByUserId,
+                UserName = deletedByUserName,
+                Action = AuditAction.Delete,
+                EntityName = "TimeEntry",
+                EntityId = timeEntryId,
+                OldValues = SerializeObject(oldValues),
+                IpAddress = ipAddress,
+                UserAgent = userAgent,
+                Success = true
+            };
+
+            await _auditLogRepository.AddAsync(auditLog);
+            await _unitOfWork.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Audit: TimeEntry Deleted - ID: {TimeEntryId}, User: {UserId} ({UserName}) by {DeletedBy}",
+                timeEntryId, userId, userName, deletedByUserName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to log audit for TimeEntry Deletion - TimeEntryId: {TimeEntryId}",
+                timeEntryId);
+        }
+    }
+
+    public async Task LogTimeEntriesCopiedAsync(
+        long userId,
+        string userName,
+        DateTime sourceDate,
+        DateTime targetDate,
+        int copiedCount,
+        string copyType,
+        long requestingUserId,
+        string requestingUserName,
+        string ipAddress,
+        string userAgent)
+    {
+        try
+        {
+            var newValues = new
+            {
+                UserId = userId,
+                UserName = userName,
+                SourceDate = sourceDate,
+                TargetDate = targetDate,
+                CopiedCount = copiedCount,
+                CopyType = copyType,
+                RequestedBy = requestingUserName
+            };
+
+            var auditLog = new AuditLog
+            {
+                UserId = requestingUserId,
+                UserName = requestingUserName,
+                Action = $"TimeEntryCopy{copyType}", // "TimeEntryCopyDay" или "TimeEntryCopyWeek"
+                EntityName = "TimeEntry",
+                EntityId = userId, // UserId как EntityId, т.к. копируем для конкретного пользователя
+                NewValues = SerializeObject(newValues),
+                IpAddress = ipAddress,
+                UserAgent = userAgent,
+                Success = true
+            };
+
+            await _auditLogRepository.AddAsync(auditLog);
+            await _unitOfWork.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Audit: TimeEntries Copied ({CopyType}) - User: {UserId} ({UserName}), From: {SourceDate}, To: {TargetDate}, Count: {Count} by {RequestedBy}",
+                copyType, userId, userName, sourceDate, targetDate, copiedCount, requestingUserName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to log audit for TimeEntries Copy - UserId: {UserId}, CopyType: {CopyType}",
+                userId, copyType);
+        }
+    }
+
+    public async Task LogTimeEntriesBulkOperationAsync(
+        string operation,
+        long userId,
+        string userName,
+        int affectedCount,
+        long requestingUserId,
+        string requestingUserName,
+        string ipAddress,
+        string userAgent)
+    {
+        try
+        {
+            var newValues = new
+            {
+                Operation = operation,
+                UserId = userId,
+                UserName = userName,
+                AffectedCount = affectedCount,
+                RequestedBy = requestingUserName
+            };
+
+            var auditLog = new AuditLog
+            {
+                UserId = requestingUserId,
+                UserName = requestingUserName,
+                Action = operation, // "BulkCreate", "BulkUpdate", "BulkDelete"
+                EntityName = "TimeEntry",
+                EntityId = userId,
+                NewValues = SerializeObject(newValues),
+                IpAddress = ipAddress,
+                UserAgent = userAgent,
+                Success = true
+            };
+
+            await _auditLogRepository.AddAsync(auditLog);
+            await _unitOfWork.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Audit: TimeEntries {Operation} - User: {UserId} ({UserName}), Count: {AffectedCount} by {RequestedBy}",
+                operation, userId, userName, affectedCount, requestingUserName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to log audit for TimeEntries Bulk Operation - Operation: {Operation}, UserId: {UserId}",
+                operation, userId);
+        }
+    }
+
     public async Task LogDictionaryCreatedAsync(
         string dictionaryType,
         long dictionaryId,
