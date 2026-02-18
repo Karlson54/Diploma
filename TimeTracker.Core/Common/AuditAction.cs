@@ -33,4 +33,7 @@ public static class AuditAction
     public const string BulkCreate = "BulkCreate";
     public const string BulkUpdate = "BulkUpdate";
     public const string BulkDelete = "BulkDelete";
+    
+    // Report Operations
+    public const string ReportExported = "ReportExported";
 }

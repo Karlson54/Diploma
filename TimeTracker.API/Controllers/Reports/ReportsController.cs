@@ -70,11 +70,14 @@ public class ReportsController : ControllerBase
         try
         {
             var currentUserId = GetCurrentUserId();
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
             var fileBytes = await _exportService.ExportUserLoadReportToExcelAsync(
-                userId, fromDate, toDate, currentUserId, locale);
+                userId, fromDate, toDate, currentUserId, ipAddress, userAgent, locale);
 
             var fileName = $"UserLoadReport_{userId}_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.xlsx";
-            
+
             return File(
                 fileBytes,
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -104,11 +107,14 @@ public class ReportsController : ControllerBase
         try
         {
             var currentUserId = GetCurrentUserId();
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
             var fileBytes = await _exportService.ExportUserLoadReportToCsvAsync(
-                userId, fromDate, toDate, currentUserId, locale);
+                userId, fromDate, toDate, currentUserId, ipAddress, userAgent, locale);
 
             var fileName = $"UserLoadReport_{userId}_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.csv";
-            
+
             return File(fileBytes, "text/csv", fileName);
         }
         catch (UnauthorizedAccessException ex)
@@ -168,11 +174,14 @@ public class ReportsController : ControllerBase
         try
         {
             var currentUserId = GetCurrentUserId();
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
             var fileBytes = await _exportService.ExportTeamLoadReportToExcelAsync(
-                agencyId, fromDate, toDate, currentUserId, locale);
+                agencyId, fromDate, toDate, currentUserId, ipAddress, userAgent, locale);
 
             var fileName = $"TeamLoadReport_{agencyId}_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.xlsx";
-            
+
             return File(
                 fileBytes,
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -202,11 +211,14 @@ public class ReportsController : ControllerBase
         try
         {
             var currentUserId = GetCurrentUserId();
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
             var fileBytes = await _exportService.ExportTeamLoadReportToCsvAsync(
-                agencyId, fromDate, toDate, currentUserId, locale);
+                agencyId, fromDate, toDate, currentUserId, ipAddress, userAgent, locale);
 
             var fileName = $"TeamLoadReport_{agencyId}_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.csv";
-            
+
             return File(fileBytes, "text/csv", fileName);
         }
         catch (UnauthorizedAccessException ex)
@@ -266,11 +278,14 @@ public class ReportsController : ControllerBase
         try
         {
             var currentUserId = GetCurrentUserId();
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
             var fileBytes = await _exportService.ExportClientReportToExcelAsync(
-                clientId, fromDate, toDate, currentUserId, locale);
+                clientId, fromDate, toDate, currentUserId, ipAddress, userAgent, locale);
 
             var fileName = $"ClientReport_{clientId}_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.xlsx";
-            
+
             return File(
                 fileBytes,
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -300,11 +315,14 @@ public class ReportsController : ControllerBase
         try
         {
             var currentUserId = GetCurrentUserId();
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
             var fileBytes = await _exportService.ExportClientReportToCsvAsync(
-                clientId, fromDate, toDate, currentUserId, locale);
+                clientId, fromDate, toDate, currentUserId, ipAddress, userAgent, locale);
 
             var fileName = $"ClientReport_{clientId}_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.csv";
-            
+
             return File(fileBytes, "text/csv", fileName);
         }
         catch (UnauthorizedAccessException ex)
@@ -428,11 +446,14 @@ public class ReportsController : ControllerBase
         try
         {
             var currentUserId = GetCurrentUserId();
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
             var fileBytes = await _exportService.ExportTimeSummaryReportToExcelAsync(
-                fromDate, toDate, currentUserId, agencyId, clientId, locale);
+                fromDate, toDate, currentUserId, ipAddress, userAgent, agencyId, clientId, locale);
 
             var fileName = $"TimeSummary_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.xlsx";
-            
+
             return File(
                 fileBytes,
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -463,11 +484,14 @@ public class ReportsController : ControllerBase
         try
         {
             var currentUserId = GetCurrentUserId();
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
             var fileBytes = await _exportService.ExportTimeSummaryReportToCsvAsync(
-                fromDate, toDate, currentUserId, agencyId, clientId, locale);
+                fromDate, toDate, currentUserId, ipAddress, userAgent, agencyId, clientId, locale);
 
             var fileName = $"TimeSummary_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.csv";
-            
+
             return File(fileBytes, "text/csv", fileName);
         }
         catch (UnauthorizedAccessException ex)
@@ -476,21 +500,58 @@ public class ReportsController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Помилка при експорті зведеного звіту");
+            _logger.LogError(ex, "Помилка при експорті зведеного звіту CSV");
             return BadRequest(new { Message = ex.Message });
         }
     }
 
+    // ==================== HELPER METHODS ====================
+
     private long GetCurrentUserId()
     {
         var userIdClaim = User.FindFirst("userId")?.Value;
-        
+
         if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
         {
-            _logger.LogError("Не вдалося отримати userId з токена");
+            _logger.LogWarning("Невалідний токен: не вдалося отримати userId");
             throw new UnauthorizedAccessException("Невалідний токен");
         }
 
         return userId;
+    }
+
+    private string GetIpAddress()
+    {
+        var forwardedFor = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(forwardedFor))
+        {
+            var ips = forwardedFor.Split(',', StringSplitOptions.RemoveEmptyEntries);
+            if (ips.Length > 0)
+            {
+                return ips[0].Trim();
+            }
+        }
+
+        var realIp = HttpContext.Request.Headers["X-Real-IP"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(realIp))
+        {
+            return realIp.Trim();
+        }
+
+        return HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+    }
+
+    private string GetUserAgent()
+    {
+        var userAgent = HttpContext.Request.Headers["User-Agent"].FirstOrDefault();
+
+        if (string.IsNullOrEmpty(userAgent))
+        {
+            return "Unknown";
+        }
+
+        return userAgent.Length > 500
+            ? userAgent.Substring(0, 500)
+            : userAgent;
     }
 }

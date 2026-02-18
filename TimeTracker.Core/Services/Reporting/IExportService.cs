@@ -8,6 +8,8 @@ public interface IExportService
         DateTime fromDate,
         DateTime toDate,
         long requestingUserId,
+        string ipAddress,
+        string userAgent,
         string locale = "uk");
 
     Task<byte[]> ExportTeamLoadReportToExcelAsync(
@@ -15,6 +17,8 @@ public interface IExportService
         DateTime fromDate,
         DateTime toDate,
         long requestingUserId,
+        string ipAddress,
+        string userAgent,
         string locale = "uk");
 
     Task<byte[]> ExportClientReportToExcelAsync(
@@ -22,12 +26,16 @@ public interface IExportService
         DateTime fromDate,
         DateTime toDate,
         long requestingUserId,
+        string ipAddress,
+        string userAgent,
         string locale = "uk");
 
     Task<byte[]> ExportTimeSummaryReportToExcelAsync(
         DateTime fromDate,
         DateTime toDate,
         long requestingUserId,
+        string ipAddress,
+        string userAgent,
         long? agencyId = null,
         long? clientId = null,
         string locale = "uk");
@@ -38,6 +46,8 @@ public interface IExportService
         DateTime fromDate,
         DateTime toDate,
         long requestingUserId,
+        string ipAddress,
+        string userAgent,
         string locale = "uk");
 
     Task<byte[]> ExportTeamLoadReportToCsvAsync(
@@ -45,6 +55,8 @@ public interface IExportService
         DateTime fromDate,
         DateTime toDate,
         long requestingUserId,
+        string ipAddress,
+        string userAgent,
         string locale = "uk");
 
     Task<byte[]> ExportClientReportToCsvAsync(
@@ -52,12 +64,16 @@ public interface IExportService
         DateTime fromDate,
         DateTime toDate,
         long requestingUserId,
+        string ipAddress,
+        string userAgent,
         string locale = "uk");
 
     Task<byte[]> ExportTimeSummaryReportToCsvAsync(
         DateTime fromDate,
         DateTime toDate,
         long requestingUserId,
+        string ipAddress,
+        string userAgent,
         long? agencyId = null,
         long? clientId = null,
         string locale = "uk");

@@ -202,7 +202,7 @@ public interface IAuditService
         bool isSelfChange,
         string ipAddress,
         string userAgent);
-    
+
     // TimeEntry Management
     Task LogTimeEntryCreatedAsync(
         long timeEntryId,
@@ -243,14 +243,14 @@ public interface IAuditService
         DateTime sourceDate,
         DateTime targetDate,
         int copiedCount,
-        string copyType, // "Day" или "Week"
+        string copyType,
         long requestingUserId,
         string requestingUserName,
         string ipAddress,
         string userAgent);
 
     Task LogTimeEntriesBulkOperationAsync(
-        string operation, // "BulkCreate", "BulkUpdate", "BulkDelete"
+        string operation,
         long userId,
         string userName,
         int affectedCount,
@@ -258,4 +258,16 @@ public interface IAuditService
         string requestingUserName,
         string ipAddress,
         string userAgent);
+
+    // Report Export (НОВОЕ)
+    Task LogReportExportedAsync(
+        string reportType,
+        string exportFormat,
+        long requestingUserId,
+        string requestingUserName,
+        object reportParams,
+        string ipAddress,
+        string userAgent,
+        bool success = true,
+        string? errorMessage = null);
 }

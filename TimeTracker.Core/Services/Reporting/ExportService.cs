@@ -6,6 +6,7 @@ using CsvHelper.Configuration;
 using Microsoft.Extensions.Logging;
 using TimeTracker.Core.DTOs.Reports;
 using TimeTracker.Core.DTOs.Reports.Common;
+using TimeTracker.Core.Services.Audit;
 using static TimeTracker.Core.Common.ExportConstants;
 
 namespace TimeTracker.Core.Services.Reporting;
@@ -13,13 +14,16 @@ namespace TimeTracker.Core.Services.Reporting;
 public class ExportService : IExportService
 {
     private readonly IReportService _reportService;
+    private readonly IAuditService _auditService;
     private readonly ILogger<ExportService> _logger;
 
     public ExportService(
         IReportService reportService,
+        IAuditService auditService,
         ILogger<ExportService> logger)
     {
         _reportService = reportService;
+        _auditService = auditService;
         _logger = logger;
     }
 
@@ -28,57 +32,93 @@ public class ExportService : IExportService
         DateTime fromDate,
         DateTime toDate,
         long requestingUserId,
+        string ipAddress,
+        string userAgent,
         string locale = "uk")
     {
-        var report = await _reportService.GetUserLoadReportAsync(
-            userId, fromDate, toDate, requestingUserId);
-
-        using var workbook = new XLWorkbook();
-        var sheetName = locale.ToLower() == "uk" ? "Навантаження користувача" : "User Load Report";
-        var worksheet = workbook.Worksheets.Add(sheetName);
-
-        var currentRow = 1;
-
-        currentRow = AddReportTitle(
-            worksheet,
-            currentRow,
-            GetLocalizedText("User Load Report", locale),
-            locale);
-
-        currentRow = AddUserInfo(worksheet, currentRow, report, locale);
-        currentRow = AddPeriodInfo(worksheet, currentRow, report.FromDate, report.ToDate, locale);
-        currentRow++;
-
-        currentRow = AddUserStatistics(worksheet, currentRow, report, locale);
-        currentRow++;
-
-        if (report.DailyBreakdown.Any())
+        try
         {
-            currentRow = AddDailyBreakdown(worksheet, currentRow, report.DailyBreakdown, locale);
+            var report = await _reportService.GetUserLoadReportAsync(
+                userId, fromDate, toDate, requestingUserId);
+
+            using var workbook = new XLWorkbook();
+            var sheetName = locale.ToLower() == "uk" ? "Навантаження користувача" : "User Load Report";
+            var worksheet = workbook.Worksheets.Add(sheetName);
+
+            var currentRow = 1;
+
+            currentRow = AddReportTitle(
+                worksheet,
+                currentRow,
+                GetLocalizedText("User Load Report", locale),
+                locale);
+
+            currentRow = AddUserInfo(worksheet, currentRow, report, locale);
+            currentRow = AddPeriodInfo(worksheet, currentRow, report.FromDate, report.ToDate, locale);
             currentRow++;
-        }
 
-        if (report.ClientBreakdown.Any())
-        {
-            currentRow = AddClientBreakdown(worksheet, currentRow, report.ClientBreakdown, locale);
+            currentRow = AddUserStatistics(worksheet, currentRow, report, locale);
             currentRow++;
-        }
 
-        if (report.JobTypeBreakdown.Any())
+            if (report.DailyBreakdown.Any())
+            {
+                currentRow = AddDailyBreakdown(worksheet, currentRow, report.DailyBreakdown, locale);
+                currentRow++;
+            }
+
+            if (report.ClientBreakdown.Any())
+            {
+                currentRow = AddClientBreakdown(worksheet, currentRow, report.ClientBreakdown, locale);
+                currentRow++;
+            }
+
+            if (report.JobTypeBreakdown.Any())
+            {
+                currentRow = AddJobTypeBreakdown(worksheet, currentRow, report.JobTypeBreakdown, locale);
+            }
+
+            worksheet.Columns().AdjustToContents();
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+
+            _logger.LogInformation(
+                "Експортовано User Load Report для користувача {UserId} у форматі Excel",
+                userId);
+
+            // Аудит успішного експорту
+            await _auditService.LogReportExportedAsync(
+                reportType: "UserLoad",
+                exportFormat: "Excel",
+                requestingUserId: requestingUserId,
+                requestingUserName: report.UserName,
+                reportParams: new { UserId = userId, FromDate = fromDate, ToDate = toDate },
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: true);
+
+            return stream.ToArray();
+        }
+        catch (Exception ex)
         {
-            currentRow = AddJobTypeBreakdown(worksheet, currentRow, report.JobTypeBreakdown, locale);
+            _logger.LogError(ex,
+                "Помилка при експорті User Load Report для користувача {UserId}",
+                userId);
+
+            // Аудит неуспішного експорту
+            await _auditService.LogReportExportedAsync(
+                reportType: "UserLoad",
+                exportFormat: "Excel",
+                requestingUserId: requestingUserId,
+                requestingUserName: "Unknown",
+                reportParams: new { UserId = userId, FromDate = fromDate, ToDate = toDate },
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: false,
+                errorMessage: ex.Message);
+
+            throw;
         }
-
-        worksheet.Columns().AdjustToContents();
-
-        using var stream = new MemoryStream();
-        workbook.SaveAs(stream);
-
-        _logger.LogInformation(
-            "Експортовано User Load Report для користувача {UserId} у форматі Excel",
-            userId);
-
-        return stream.ToArray();
     }
 
     public async Task<byte[]> ExportTeamLoadReportToExcelAsync(
@@ -86,54 +126,90 @@ public class ExportService : IExportService
         DateTime fromDate,
         DateTime toDate,
         long requestingUserId,
+        string ipAddress,
+        string userAgent,
         string locale = "uk")
     {
-        var report = await _reportService.GetTeamLoadReportAsync(
-            agencyId, fromDate, toDate, requestingUserId);
-
-        using var workbook = new XLWorkbook();
-        var worksheet = workbook.Worksheets.Add(GetLocalizedText("Team Load Report", locale));
-
-        var currentRow = 1;
-
-        currentRow = AddReportTitle(
-            worksheet,
-            currentRow,
-            GetLocalizedText("Team Load Report", locale),
-            locale);
-
-        worksheet.Cell(currentRow, 1).Value = GetLocalizedText("Agency", locale) + ":";
-        worksheet.Cell(currentRow, 1).Style.Font.Bold = true;
-        worksheet.Cell(currentRow, 2).Value = report.AgencyName;
-        currentRow++;
-
-        currentRow = AddPeriodInfo(worksheet, currentRow, report.FromDate, report.ToDate, locale);
-        currentRow++;
-
-        currentRow = AddTeamStatistics(worksheet, currentRow, report, locale);
-        currentRow++;
-
-        if (report.MembersLoad.Any())
+        try
         {
-            currentRow = AddMembersLoad(worksheet, currentRow, report.MembersLoad, locale);
+            var report = await _reportService.GetTeamLoadReportAsync(
+                agencyId, fromDate, toDate, requestingUserId);
+
+            using var workbook = new XLWorkbook();
+            var worksheet = workbook.Worksheets.Add(GetLocalizedText("Team Load Report", locale));
+
+            var currentRow = 1;
+
+            currentRow = AddReportTitle(
+                worksheet,
+                currentRow,
+                GetLocalizedText("Team Load Report", locale),
+                locale);
+
+            worksheet.Cell(currentRow, 1).Value = GetLocalizedText("Agency", locale) + ":";
+            worksheet.Cell(currentRow, 1).Style.Font.Bold = true;
+            worksheet.Cell(currentRow, 2).Value = report.AgencyName;
             currentRow++;
-        }
 
-        if (report.TopClients.Any())
+            currentRow = AddPeriodInfo(worksheet, currentRow, report.FromDate, report.ToDate, locale);
+            currentRow++;
+
+            currentRow = AddTeamStatistics(worksheet, currentRow, report, locale);
+            currentRow++;
+
+            if (report.MembersLoad.Any())
+            {
+                currentRow = AddMembersLoad(worksheet, currentRow, report.MembersLoad, locale);
+                currentRow++;
+            }
+
+            if (report.TopClients.Any())
+            {
+                currentRow = AddTopClientsFromClientBreakdown(worksheet, currentRow, report.TopClients, locale);
+            }
+
+            worksheet.Columns().AdjustToContents();
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+
+            _logger.LogInformation(
+                "Експортовано Team Load Report для агентства {AgencyId} у форматі Excel",
+                agencyId);
+
+            // Аудит успішного експорту
+            await _auditService.LogReportExportedAsync(
+                reportType: "TeamLoad",
+                exportFormat: "Excel",
+                requestingUserId: requestingUserId,
+                requestingUserName: report.AgencyName,
+                reportParams: new { AgencyId = agencyId, FromDate = fromDate, ToDate = toDate },
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: true);
+
+            return stream.ToArray();
+        }
+        catch (Exception ex)
         {
-            currentRow = AddTopClientsFromClientBreakdown(worksheet, currentRow, report.TopClients, locale);
+            _logger.LogError(ex,
+                "Помилка при експорті Team Load Report для агентства {AgencyId}",
+                agencyId);
+
+            // Аудит неуспішного експорту
+            await _auditService.LogReportExportedAsync(
+                reportType: "TeamLoad",
+                exportFormat: "Excel",
+                requestingUserId: requestingUserId,
+                requestingUserName: "Unknown",
+                reportParams: new { AgencyId = agencyId, FromDate = fromDate, ToDate = toDate },
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: false,
+                errorMessage: ex.Message);
+
+            throw;
         }
-
-        worksheet.Columns().AdjustToContents();
-
-        using var stream = new MemoryStream();
-        workbook.SaveAs(stream);
-
-        _logger.LogInformation(
-            "Експортовано Team Load Report для агентства {AgencyId} у форматі Excel",
-            agencyId);
-
-        return stream.ToArray();
     }
 
     public async Task<byte[]> ExportClientReportToExcelAsync(
@@ -141,128 +217,200 @@ public class ExportService : IExportService
         DateTime fromDate,
         DateTime toDate,
         long requestingUserId,
+        string ipAddress,
+        string userAgent,
         string locale = "uk")
     {
-        var report = await _reportService.GetClientReportAsync(
-            clientId, fromDate, toDate, requestingUserId);
-
-        using var workbook = new XLWorkbook();
-        var worksheet = workbook.Worksheets.Add(GetLocalizedText("Client Report", locale));
-
-        var currentRow = 1;
-
-        currentRow = AddReportTitle(
-            worksheet,
-            currentRow,
-            GetLocalizedText("Client Report", locale),
-            locale);
-
-        worksheet.Cell(currentRow, 1).Value = GetLocalizedText("Client", locale) + ":";
-        worksheet.Cell(currentRow, 1).Style.Font.Bold = true;
-        worksheet.Cell(currentRow, 2).Value = report.ClientName;
-        currentRow++;
-
-        if (!string.IsNullOrEmpty(report.ClientEmail))
+        try
         {
-            worksheet.Cell(currentRow, 1).Value = "Email:";
+            var report = await _reportService.GetClientReportAsync(
+                clientId, fromDate, toDate, requestingUserId);
+
+            using var workbook = new XLWorkbook();
+            var worksheet = workbook.Worksheets.Add(GetLocalizedText("Client Report", locale));
+
+            var currentRow = 1;
+
+            currentRow = AddReportTitle(
+                worksheet,
+                currentRow,
+                GetLocalizedText("Client Report", locale),
+                locale);
+
+            worksheet.Cell(currentRow, 1).Value = GetLocalizedText("Client", locale) + ":";
             worksheet.Cell(currentRow, 1).Style.Font.Bold = true;
-            worksheet.Cell(currentRow, 2).Value = report.ClientEmail;
+            worksheet.Cell(currentRow, 2).Value = report.ClientName;
             currentRow++;
-        }
 
-        currentRow = AddPeriodInfo(worksheet, currentRow, report.FromDate, report.ToDate, locale);
-        currentRow++;
+            if (!string.IsNullOrEmpty(report.ClientEmail))
+            {
+                worksheet.Cell(currentRow, 1).Value = "Email:";
+                worksheet.Cell(currentRow, 1).Style.Font.Bold = true;
+                worksheet.Cell(currentRow, 2).Value = report.ClientEmail;
+                currentRow++;
+            }
 
-        currentRow = AddClientStatistics(worksheet, currentRow, report, locale);
-        currentRow++;
-
-        if (report.ProjectBreakdown.Any())
-        {
-            currentRow = AddProjectBreakdown(worksheet, currentRow, report.ProjectBreakdown, locale);
+            currentRow = AddPeriodInfo(worksheet, currentRow, report.FromDate, report.ToDate, locale);
             currentRow++;
-        }
 
-        if (report.JobTypeBreakdown.Any())
+            currentRow = AddClientStatistics(worksheet, currentRow, report, locale);
+            currentRow++;
+
+            if (report.ProjectBreakdown.Any())
+            {
+                currentRow = AddProjectBreakdown(worksheet, currentRow, report.ProjectBreakdown, locale);
+                currentRow++;
+            }
+
+            if (report.JobTypeBreakdown.Any())
+            {
+                currentRow = AddJobTypeBreakdown(worksheet, currentRow, report.JobTypeBreakdown, locale);
+            }
+
+            worksheet.Columns().AdjustToContents();
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+
+            _logger.LogInformation(
+                "Експортовано Client Report для клієнта {ClientId} у форматі Excel",
+                clientId);
+
+            // Аудит успішного експорту
+            await _auditService.LogReportExportedAsync(
+                reportType: "Client",
+                exportFormat: "Excel",
+                requestingUserId: requestingUserId,
+                requestingUserName: report.ClientName,
+                reportParams: new { ClientId = clientId, FromDate = fromDate, ToDate = toDate },
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: true);
+
+            return stream.ToArray();
+        }
+        catch (Exception ex)
         {
-            currentRow = AddJobTypeBreakdown(worksheet, currentRow, report.JobTypeBreakdown, locale);
+            _logger.LogError(ex,
+                "Помилка при експорті Client Report для клієнта {ClientId}",
+                clientId);
+
+            // Аудит неуспішного експорту
+            await _auditService.LogReportExportedAsync(
+                reportType: "Client",
+                exportFormat: "Excel",
+                requestingUserId: requestingUserId,
+                requestingUserName: "Unknown",
+                reportParams: new { ClientId = clientId, FromDate = fromDate, ToDate = toDate },
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: false,
+                errorMessage: ex.Message);
+
+            throw;
         }
-
-        worksheet.Columns().AdjustToContents();
-
-        using var stream = new MemoryStream();
-        workbook.SaveAs(stream);
-
-        _logger.LogInformation(
-            "Експортовано Client Report для клієнта {ClientId} у форматі Excel",
-            clientId);
-
-        return stream.ToArray();
     }
 
     public async Task<byte[]> ExportTimeSummaryReportToExcelAsync(
         DateTime fromDate,
         DateTime toDate,
         long requestingUserId,
+        string ipAddress,
+        string userAgent,
         long? agencyId = null,
         long? clientId = null,
         string locale = "uk")
     {
-        var report = await _reportService.GetTimeSummaryReportAsync(
-            fromDate, toDate, requestingUserId, agencyId, clientId);
-
-        using var workbook = new XLWorkbook();
-        var worksheet = workbook.Worksheets.Add(GetLocalizedText("Summary Report", locale));
-
-        var currentRow = 1;
-
-        currentRow = AddReportTitle(
-            worksheet,
-            currentRow,
-            GetLocalizedText("Time Summary Report", locale),
-            locale);
-
-        if (agencyId.HasValue)
+        try
         {
-            worksheet.Cell(currentRow, 1).Value = GetLocalizedText("Agency", locale) + ":";
-            worksheet.Cell(currentRow, 1).Style.Font.Bold = true;
-            worksheet.Cell(currentRow, 2).Value = report.AgencyName ?? "";
+            var report = await _reportService.GetTimeSummaryReportAsync(
+                fromDate, toDate, requestingUserId, agencyId, clientId);
+
+            using var workbook = new XLWorkbook();
+            var sheetName = locale.ToLower() == "uk" ? "Зведений звіт" : "Time Summary Report";
+            var worksheet = workbook.Worksheets.Add(sheetName);
+
+            var currentRow = 1;
+
+            currentRow = AddReportTitle(
+                worksheet,
+                currentRow,
+                GetLocalizedText("Time Summary Report", locale),
+                locale);
+
+            if (agencyId.HasValue)
+            {
+                worksheet.Cell(currentRow, 1).Value = GetLocalizedText("Agency", locale) + ":";
+                worksheet.Cell(currentRow, 1).Style.Font.Bold = true;
+                worksheet.Cell(currentRow, 2).Value = report.AgencyName ?? "";
+                currentRow++;
+            }
+
+            if (clientId.HasValue)
+            {
+                worksheet.Cell(currentRow, 1).Value = GetLocalizedText("Client", locale) + ":";
+                worksheet.Cell(currentRow, 1).Style.Font.Bold = true;
+                worksheet.Cell(currentRow, 2).Value = report.ClientName ?? "";
+                currentRow++;
+            }
+
+            currentRow = AddPeriodInfo(worksheet, currentRow, report.FromDate, report.ToDate, locale);
             currentRow++;
-        }
 
-        if (clientId.HasValue)
-        {
-            worksheet.Cell(currentRow, 1).Value = GetLocalizedText("Client", locale) + ":";
-            worksheet.Cell(currentRow, 1).Style.Font.Bold = true;
-            worksheet.Cell(currentRow, 2).Value = report.ClientName ?? "";
+            currentRow = AddSummaryStatistics(worksheet, currentRow, report, locale);
             currentRow++;
+
+            if (report.TopUsers.Any())
+            {
+                currentRow = AddTopUsers(worksheet, currentRow, report.TopUsers, locale);
+                currentRow++;
+            }
+
+            if (report.TopClients.Any())
+            {
+                currentRow = AddTopClientsFromClientSummary(worksheet, currentRow, report.TopClients, locale);
+            }
+
+            worksheet.Columns().AdjustToContents();
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+
+            _logger.LogInformation(
+                "Експортовано Time Summary Report у форматі Excel");
+
+            // Аудит успішного експорту
+            await _auditService.LogReportExportedAsync(
+                reportType: "TimeSummary",
+                exportFormat: "Excel",
+                requestingUserId: requestingUserId,
+                requestingUserName: report.AgencyName ?? "System",
+                reportParams: new { FromDate = fromDate, ToDate = toDate, AgencyId = agencyId, ClientId = clientId },
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: true);
+
+            return stream.ToArray();
         }
-
-        currentRow = AddPeriodInfo(worksheet, currentRow, report.FromDate, report.ToDate, locale);
-        currentRow++;
-
-        currentRow = AddSummaryStatistics(worksheet, currentRow, report, locale);
-        currentRow++;
-
-        if (report.TopUsers.Any())
+        catch (Exception ex)
         {
-            currentRow = AddTopUsers(worksheet, currentRow, report.TopUsers, locale);
-            currentRow++;
+            _logger.LogError(ex,
+                "Помилка при експорті Time Summary Report");
+
+            // Аудит неуспішного експорту
+            await _auditService.LogReportExportedAsync(
+                reportType: "TimeSummary",
+                exportFormat: "Excel",
+                requestingUserId: requestingUserId,
+                requestingUserName: "Unknown",
+                reportParams: new { FromDate = fromDate, ToDate = toDate, AgencyId = agencyId, ClientId = clientId },
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: false,
+                errorMessage: ex.Message);
+
+            throw;
         }
-
-        if (report.TopClients.Any())
-        {
-            currentRow = AddTopClientsFromClientSummary(worksheet, currentRow, report.TopClients, locale);
-        }
-
-        worksheet.Columns().AdjustToContents();
-
-        using var stream = new MemoryStream();
-        workbook.SaveAs(stream);
-
-        _logger.LogInformation(
-            "Експортовано Time Summary Report у форматі Excel");
-
-        return stream.ToArray();
     }
 
     public async Task<byte[]> ExportUserLoadReportToCsvAsync(
@@ -270,28 +418,70 @@ public class ExportService : IExportService
         DateTime fromDate,
         DateTime toDate,
         long requestingUserId,
+        string ipAddress,
+        string userAgent,
         string locale = "uk")
     {
-        var report = await _reportService.GetUserLoadReportAsync(
-            userId, fromDate, toDate, requestingUserId);
-
-        var records = new List<UserLoadCsvRecord>();
-
-        foreach (var day in report.DailyBreakdown)
+        try
         {
-            records.Add(new UserLoadCsvRecord
-            {
-                UserName = report.UserName,
-                UserEmail = report.UserEmail,
-                AgencyName = report.AgencyName,
-                Date = day.Date.ToString("yyyy-MM-dd"),
-                DayOfWeek = day.DayOfWeek,
-                Hours = day.Hours,
-                EntriesCount = day.EntriesCount
-            });
-        }
+            var report = await _reportService.GetUserLoadReportAsync(
+                userId, fromDate, toDate, requestingUserId);
 
-        return ExportToCsvInternal(records, locale);
+            var records = new List<UserLoadCsvRecord>();
+
+            foreach (var day in report.DailyBreakdown)
+            {
+                records.Add(new UserLoadCsvRecord
+                {
+                    UserName = report.UserName,
+                    UserEmail = report.UserEmail,
+                    AgencyName = report.AgencyName,
+                    Date = day.Date.ToString("yyyy-MM-dd"),
+                    DayOfWeek = day.DayOfWeek,
+                    Hours = day.Hours,
+                    EntriesCount = day.EntriesCount
+                });
+            }
+
+            var result = ExportToCsvInternal(records, locale);
+
+            _logger.LogInformation(
+                "Експортовано User Load Report для користувача {UserId} у форматі CSV",
+                userId);
+
+            // Аудит успішного експорту
+            await _auditService.LogReportExportedAsync(
+                reportType: "UserLoad",
+                exportFormat: "CSV",
+                requestingUserId: requestingUserId,
+                requestingUserName: report.UserName,
+                reportParams: new { UserId = userId, FromDate = fromDate, ToDate = toDate },
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: true);
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Помилка при експорті User Load Report CSV для користувача {UserId}",
+                userId);
+
+            // Аудит неуспішного експорту
+            await _auditService.LogReportExportedAsync(
+                reportType: "UserLoad",
+                exportFormat: "CSV",
+                requestingUserId: requestingUserId,
+                requestingUserName: "Unknown",
+                reportParams: new { UserId = userId, FromDate = fromDate, ToDate = toDate },
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: false,
+                errorMessage: ex.Message);
+
+            throw;
+        }
     }
 
     public async Task<byte[]> ExportTeamLoadReportToCsvAsync(
@@ -299,24 +489,66 @@ public class ExportService : IExportService
         DateTime fromDate,
         DateTime toDate,
         long requestingUserId,
+        string ipAddress,
+        string userAgent,
         string locale = "uk")
     {
-        var report = await _reportService.GetTeamLoadReportAsync(
-            agencyId, fromDate, toDate, requestingUserId);
-
-        var records = report.MembersLoad.Select(m => new TeamLoadCsvRecord
+        try
         {
-            AgencyName = report.AgencyName,
-            UserName = m.UserName,
-            UserEmail = m.UserEmail,
-            TotalHours = m.TotalHours,
-            EntriesCount = m.EntriesCount,
-            WorkingDays = m.WorkingDays,
-            AverageHoursPerDay = m.AverageHoursPerDay,
-            LoadPercentage = m.LoadPercentage
-        }).ToList();
+            var report = await _reportService.GetTeamLoadReportAsync(
+                agencyId, fromDate, toDate, requestingUserId);
 
-        return ExportToCsvInternal(records, locale);
+            var records = report.MembersLoad.Select(m => new TeamLoadCsvRecord
+            {
+                AgencyName = report.AgencyName,
+                UserName = m.UserName,
+                UserEmail = m.UserEmail,
+                TotalHours = m.TotalHours,
+                EntriesCount = m.EntriesCount,
+                WorkingDays = m.WorkingDays,
+                AverageHoursPerDay = m.AverageHoursPerDay,
+                LoadPercentage = m.LoadPercentage
+            }).ToList();
+
+            var result = ExportToCsvInternal(records, locale);
+
+            _logger.LogInformation(
+                "Експортовано Team Load Report для агентства {AgencyId} у форматі CSV",
+                agencyId);
+
+            // Аудит успішного експорту
+            await _auditService.LogReportExportedAsync(
+                reportType: "TeamLoad",
+                exportFormat: "CSV",
+                requestingUserId: requestingUserId,
+                requestingUserName: report.AgencyName,
+                reportParams: new { AgencyId = agencyId, FromDate = fromDate, ToDate = toDate },
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: true);
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Помилка при експорті Team Load Report CSV для агентства {AgencyId}",
+                agencyId);
+
+            // Аудит неуспішного експорту
+            await _auditService.LogReportExportedAsync(
+                reportType: "TeamLoad",
+                exportFormat: "CSV",
+                requestingUserId: requestingUserId,
+                requestingUserName: "Unknown",
+                reportParams: new { AgencyId = agencyId, FromDate = fromDate, ToDate = toDate },
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: false,
+                errorMessage: ex.Message);
+
+            throw;
+        }
     }
 
     public async Task<byte[]> ExportClientReportToCsvAsync(
@@ -324,44 +556,126 @@ public class ExportService : IExportService
         DateTime fromDate,
         DateTime toDate,
         long requestingUserId,
+        string ipAddress,
+        string userAgent,
         string locale = "uk")
     {
-        var report = await _reportService.GetClientReportAsync(
-            clientId, fromDate, toDate, requestingUserId);
-
-        var records = report.ProjectBreakdown.Select(p => new ClientReportCsvRecord
+        try
         {
-            ClientName = report.ClientName,
-            ProjectName = p.ProjectBrandName,
-            TotalHours = p.TotalHours,
-            EntriesCount = p.EntriesCount,
-            Percentage = p.Percentage
-        }).ToList();
+            var report = await _reportService.GetClientReportAsync(
+                clientId, fromDate, toDate, requestingUserId);
 
-        return ExportToCsvInternal(records, locale);
+            var records = report.ProjectBreakdown.Select(p => new ClientReportCsvRecord
+            {
+                ClientName = report.ClientName,
+                ProjectName = p.ProjectBrandName,
+                TotalHours = p.TotalHours,
+                EntriesCount = p.EntriesCount,
+                Percentage = p.Percentage
+            }).ToList();
+
+            var result = ExportToCsvInternal(records, locale);
+
+            _logger.LogInformation(
+                "Експортовано Client Report для клієнта {ClientId} у форматі CSV",
+                clientId);
+
+            // Аудит успішного експорту
+            await _auditService.LogReportExportedAsync(
+                reportType: "Client",
+                exportFormat: "CSV",
+                requestingUserId: requestingUserId,
+                requestingUserName: report.ClientName,
+                reportParams: new { ClientId = clientId, FromDate = fromDate, ToDate = toDate },
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: true);
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Помилка при експорті Client Report CSV для клієнта {ClientId}",
+                clientId);
+
+            // Аудит неуспішного експорту
+            await _auditService.LogReportExportedAsync(
+                reportType: "Client",
+                exportFormat: "CSV",
+                requestingUserId: requestingUserId,
+                requestingUserName: "Unknown",
+                reportParams: new { ClientId = clientId, FromDate = fromDate, ToDate = toDate },
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: false,
+                errorMessage: ex.Message);
+
+            throw;
+        }
     }
 
     public async Task<byte[]> ExportTimeSummaryReportToCsvAsync(
         DateTime fromDate,
         DateTime toDate,
         long requestingUserId,
+        string ipAddress,
+        string userAgent,
         long? agencyId = null,
         long? clientId = null,
         string locale = "uk")
     {
-        var report = await _reportService.GetTimeSummaryReportAsync(
-            fromDate, toDate, requestingUserId, agencyId, clientId);
-
-        var records = report.TopClients.Select(c => new TimeSummaryCsvRecord
+        try
         {
-            ClientName = c.ClientName,
-            TotalHours = c.TotalHours,
-            ProjectsCount = c.ProjectsCount,
-            UsersCount = c.UsersCount,
-            Percentage = c.Percentage
-        }).ToList();
+            var report = await _reportService.GetTimeSummaryReportAsync(
+                fromDate, toDate, requestingUserId, agencyId, clientId);
 
-        return ExportToCsvInternal(records, locale);
+            var records = report.TopClients.Select(c => new TimeSummaryCsvRecord
+            {
+                ClientName = c.ClientName,
+                TotalHours = c.TotalHours,
+                ProjectsCount = c.ProjectsCount,
+                UsersCount = c.UsersCount,
+                Percentage = c.Percentage
+            }).ToList();
+
+            var result = ExportToCsvInternal(records, locale);
+
+            _logger.LogInformation(
+                "Експортовано Time Summary Report у форматі CSV");
+
+            // Аудит успішного експорту
+            await _auditService.LogReportExportedAsync(
+                reportType: "TimeSummary",
+                exportFormat: "CSV",
+                requestingUserId: requestingUserId,
+                requestingUserName: report.AgencyName ?? "System",
+                reportParams: new { FromDate = fromDate, ToDate = toDate, AgencyId = agencyId, ClientId = clientId },
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: true);
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Помилка при експорті Time Summary Report CSV");
+
+            // Аудит неуспішного експорту
+            await _auditService.LogReportExportedAsync(
+                reportType: "TimeSummary",
+                exportFormat: "CSV",
+                requestingUserId: requestingUserId,
+                requestingUserName: "Unknown",
+                reportParams: new { FromDate = fromDate, ToDate = toDate, AgencyId = agencyId, ClientId = clientId },
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: false,
+                errorMessage: ex.Message);
+
+            throw;
+        }
     }
 
     public Task<byte[]> ExportToExcelAsync<T>(

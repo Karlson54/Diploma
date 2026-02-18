@@ -1135,4 +1135,59 @@ public class AuditService : IAuditService
                 userId);
         }
     }
+
+    public async Task LogReportExportedAsync(
+        string reportType,
+        string exportFormat,
+        long requestingUserId,
+        string requestingUserName,
+        object reportParams,
+        string ipAddress,
+        string userAgent,
+        bool success = true,
+        string? errorMessage = null)
+    {
+        try
+        {
+            var auditLog = new AuditLog
+            {
+                UserId = requestingUserId,
+                UserName = requestingUserName,
+                Action = AuditAction.ReportExported,
+                EntityName = "Report",
+                NewValues = SerializeObject(new
+                {
+                    ReportType = reportType,
+                    ExportFormat = exportFormat,
+                    Params = reportParams
+                }),
+                IpAddress = ipAddress,
+                UserAgent = userAgent,
+                Success = success,
+                ErrorMessage = errorMessage
+            };
+
+            await _auditLogRepository.AddAsync(auditLog);
+            await _unitOfWork.SaveChangesAsync();
+
+            if (success)
+            {
+                _logger.LogInformation(
+                    "Audit: Report {ReportType} exported as {Format} by User {UserId}",
+                    reportType, exportFormat, requestingUserId);
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "Audit: Report {ReportType} export failed for User {UserId} - {ErrorMessage}",
+                    reportType, requestingUserId, errorMessage);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to log audit for Report Export - Type: {ReportType}, Format: {Format}",
+                reportType, exportFormat);
+        }
+    }
 }
