@@ -22,6 +22,9 @@ builder.Services.AddTimeTrackerDatabase(builder.Configuration, builder.Environme
 
 var app = builder.Build();
 
+// Seed
+await app.SeedDatabaseAsync();
+
 // Middleware Pipeline
 if (app.Environment.IsDevelopment())
 {
