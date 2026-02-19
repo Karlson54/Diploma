@@ -4,10 +4,14 @@ using TimeTracker.Core.Services.Reporting;
 
 namespace TimeTracker.API.Controllers.Reports;
 
+/// <summary>
+/// Генерація звітів та експорт даних
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
 [Produces("application/json")]
+[Tags("Reports")]
 public class ReportsController : ControllerBase
 {
     private readonly IReportService _reportService;
@@ -24,6 +28,12 @@ public class ReportsController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>
+    /// Звіт завантаженості конкретного співробітника
+    /// </summary>
+    /// <param name="userId">Ідентифікатор користувача</param>
+    /// <param name="fromDate">Початок діапазону</param>
+    /// <param name="toDate">Кінець діапазону</param>
     [HttpGet("user/{userId}")]
     [Authorize(Policy = "CanViewOwnReports")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -57,6 +67,9 @@ public class ReportsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Експортувати звіт співробітника у Excel
+    /// </summary>
     [HttpGet("user/{userId}/export/excel")]
     [Authorize(Policy = "CanViewOwnReports")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -94,6 +107,9 @@ public class ReportsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Експортувати звіт співробітника у CSV
+    /// </summary>
     [HttpGet("user/{userId}/export/csv")]
     [Authorize(Policy = "CanViewOwnReports")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -128,6 +144,10 @@ public class ReportsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Звіт завантаженості команди агентства
+    /// </summary>
+    /// <param name="agencyId">Ідентифікатор агентства</param>
     [HttpGet("team/{agencyId}")]
     [Authorize(Policy = "CanViewAllReports")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -161,6 +181,9 @@ public class ReportsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Експортувати звіт команди у Excel
+    /// </summary>
     [HttpGet("team/{agencyId}/export/excel")]
     [Authorize(Policy = "CanViewAllReports")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -232,6 +255,10 @@ public class ReportsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Звіт по клієнту (тільки Manager/Admin/Accountant)
+    /// </summary>
+    /// <param name="clientId">Ідентифікатор клієнта</param>
     [HttpGet("client/{clientId}")]
     [Authorize(Policy = "CanViewAllReports")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -265,6 +292,9 @@ public class ReportsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Експортувати звіт по клієнту у Excel
+    /// </summary>
     [HttpGet("client/{clientId}/export/excel")]
     [Authorize(Policy = "CanViewAllReports")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -302,6 +332,9 @@ public class ReportsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Експортувати звіт по клієнту у CSV
+    /// </summary>
     [HttpGet("client/{clientId}/export/csv")]
     [Authorize(Policy = "CanViewAllReports")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -336,6 +369,13 @@ public class ReportsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Топ клієнтів за витраченим часом
+    /// </summary>
+    /// <param name="fromDate">Початок діапазону</param>
+    /// <param name="toDate">Кінець діапазону</param>
+    /// <param name="agencyId">Фільтр за агентством (опціонально)</param>
+    /// <param name="top">Кількість клієнтів у топі (за замовчуванням 10)</param>
     [HttpGet("clients/top")]
     [Authorize(Policy = "CanViewAllReports")]
     [ProducesResponseType(StatusCodes.Status200OK)]

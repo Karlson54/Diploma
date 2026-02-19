@@ -5,10 +5,14 @@ using TimeTracker.Core.Services.RoleManagement;
 
 namespace TimeTracker.API.Controllers.Roles;
 
+/// <summary>
+/// Управління ролями та правами доступу
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
 [Produces("application/json")]
+[Tags("Roles")]
 public class RolesController : ControllerBase
 {
     private readonly IRoleService _roleService;
@@ -22,6 +26,9 @@ public class RolesController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>
+    /// Отримати всі ролі
+    /// </summary>
     [HttpGet]
     [Authorize(Policy = "CanViewUsers")]
     [ProducesResponseType(typeof(IEnumerable<RoleListItemDto>), StatusCodes.Status200OK)]
@@ -33,6 +40,9 @@ public class RolesController : ControllerBase
         return Ok(roles);
     }
 
+    /// <summary>
+    /// Отримати тільки активні ролі
+    /// </summary>
     [HttpGet("active")]
     [Authorize(Policy = "CanViewUsers")]
     [ProducesResponseType(typeof(IEnumerable<RoleListItemDto>), StatusCodes.Status200OK)]
@@ -44,6 +54,10 @@ public class RolesController : ControllerBase
         return Ok(roles);
     }
 
+    /// <summary>
+    /// Отримати роль за ID
+    /// </summary>
+    /// <param name="id">Ідентифікатор ролі</param>
     [HttpGet("{id}")]
     [Authorize(Policy = "CanViewUsers")]
     [ProducesResponseType(typeof(RoleDetailDto), StatusCodes.Status200OK)]
@@ -93,6 +107,10 @@ public class RolesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Отримати список користувачів з певною роллю
+    /// </summary>
+    /// <param name="roleId">Ідентифікатор ролі</param>
     [HttpGet("{roleId}/users")]
     [Authorize(Policy = "CanViewUsers")]
     [ProducesResponseType(typeof(IEnumerable<UserInRoleDto>), StatusCodes.Status200OK)]
@@ -112,6 +130,10 @@ public class RolesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Отримати permissions ролі у вигляді списку рядків
+    /// </summary>
+    /// <param name="roleId">Ідентифікатор ролі</param>
     [HttpGet("{roleId}/permissions")]
     [Authorize(Policy = "AdminOnly")]
     [ProducesResponseType(typeof(IEnumerable<string>), StatusCodes.Status200OK)]
@@ -131,26 +153,36 @@ public class RolesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Перевірити чи має користувач певну роль
+    /// </summary>
+    /// <param name="userId">Ідентифікатор користувача</param>
+    /// <param name="roleName">Назва ролі</param>
     [HttpGet("check")]
     [Authorize(Policy = "CanViewUsers")]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CheckUserRole(
-        [FromQuery] long userId, 
+        [FromQuery] long userId,
         [FromQuery] string roleName)
     {
         var hasRole = await _roleService.UserHasRoleAsync(userId, roleName);
         return Ok(new { HasRole = hasRole });
     }
 
+    /// <summary>
+    /// Перевірити чи існує назва ролі (для валідації форм)
+    /// </summary>
+    /// <param name="name">Назва для перевірки</param>
+    /// <param name="excludeRoleId">ID ролі якого виключити з перевірки</param>
     [HttpGet("check-name")]
     [Authorize(Policy = "AdminOnly")]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CheckRoleName(
-        [FromQuery] string name, 
+        [FromQuery] string name,
         [FromQuery] long? excludeRoleId = null)
     {
         var exists = await _roleService.IsRoleNameExistsAsync(name, excludeRoleId);
@@ -168,6 +200,10 @@ public class RolesController : ControllerBase
         return Ok(new { CanDelete = canDelete });
     }
 
+    /// <summary>
+    /// Створити нову роль
+    /// </summary>
+    /// <param name="dto">Дані нової ролі</param>
     [HttpPost]
     [Authorize(Policy = "AdminOnly")]
     [ProducesResponseType(typeof(RoleDto), StatusCodes.Status201Created)]
@@ -208,6 +244,11 @@ public class RolesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Оновити роль
+    /// </summary>
+    /// <param name="id">Ідентифікатор ролі</param>
+    /// <param name="dto">Нові дані ролі</param>
     [HttpPut("{id}")]
     [Authorize(Policy = "AdminOnly")]
     [ProducesResponseType(typeof(RoleDto), StatusCodes.Status200OK)]
@@ -253,6 +294,10 @@ public class RolesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Видалити роль (тільки якщо не призначена жодному користувачу)
+    /// </summary>
+    /// <param name="id">Ідентифікатор ролі</param>
     [HttpDelete("{id}")]
     [Authorize(Policy = "AdminOnly")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -294,6 +339,10 @@ public class RolesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Активувати роль
+    /// </summary>
+    /// <param name="id">Ідентифікатор ролі</param>
     [HttpPatch("{id}/activate")]
     [Authorize(Policy = "AdminOnly")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -334,6 +383,10 @@ public class RolesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Деактивувати роль
+    /// </summary>
+    /// <param name="id">Ідентифікатор ролі</param>
     [HttpPatch("{id}/deactivate")]
     [Authorize(Policy = "AdminOnly")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -375,6 +428,10 @@ public class RolesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Призначити роль користувачу
+    /// </summary>
+    /// <param name="dto">ID користувача та ID ролі</param>
     [HttpPost("assign")]
     [Authorize(Policy = "CanManageUsers")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -396,10 +453,10 @@ public class RolesController : ControllerBase
 
             //Передаем параметры аудита
             await _roleService.AssignRoleToUserAsync(
-                dto.UserId, 
-                dto.RoleId, 
-                requestingUserId, 
-                ipAddress, 
+                dto.UserId,
+                dto.RoleId,
+                requestingUserId,
+                ipAddress,
                 userAgent);
 
             _logger.LogInformation(
@@ -414,7 +471,8 @@ public class RolesController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Конфлікт при призначенні ролі {RoleId} користувачу {UserId}", dto.RoleId, dto.UserId);
+            _logger.LogWarning(ex, "Конфлікт при призначенні ролі {RoleId} користувачу {UserId}", dto.RoleId,
+                dto.UserId);
             return BadRequest(new { Message = ex.Message });
         }
         catch (Exception ex)
@@ -445,10 +503,10 @@ public class RolesController : ControllerBase
 
             //Передаем параметры аудита
             await _roleService.RemoveRoleFromUserAsync(
-                dto.UserId, 
-                dto.RoleId, 
-                requestingUserId, 
-                ipAddress, 
+                dto.UserId,
+                dto.RoleId,
+                requestingUserId,
+                ipAddress,
                 userAgent);
 
             _logger.LogInformation(
@@ -473,6 +531,11 @@ public class RolesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Замінити всі ролі користувача
+    /// </summary>
+    /// <param name="userId">Ідентифікатор користувача</param>
+    /// <param name="dto">Новий список ID ролей</param>
     [HttpPut("user/{userId}/replace")]
     [Authorize(Policy = "CanManageUsers")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -494,10 +557,10 @@ public class RolesController : ControllerBase
 
             //Передаем параметры аудита
             await _roleService.ReplaceUserRolesAsync(
-                userId, 
-                dto.RoleIds, 
-                requestingUserId, 
-                ipAddress, 
+                userId,
+                dto.RoleIds,
+                requestingUserId,
+                ipAddress,
                 userAgent);
 
             _logger.LogInformation(
@@ -526,6 +589,11 @@ public class RolesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Оновити permissions ролі
+    /// </summary>
+    /// <param name="roleId">Ідентифікатор ролі</param>
+    /// <param name="dto">Новий набір permissions</param>
     [HttpPut("{roleId}/permissions")]
     [Authorize(Policy = "AdminOnly")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -547,10 +615,10 @@ public class RolesController : ControllerBase
 
             //Передаем параметры аудита
             await _roleService.UpdateRolePermissionsAsync(
-                roleId, 
-                dto.Permissions, 
-                requestingUserId, 
-                ipAddress, 
+                roleId,
+                dto.Permissions,
+                requestingUserId,
+                ipAddress,
                 userAgent);
 
             _logger.LogInformation(
@@ -577,7 +645,7 @@ public class RolesController : ControllerBase
     private long GetCurrentUserId()
     {
         var userIdClaim = User.FindFirst("userId")?.Value;
-        
+
         if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
         {
             _logger.LogWarning("Невалідний токен: не вдалося отримати userId");
@@ -614,15 +682,15 @@ public class RolesController : ControllerBase
     private string GetUserAgent()
     {
         var userAgent = HttpContext.Request.Headers["User-Agent"].FirstOrDefault();
-        
+
         if (string.IsNullOrEmpty(userAgent))
         {
             return "Unknown";
         }
 
         // Обмежуємо розмір (БД constraint 500 символів)
-        return userAgent.Length > 500 
-            ? userAgent.Substring(0, 500) 
+        return userAgent.Length > 500
+            ? userAgent.Substring(0, 500)
             : userAgent;
     }
 }

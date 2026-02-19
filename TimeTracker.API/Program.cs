@@ -28,25 +28,24 @@ await app.SeedDatabaseAsync();
 // Middleware Pipeline
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerWithUI();
 }
 
 app.UseHttpsRedirection();
 
-// 1️⃣ ExceptionMiddleware - перший!
+// ExceptionMiddleware
 app.UseMiddleware<ExceptionMiddleware>();
 
-// 2️⃣ Authentication
+// Authentication
 app.UseAuthentication();
 
-// 3️⃣ AuditMiddleware
+// AuditMiddleware
 app.UseMiddleware<AuditMiddleware>();
 
-// 4️⃣ Authorization
+// Authorization
 app.UseAuthorization();
 
-// 5️⃣ Controllers
+// Controllers
 app.MapControllers();
 
 app.Run();

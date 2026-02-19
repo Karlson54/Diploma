@@ -5,10 +5,14 @@ using TimeTracker.Core.Services.TimeTracking;
 
 namespace TimeTracker.API.Controllers.TimeTracking;
 
+/// <summary>
+/// Управління записами робочого часу
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
 [Produces("application/json")]
+[Tags("Time Entries")]
 public class TimeEntriesController : ControllerBase
 {
     private readonly ITimeEntryService _timeEntryService;
@@ -22,6 +26,10 @@ public class TimeEntriesController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>
+    /// Отримати запис часу за ID
+    /// </summary>
+    /// <param name="id">Ідентифікатор запису</param>
     [HttpGet("{id}")]
     [Authorize(Policy = "CanCreateTimeEntry")]
     [ProducesResponseType(typeof(TimeEntryDetailDto), StatusCodes.Status200OK)]
@@ -50,6 +58,11 @@ public class TimeEntriesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Отримати власні записи часу поточного користувача
+    /// </summary>
+    /// <param name="fromDate">Початок діапазону дат</param>
+    /// <param name="toDate">Кінець діапазону дат</param>
     [HttpGet("my")]
     [Authorize(Policy = "CanCreateTimeEntry")]
     [ProducesResponseType(typeof(IEnumerable<TimeEntryListItemDto>), StatusCodes.Status200OK)]
@@ -74,6 +87,12 @@ public class TimeEntriesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Отримати записи часу конкретного користувача (тільки Manager/Admin)
+    /// </summary>
+    /// <param name="userId">Ідентифікатор користувача</param>
+    /// <param name="fromDate">Початок діапазону дат</param>
+    /// <param name="toDate">Кінець діапазону дат</param>
     [HttpGet("user/{userId}")]
     [Authorize(Policy = "CanEditAnyTimeEntry")]
     [ProducesResponseType(typeof(IEnumerable<TimeEntryListItemDto>), StatusCodes.Status200OK)]
@@ -99,6 +118,10 @@ public class TimeEntriesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Створити новий запис часу
+    /// </summary>
+    /// <param name="dto">Дані запису часу</param>
     [HttpPost]
     [Authorize(Policy = "CanCreateTimeEntry")]
     [ProducesResponseType(typeof(TimeEntryDto), StatusCodes.Status201Created)]
@@ -289,6 +312,11 @@ public class TimeEntriesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Оновити запис часу
+    /// </summary>
+    /// <param name="id">Ідентифікатор запису</param>
+    /// <param name="dto">Нові дані запису</param>
     [HttpPut("{id}")]
     [Authorize(Policy = "CanEditOwnTimeEntry")]
     [ProducesResponseType(typeof(TimeEntryDto), StatusCodes.Status200OK)]
@@ -384,6 +412,10 @@ public class TimeEntriesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Видалити запис часу
+    /// </summary>
+    /// <param name="id">Ідентифікатор запису</param>
     [HttpDelete("{id}")]
     [Authorize(Policy = "CanDeleteOwnTimeEntry")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -441,7 +473,7 @@ public class TimeEntriesController : ControllerBase
             var userAgent = GetUserAgent();
 
             await _timeEntryService.DeleteBulkAsync(
-                ids, 
+                ids,
                 currentUserId,
                 ipAddress,
                 userAgent);

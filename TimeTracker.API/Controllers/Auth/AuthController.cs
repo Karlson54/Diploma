@@ -6,9 +6,13 @@ using TimeTracker.Core.Services.Auth;
 
 namespace TimeTracker.API.Controllers.Auth;
 
+/// <summary>
+/// Аутентифікація та управління сесіями користувачів
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
+[Tags("Auth")]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
@@ -22,6 +26,11 @@ public class AuthController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>
+    /// Реєстрація нового користувача
+    /// </summary>
+    /// <param name="dto">Дані для реєстрації</param>
+    /// <returns>JWT токен та інформація про користувача</returns>
     [HttpPost("register")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status201Created)]
@@ -57,6 +66,11 @@ public class AuthController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Вхід до системи
+    /// </summary>
+    /// <param name="dto">Логін та пароль</param>
+    /// <returns>JWT токен та інформація про користувача</returns>
     [HttpPost("login")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
@@ -80,6 +94,10 @@ public class AuthController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Перевірка валідності JWT токену
+    /// </summary>
+    /// <returns>Інформація про поточного користувача з токену</returns>
     [HttpGet("validate")]
     [Authorize]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
@@ -100,6 +118,10 @@ public class AuthController : ControllerBase
         });
     }
 
+    /// <summary>
+    /// Зміна пароля поточного користувача
+    /// </summary>
+    /// <param name="dto">Поточний та новий пароль</param>
     [HttpPost("change-password")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]

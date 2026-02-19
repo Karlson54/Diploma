@@ -5,6 +5,9 @@ using TimeTracker.Core.Services.Dictionaries;
 
 namespace TimeTracker.API.Controllers.Dictionaries;
 
+/// <summary>
+/// Базовий контролер для управління довідниками системи
+/// </summary>
 [ApiController]
 [Authorize]
 [Produces("application/json")]
@@ -27,6 +30,9 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
         _entityName = entityName;
     }
 
+    /// <summary>
+    /// Отримати всі записи довідника (включно з неактивними)
+    /// </summary>
     [HttpGet]
     [Authorize(Policy = "CanViewDictionaries")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -36,6 +42,9 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
         return Ok(items);
     }
 
+    /// <summary>
+    /// Отримати тільки активні записи довідника
+    /// </summary>
     [HttpGet("active")]
     [Authorize(Policy = "CanViewDictionaries")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -45,6 +54,10 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
         return Ok(items);
     }
 
+    /// <summary>
+    /// Отримати запис довідника за ID
+    /// </summary>
+    /// <param name="id">Ідентифікатор запису</param>
     [HttpGet("{id}")]
     [Authorize(Policy = "CanViewDictionaries")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -58,6 +71,10 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
         return Ok(item);
     }
 
+    /// <summary>
+    /// Отримати запис довідника за назвою
+    /// </summary>
+    /// <param name="name">Назва запису</param>
     [HttpGet("by-name/{name}")]
     [Authorize(Policy = "CanViewDictionaries")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -71,6 +88,13 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
         return Ok(item);
     }
 
+    /// <summary>
+    /// Отримати записи з пагінацією та фільтрацією
+    /// </summary>
+    /// <param name="pageNumber">Номер сторінки (починаючи з 1)</param>
+    /// <param name="pageSize">Кількість записів на сторінці</param>
+    /// <param name="searchTerm">Рядок пошуку за назвою</param>
+    /// <param name="isActive">Фільтр по статусу активності</param>
     [HttpGet("paged")]
     [Authorize(Policy = "CanViewDictionaries")]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
@@ -93,8 +117,12 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
         });
     }
 
+    /// <summary>
+    /// Створити новий запис довідника
+    /// </summary>
+    /// <param name="dto">Дані нового запису</param>
     [HttpPost]
-    [Authorize(Policy = "CanEditDictionaries")]
+    [Authorize(Policy = "CanManageDictionaries")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -113,7 +141,7 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
 
             //Передаємо параметри аудиту
             var item = await _service.CreateAsync(dto, userId, userName, ipAddress, userAgent);
-            
+
             return CreatedAtAction(nameof(GetById), new { id = item.Id }, item);
         }
         catch (InvalidOperationException ex)
@@ -127,12 +155,16 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
         }
     }
 
+    /// <summary>
+    /// Оновити існуючий запис довідника
+    /// </summary>
+    /// <param name="id">Ідентифікатор запису</param>
+    /// <param name="dto">Нові дані запису</param>
     [HttpPut("{id}")]
-    [Authorize(Policy = "CanEditDictionaries")]
+    [Authorize(Policy = "CanManageDictionaries")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public virtual async Task<IActionResult> Update(long id, [FromBody] TUpdateDto dto)
     {
         if (!ModelState.IsValid)
@@ -148,7 +180,7 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
 
             //Передаємо параметри аудиту
             var item = await _service.UpdateAsync(id, dto, userId, userName, ipAddress, userAgent);
-            
+
             return Ok(item);
         }
         catch (KeyNotFoundException ex)
@@ -166,11 +198,15 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
         }
     }
 
+    /// <summary>
+    /// Видалити запис довідника
+    /// </summary>
+    /// <param name="id">Ідентифікатор запису</param>
     [HttpDelete("{id}")]
-    [Authorize(Policy = "CanEditDictionaries")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [Authorize(Policy = "CanManageDictionaries")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public virtual async Task<IActionResult> Delete(long id)
     {
         try
@@ -183,7 +219,7 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
 
             //Передаємо параметри аудиту
             await _service.DeleteAsync(id, userId, userName, ipAddress, userAgent);
-            
+
             return Ok(new { Message = $"{_entityName} успішно видалено" });
         }
         catch (KeyNotFoundException ex)
@@ -201,10 +237,13 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
         }
     }
 
+    /// <summary>
+    /// Активувати раніше деактивований запис довідника
+    /// </summary>
+    /// <param name="id">Ідентифікатор запису</param>
     [HttpPatch("{id}/activate")]
-    [Authorize(Policy = "CanEditDictionaries")]
+    [Authorize(Policy = "CanManageDictionaries")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public virtual async Task<IActionResult> Activate(long id)
     {
@@ -218,7 +257,7 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
 
             //Передаємо параметри аудиту
             await _service.ActivateAsync(id, userId, userName, ipAddress, userAgent);
-            
+
             return Ok(new { Message = $"{_entityName} успішно активовано" });
         }
         catch (KeyNotFoundException ex)
@@ -236,11 +275,15 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
         }
     }
 
+    /// <summary>
+    /// Деактивувати запис довідника (soft delete)
+    /// </summary>
+    /// <param name="id">Ідентифікатор запису</param>
     [HttpPatch("{id}/deactivate")]
-    [Authorize(Policy = "CanEditDictionaries")]
+    [Authorize(Policy = "CanManageDictionaries")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public virtual async Task<IActionResult> Deactivate(long id)
     {
         try
@@ -253,7 +296,7 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
 
             //Передаємо параметри аудиту
             await _service.DeactivateAsync(id, userId, userName, ipAddress, userAgent);
-            
+
             return Ok(new { Message = $"{_entityName} успішно деактивовано" });
         }
         catch (KeyNotFoundException ex)
@@ -311,7 +354,7 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
     protected long GetCurrentUserId()
     {
         var userIdClaim = User.FindFirst("userId")?.Value;
-        
+
         if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
         {
             _logger.LogWarning("Невалідний токен: не вдалося отримати userId");
@@ -355,15 +398,15 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
     protected string GetUserAgent()
     {
         var userAgent = HttpContext.Request.Headers["User-Agent"].FirstOrDefault();
-        
+
         if (string.IsNullOrEmpty(userAgent))
         {
             return "Unknown";
         }
 
         // Обмежуємо розмір (БД constraint 500 символів)
-        return userAgent.Length > 500 
-            ? userAgent.Substring(0, 500) 
+        return userAgent.Length > 500
+            ? userAgent.Substring(0, 500)
             : userAgent;
     }
 }

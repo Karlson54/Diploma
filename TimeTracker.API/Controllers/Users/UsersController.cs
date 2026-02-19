@@ -5,24 +5,35 @@ using TimeTracker.Core.Services.UserManagement;
 
 namespace TimeTracker.API.Controllers.Users;
 
+/// <summary>
+/// Управління користувачами системи
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
+[Produces("application/json")]
+[Tags("Users")]
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
     private readonly ILogger<UsersController> _logger;
 
-    public UsersController(
-        IUserService userService,
-        ILogger<UsersController> logger)
+    public UsersController(IUserService userService, ILogger<UsersController> logger)
     {
         _userService = userService;
         _logger = logger;
     }
 
+    /// <summary>
+    /// Отримати користувача за ID
+    /// </summary>
+    /// <param name="id">Ідентифікатор користувача</param>
     [HttpGet("{id}")]
     [Authorize(Policy = "CanViewUsers")]
+    [ProducesResponseType(typeof(UserDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetById(long id)
     {
         try
@@ -40,8 +51,14 @@ public class UsersController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Отримати всіх користувачів
+    /// </summary>
     [HttpGet]
     [Authorize(Policy = "CanViewUsers")]
+    [ProducesResponseType(typeof(IEnumerable<UserListItemDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetAll()
     {
         try
@@ -56,8 +73,14 @@ public class UsersController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Отримати тільки активних користувачів
+    /// </summary>
     [HttpGet("active")]
     [Authorize(Policy = "CanViewUsers")]
+    [ProducesResponseType(typeof(IEnumerable<UserListItemDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetActive()
     {
         try
@@ -72,8 +95,19 @@ public class UsersController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Отримати користувачів з пагінацією та фільтрацією
+    /// </summary>
+    /// <param name="pageNumber">Номер сторінки (починаючи з 1)</param>
+    /// <param name="pageSize">Кількість записів на сторінці</param>
+    /// <param name="searchTerm">Пошук за іменем, email або логіном</param>
+    /// <param name="agencyId">Фільтр за агентством</param>
+    /// <param name="isActive">Фільтр за статусом активності</param>
     [HttpGet("paged")]
     [Authorize(Policy = "CanViewUsers")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetPaged(
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 10,
@@ -102,8 +136,17 @@ public class UsersController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Створити нового користувача
+    /// </summary>
+    /// <param name="dto">Дані нового користувача</param>
     [HttpPost]
     [Authorize(Policy = "CanManageUsers")]
+    [ProducesResponseType(typeof(UserDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Create([FromBody] CreateUserDto dto)
     {
         if (!ModelState.IsValid)
@@ -151,8 +194,19 @@ public class UsersController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Оновити дані користувача
+    /// </summary>
+    /// <param name="id">Ідентифікатор користувача</param>
+    /// <param name="dto">Нові дані користувача</param>
     [HttpPut("{id}")]
     [Authorize(Policy = "CanManageUsers")]
+    [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Update(long id, [FromBody] UpdateUserDto dto)
     {
         if (!ModelState.IsValid)
@@ -201,8 +255,17 @@ public class UsersController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Активувати деактивованого користувача
+    /// </summary>
+    /// <param name="id">Ідентифікатор користувача</param>
     [HttpPatch("{id}/activate")]
     [Authorize(Policy = "CanManageUsers")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Activate(long id)
     {
         try
@@ -242,8 +305,17 @@ public class UsersController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Деактивувати користувача (soft delete)
+    /// </summary>
+    /// <param name="id">Ідентифікатор користувача</param>
     [HttpPatch("{id}/deactivate")]
     [Authorize(Policy = "CanManageUsers")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Deactivate(long id)
     {
         try
@@ -283,8 +355,18 @@ public class UsersController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Змінити пароль користувача. Доступно самому користувачу або Admin
+    /// </summary>
+    /// <param name="id">Ідентифікатор користувача</param>
+    /// <param name="dto">Поточний та новий пароль</param>
     [HttpPost("{id}/change-password")]
     [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ChangePassword(long id, [FromBody] ChangePasswordDto dto)
     {
         if (!ModelState.IsValid)
@@ -342,16 +424,28 @@ public class UsersController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Перевірити чи існує email (для валідації форм)
+    /// </summary>
+    /// <param name="email">Email для перевірки</param>
+    /// <param name="excludeUserId">ID користувача якого виключити з перевірки (для редагування)</param>
     [HttpGet("check-email")]
     [AllowAnonymous]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     public async Task<IActionResult> CheckEmail([FromQuery] string email, [FromQuery] long? excludeUserId = null)
     {
         var exists = await _userService.IsEmailExistsAsync(email, excludeUserId);
         return Ok(new { Exists = exists });
     }
 
+    /// <summary>
+    /// Перевірити чи існує логін (для валідації форм)
+    /// </summary>
+    /// <param name="login">Логін для перевірки</param>
+    /// <param name="excludeUserId">ID користувача якого виключити з перевірки (для редагування)</param>
     [HttpGet("check-login")]
     [AllowAnonymous]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     public async Task<IActionResult> CheckLogin([FromQuery] string login, [FromQuery] long? excludeUserId = null)
     {
         var exists = await _userService.IsLoginExistsAsync(login, excludeUserId);
