@@ -452,6 +452,7 @@ public class TimeEntryService : ITimeEntryService
             }
         }
 
+        // Один запрос — з Include вже всередині репозиторію
         var (entries, totalCount) = await _timeEntryRepository.GetTimeEntriesPagedAsync(
             pageNumber,
             pageSize,
@@ -461,17 +462,7 @@ public class TimeEntryService : ITimeEntryService
             fromDate,
             toDate);
 
-        var entriesWithDetails = await _timeEntryRepository
-            .GetQueryable()
-            .Include(te => te.User)
-            .Include(te => te.Client)
-            .Include(te => te.ProjectBrand)
-            .Where(te => entries.Select(e => e.Id).Contains(te.Id))
-            .OrderByDescending(te => te.EntryDate)
-            .ThenByDescending(te => te.CreatedAt)
-            .ToListAsync();
-
-        var dtos = _mapper.Map<IEnumerable<TimeEntryListItemDto>>(entriesWithDetails);
+        var dtos = _mapper.Map<IEnumerable<TimeEntryListItemDto>>(entries);
 
         return (dtos, totalCount);
     }
@@ -1187,6 +1178,7 @@ public class TimeEntryService : ITimeEntryService
             .Include(te => te.Client)
             .Include(te => te.ProjectBrand)
             .Include(te => te.JobType)
+            .AsNoTracking()
             .ToListAsync();
 
         var weekSummaries = monthEntries

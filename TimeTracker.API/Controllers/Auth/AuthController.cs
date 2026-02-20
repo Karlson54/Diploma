@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using TimeTracker.Core.DTOs.Auth;
 using TimeTracker.Core.DTOs.Users;
 using TimeTracker.Core.Services.Auth;
+using Microsoft.AspNetCore.RateLimiting;
+using TimeTracker.API.Extensions;
 
 namespace TimeTracker.API.Controllers.Auth;
 
@@ -33,6 +35,7 @@ public class AuthController : ControllerBase
     /// <returns>JWT токен та інформація про користувача</returns>
     [HttpPost("register")]
     [AllowAnonymous]
+    [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -73,6 +76,7 @@ public class AuthController : ControllerBase
     /// <returns>JWT токен та інформація про користувача</returns>
     [HttpPost("login")]
     [AllowAnonymous]
+    [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)

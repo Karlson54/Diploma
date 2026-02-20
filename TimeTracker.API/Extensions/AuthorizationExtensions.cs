@@ -55,7 +55,10 @@ public static class AuthorizationExtensions
                     context.User.IsInRole("Admin") ||
                     context.User.IsInRole("Manager")))
             .AddPolicy("CanViewDictionaries", policy =>
-                policy.RequireAuthenticatedUser());
+                policy.RequireAuthenticatedUser())
+            .AddPolicy("CanManageDictionaries", policy =>
+                policy.RequireAssertion(context =>
+                    context.User.IsInRole("Admin")));
     }
 
     private static void AddTimeEntryPolicies(AuthorizationBuilder builder)

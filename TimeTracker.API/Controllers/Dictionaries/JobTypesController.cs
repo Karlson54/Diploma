@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
+using TimeTracker.API.Extensions;
 using TimeTracker.Core.DTOs.Dictionaries.JobTypes;
 using TimeTracker.Core.Services.Dictionaries.JobTypes;
 
@@ -9,8 +11,9 @@ public class JobTypesController : BaseDictionaryController<JobTypeDto, CreateJob
 {
     public JobTypesController(
         IJobTypeService service,
-        ILogger<JobTypesController> logger)
-        : base(service, logger, "JobType")
+        ILogger<JobTypesController> logger,
+        IMemoryCache cache)
+        : base(service, logger, "JobType", cache, CacheKeys.JobTypesAll, CacheKeys.JobTypesActive)
     {
     }
 }

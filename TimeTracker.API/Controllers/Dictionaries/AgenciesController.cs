@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
+using TimeTracker.API.Extensions;
 using TimeTracker.Core.DTOs.Dictionaries.Agencies;
 using TimeTracker.Core.Services.Dictionaries.Agencies;
 
@@ -12,8 +14,9 @@ public class AgenciesController : BaseDictionaryController<AgencyDto, CreateAgen
 
     public AgenciesController(
         IAgencyService service,
-        ILogger<AgenciesController> logger)
-        : base(service, logger, "Agency")
+        ILogger<AgenciesController> logger,
+        IMemoryCache cache)
+        : base(service, logger, "Agency", cache, CacheKeys.AgenciesAll, CacheKeys.AgenciesActive)
     {
         _agencyService = service;
     }

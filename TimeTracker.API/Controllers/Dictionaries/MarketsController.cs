@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
+using TimeTracker.API.Extensions;
 using TimeTracker.Core.DTOs.Dictionaries.Markets;
 using TimeTracker.Core.Services.Dictionaries.Markets;
 
@@ -9,8 +11,9 @@ public class MarketsController : BaseDictionaryController<MarketDto, CreateMarke
 {
     public MarketsController(
         IMarketService service,
-        ILogger<MarketsController> logger)
-        : base(service, logger, "Market")
+        ILogger<MarketsController> logger,
+        IMemoryCache cache)
+        : base(service, logger, "Market", cache, CacheKeys.MarketsAll, CacheKeys.MarketsActive)
     {
     }
 }

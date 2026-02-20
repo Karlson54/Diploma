@@ -14,6 +14,13 @@ builder.Services.AddSwaggerWithJwtAuth();
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddTimeTrackerAuthorization();
 
+// Security
+builder.Services.AddTimeTrackerCors(builder.Configuration);
+builder.Services.AddTimeTrackerRateLimiting();
+builder.Services.AddTimeTrackerDataProtection(
+    builder.Configuration,
+    builder.Environment);
+
 // Application Services
 builder.Services.AddTimeTrackerServices();
 
@@ -33,8 +40,17 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// CSP
+app.UseMiddleware<SecurityHeadersMiddleware>();
+
 // ExceptionMiddleware
 app.UseMiddleware<ExceptionMiddleware>();
+
+// CORS
+app.UseTimeTrackerCors();
+
+// RateLimiter
+app.UseRateLimiter();
 
 // Authentication
 app.UseAuthentication();

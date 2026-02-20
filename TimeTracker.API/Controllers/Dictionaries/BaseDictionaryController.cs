@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
+using TimeTracker.API.Extensions;
 using TimeTracker.Core.DTOs.Dictionaries;
 using TimeTracker.Core.Services.Dictionaries;
 
@@ -19,15 +21,24 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
     protected readonly IDictionaryService<TDto, TCreateDto, TUpdateDto> _service;
     protected readonly ILogger _logger;
     protected readonly string _entityName;
+    private readonly IMemoryCache _cache;
+    private readonly string _cacheKeyAll;
+    private readonly string _cacheKeyActive;
 
     protected BaseDictionaryController(
         IDictionaryService<TDto, TCreateDto, TUpdateDto> service,
         ILogger logger,
-        string entityName)
+        string entityName,
+        IMemoryCache cache,
+        string cacheKeyAll,
+        string cacheKeyActive)
     {
         _service = service;
         _logger = logger;
         _entityName = entityName;
+        _cache = cache;
+        _cacheKeyAll = cacheKeyAll;
+        _cacheKeyActive = cacheKeyActive;
     }
 
     /// <summary>
@@ -38,7 +49,12 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
     [ProducesResponseType(StatusCodes.Status200OK)]
     public virtual async Task<IActionResult> GetAll()
     {
-        var items = await _service.GetAllAsync();
+        var items = await _cache.GetOrCreateAsync(_cacheKeyAll, async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = CacheKeys.DefaultExpiry;
+            return await _service.GetAllAsync();
+        });
+
         return Ok(items);
     }
 
@@ -50,7 +66,12 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
     [ProducesResponseType(StatusCodes.Status200OK)]
     public virtual async Task<IActionResult> GetActive()
     {
-        var items = await _service.GetActiveAsync();
+        var items = await _cache.GetOrCreateAsync(_cacheKeyActive, async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = CacheKeys.DefaultExpiry;
+            return await _service.GetActiveAsync();
+        });
+
         return Ok(items);
     }
 
@@ -142,6 +163,8 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
             //Передаємо параметри аудиту
             var item = await _service.CreateAsync(dto, userId, userName, ipAddress, userAgent);
 
+            InvalidateCache();
+
             return CreatedAtAction(nameof(GetById), new { id = item.Id }, item);
         }
         catch (InvalidOperationException ex)
@@ -181,6 +204,8 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
             //Передаємо параметри аудиту
             var item = await _service.UpdateAsync(id, dto, userId, userName, ipAddress, userAgent);
 
+            InvalidateCache();
+
             return Ok(item);
         }
         catch (KeyNotFoundException ex)
@@ -204,7 +229,7 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
     /// <param name="id">Ідентифікатор запису</param>
     [HttpDelete("{id}")]
     [Authorize(Policy = "CanManageDictionaries")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public virtual async Task<IActionResult> Delete(long id)
@@ -219,6 +244,8 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
 
             //Передаємо параметри аудиту
             await _service.DeleteAsync(id, userId, userName, ipAddress, userAgent);
+
+            InvalidateCache();
 
             return Ok(new { Message = $"{_entityName} успішно видалено" });
         }
@@ -258,6 +285,8 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
             //Передаємо параметри аудиту
             await _service.ActivateAsync(id, userId, userName, ipAddress, userAgent);
 
+            InvalidateCache();
+
             return Ok(new { Message = $"{_entityName} успішно активовано" });
         }
         catch (KeyNotFoundException ex)
@@ -296,6 +325,8 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
 
             //Передаємо параметри аудиту
             await _service.DeactivateAsync(id, userId, userName, ipAddress, userAgent);
+
+            InvalidateCache();
 
             return Ok(new { Message = $"{_entityName} успішно деактивовано" });
         }
@@ -350,7 +381,16 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
         });
     }
 
-    //HELPER МЕТОДИ ДЛЯ АУДИТУ
+    // ==================== CACHE ====================
+
+    protected void InvalidateCache()
+    {
+        _cache.Remove(_cacheKeyAll);
+        _cache.Remove(_cacheKeyActive);
+    }
+
+    // ==================== HELPER МЕТОДИ ДЛЯ АУДИТУ ====================
+
     protected long GetCurrentUserId()
     {
         var userIdClaim = User.FindFirst("userId")?.Value;

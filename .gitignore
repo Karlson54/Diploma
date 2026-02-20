@@ -80,3 +80,4 @@ paket-files/
 *.DS_Store
 Thumbs.db
 /TimeTracker.Data/obj/
+**/keys/

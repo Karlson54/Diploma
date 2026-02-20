@@ -174,35 +174,27 @@ public class TimeEntryRepository : Repository<TimeEntry>, ITimeEntryRepository
     {
         var query = _dbSet.AsNoTracking().AsQueryable();
 
-        // Применяем фильтры
         if (userId.HasValue)
-        {
             query = query.Where(te => te.UserId == userId.Value);
-        }
 
         if (agencyId.HasValue)
-        {
             query = query.Where(te => te.AgencyId == agencyId.Value);
-        }
 
         if (clientId.HasValue)
-        {
             query = query.Where(te => te.ClientId == clientId.Value);
-        }
 
         if (fromDate.HasValue)
-        {
             query = query.Where(te => te.EntryDate >= fromDate.Value.Date);
-        }
 
         if (toDate.HasValue)
-        {
             query = query.Where(te => te.EntryDate <= toDate.Value.Date);
-        }
 
         var totalCount = await query.CountAsync();
 
         var entries = await query
+            .Include(te => te.User)
+            .Include(te => te.Client)
+            .Include(te => te.ProjectBrand)
             .OrderByDescending(te => te.EntryDate)
             .ThenByDescending(te => te.CreatedAt)
             .Skip((pageNumber - 1) * pageSize)

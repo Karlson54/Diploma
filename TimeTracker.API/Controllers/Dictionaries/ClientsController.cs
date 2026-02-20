@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
+using TimeTracker.API.Extensions;
 using TimeTracker.Core.DTOs.Dictionaries.Clients;
 using TimeTracker.Core.Services.Dictionaries.Clients;
 
@@ -12,8 +14,9 @@ public class ClientsController : BaseDictionaryController<ClientDto, CreateClien
 
     public ClientsController(
         IClientService service,
-        ILogger<ClientsController> logger)
-        : base(service, logger, "Client")
+        ILogger<ClientsController> logger,
+        IMemoryCache cache)
+        : base(service, logger, "Client", cache, CacheKeys.ClientsAll, CacheKeys.ClientsActive)
     {
         _clientService = service;
     }

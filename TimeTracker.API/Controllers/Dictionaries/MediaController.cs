@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
+using TimeTracker.API.Extensions;
 using TimeTracker.Core.DTOs.Dictionaries.Media;
 using TimeTracker.Core.Services.Dictionaries.Media;
 
@@ -9,8 +11,9 @@ public class MediaController : BaseDictionaryController<MediaDto, CreateMediaDto
 {
     public MediaController(
         IMediaService service,
-        ILogger<MediaController> logger)
-        : base(service, logger, "Media")
+        ILogger<MediaController> logger,
+        IMemoryCache cache)
+        : base(service, logger, "Media", cache, CacheKeys.MediaAll, CacheKeys.MediaActive)
     {
     }
 }
