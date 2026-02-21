@@ -21,6 +21,9 @@ builder.Services.AddTimeTrackerDataProtection(
     builder.Configuration,
     builder.Environment);
 
+// Health Checks
+builder.Services.AddTimeTrackerHealthChecks();
+
 // Application Services
 builder.Services.AddTimeTrackerServices();
 
@@ -63,5 +66,8 @@ app.UseAuthorization();
 
 // Controllers
 app.MapControllers();
+
+// Health Checks
+app.MapTimeTrackerHealthChecks();
 
 app.Run();

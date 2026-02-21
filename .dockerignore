@@ -1,0 +1,36 @@
+# Build результаты
+**/bin/
+**/obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider / JetBrains
+.idea/
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Логи
+*.log
+logs/
+
+# Ключи DataProtection (генерируются в рантайме)
+**/keys/
+
+# Тесты (не нужны в production образе)
+TimeTracker.Tests/
+
+# Node (если есть frontend рядом)
+node_modules/
+**/node_modules/
