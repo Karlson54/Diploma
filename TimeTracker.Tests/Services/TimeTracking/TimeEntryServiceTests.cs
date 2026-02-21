@@ -176,7 +176,7 @@ public class TimeEntryServiceTests : ServiceTestBase
 
         // Assert
         result.Should().HaveCount(2);
-        result.All(e => e.UserId == TestUserId).Should().BeTrue();
+        result.All(e => e.UserName == "John Doe").Should().BeTrue();
     }
 
     // ==================== CREATE TESTS ====================
