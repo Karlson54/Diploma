@@ -119,6 +119,55 @@ public class TimeEntriesController : ControllerBase
     }
 
     /// <summary>
+    /// Отримати всі записи часу з пагінацією та фільтрацією (тільки Manager/Admin)
+    /// </summary>
+    [HttpGet]
+    [Authorize(Policy = "CanEditAnyTimeEntry")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetPaged(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] long? userId = null,
+        [FromQuery] long? agencyId = null,
+        [FromQuery] long? clientId = null,
+        [FromQuery] DateTime? fromDate = null,
+        [FromQuery] DateTime? toDate = null)
+    {
+        try
+        {
+            var currentUserId = GetCurrentUserId();
+            var (entries, totalCount) = await _timeEntryService.GetPagedAsync(
+                pageNumber,
+                pageSize,
+                userId,
+                agencyId,
+                clientId,
+                fromDate,
+                toDate,
+                currentUserId);
+
+            return Ok(new
+            {
+                entries,
+                totalCount,
+                pageNumber,
+                pageSize,
+                totalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Помилка при отриманні записів часу з пагінацією");
+            return BadRequest(new { Message = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Створити новий запис часу
     /// </summary>
     /// <param name="dto">Дані запису часу</param>
