@@ -25,26 +25,30 @@ public class TimeEntryRepository : Repository<TimeEntry>, ITimeEntryRepository
 
     #region Получение записей времени
 
-    public async Task<IEnumerable<TimeEntry>> GetUserTimeEntriesAsync(long userId, DateTime? fromDate = null,
+    public async Task<IEnumerable<TimeEntry>> GetUserTimeEntriesAsync(
+        long userId,
+        DateTime? fromDate = null,
         DateTime? toDate = null)
     {
         var query = _dbSet
             .AsNoTracking()
+            .Include(te => te.User)
+            .Include(te => te.Market)
+            .Include(te => te.ContractingAgency)
+            .Include(te => te.Client)
+            .Include(te => te.ProjectBrand)
+            .Include(te => te.Media)
+            .Include(te => te.JobType)
             .Where(te => te.UserId == userId);
 
         if (fromDate.HasValue)
-        {
             query = query.Where(te => te.EntryDate >= fromDate.Value.Date);
-        }
 
         if (toDate.HasValue)
-        {
             query = query.Where(te => te.EntryDate <= toDate.Value.Date);
-        }
 
         return await query
             .OrderByDescending(te => te.EntryDate)
-            .ThenByDescending(te => te.CreatedAt)
             .ToListAsync();
     }
 
@@ -193,8 +197,12 @@ public class TimeEntryRepository : Repository<TimeEntry>, ITimeEntryRepository
 
         var entries = await query
             .Include(te => te.User)
+            .Include(te => te.Market)
+            .Include(te => te.ContractingAgency)
             .Include(te => te.Client)
             .Include(te => te.ProjectBrand)
+            .Include(te => te.Media)
+            .Include(te => te.JobType)
             .OrderByDescending(te => te.EntryDate)
             .ThenByDescending(te => te.CreatedAt)
             .Skip((pageNumber - 1) * pageSize)

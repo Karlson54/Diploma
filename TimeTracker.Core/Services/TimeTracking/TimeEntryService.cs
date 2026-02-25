@@ -75,17 +75,7 @@ public class TimeEntryService : ITimeEntryService
         DateTime? toDate = null)
     {
         var entries = await _timeEntryRepository.GetUserTimeEntriesAsync(userId, fromDate, toDate);
-
-        var entriesWithDetails = await _timeEntryRepository
-            .GetQueryable()
-            .Include(te => te.User)
-            .Include(te => te.Client)
-            .Include(te => te.ProjectBrand)
-            .Where(te => entries.Select(e => e.Id).Contains(te.Id))
-            .OrderByDescending(te => te.EntryDate)
-            .ToListAsync();
-
-        return _mapper.Map<IEnumerable<TimeEntryListItemDto>>(entriesWithDetails);
+        return _mapper.Map<IEnumerable<TimeEntryListItemDto>>(entries);
     }
 
     public async Task<TimeEntryDto> CreateAsync(

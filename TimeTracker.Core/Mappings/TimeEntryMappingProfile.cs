@@ -10,31 +10,51 @@ public class TimeEntryMappingProfile : Profile
     {
         // TimeEntry -> TimeEntryDto (повний маппінг з усіма назвами)
         CreateMap<TimeEntry, TimeEntryDto>()
-            .ForMember(dest => dest.UserName, 
+            .ForMember(dest => dest.UserName,
                 opt => opt.MapFrom(src => src.User.Name))
-            .ForMember(dest => dest.AgencyName, 
+            .ForMember(dest => dest.AgencyName,
                 opt => opt.MapFrom(src => src.Agency.Name))
-            .ForMember(dest => dest.MarketName, 
+            .ForMember(dest => dest.MarketName,
                 opt => opt.MapFrom(src => src.Market.Name))
-            .ForMember(dest => dest.ContractingAgencyName, 
+            .ForMember(dest => dest.ContractingAgencyName,
                 opt => opt.MapFrom(src => src.ContractingAgency.Name))
-            .ForMember(dest => dest.ClientName, 
+            .ForMember(dest => dest.ClientName,
                 opt => opt.MapFrom(src => src.Client.Name))
-            .ForMember(dest => dest.ProjectBrandName, 
+            .ForMember(dest => dest.ProjectBrandName,
                 opt => opt.MapFrom(src => src.ProjectBrand.Name))
-            .ForMember(dest => dest.MediaName, 
+            .ForMember(dest => dest.MediaName,
                 opt => opt.MapFrom(src => src.Media.Name))
-            .ForMember(dest => dest.JobTypeName, 
+            .ForMember(dest => dest.JobTypeName,
                 opt => opt.MapFrom(src => src.JobType.Name));
 
         // TimeEntry -> TimeEntryListItemDto (спрощений для списків)
         CreateMap<TimeEntry, TimeEntryListItemDto>()
-            .ForMember(dest => dest.UserName, 
+            .ForMember(dest => dest.UserName,
                 opt => opt.MapFrom(src => src.User.Name))
-            .ForMember(dest => dest.ClientName, 
-                opt => opt.MapFrom(src => src.Client.Name))
-            .ForMember(dest => dest.ProjectBrandName, 
-                opt => opt.MapFrom(src => src.ProjectBrand.Name));
+            .ForMember(dest => dest.MarketId,
+                opt => opt.MapFrom(src => src.MarketId))
+            .ForMember(dest => dest.MarketName,
+                opt => opt.MapFrom(src => src.Market != null ? src.Market.Name : null))
+            .ForMember(dest => dest.ContractingAgencyId,
+                opt => opt.MapFrom(src => src.ContractingAgencyId))
+            .ForMember(dest => dest.ContractingAgencyName,
+                opt => opt.MapFrom(src => src.ContractingAgency != null ? src.ContractingAgency.Name : null))
+            .ForMember(dest => dest.ClientId,
+                opt => opt.MapFrom(src => src.ClientId))
+            .ForMember(dest => dest.ClientName,
+                opt => opt.MapFrom(src => src.Client != null ? src.Client.Name : null))
+            .ForMember(dest => dest.ProjectBrandId,
+                opt => opt.MapFrom(src => src.ProjectBrandId))
+            .ForMember(dest => dest.ProjectBrandName,
+                opt => opt.MapFrom(src => src.ProjectBrand != null ? src.ProjectBrand.Name : null))
+            .ForMember(dest => dest.MediaId,
+                opt => opt.MapFrom(src => src.MediaId))
+            .ForMember(dest => dest.MediaName,
+                opt => opt.MapFrom(src => src.Media != null ? src.Media.Name : null))
+            .ForMember(dest => dest.JobTypeId,
+                opt => opt.MapFrom(src => src.JobTypeId))
+            .ForMember(dest => dest.JobTypeName,
+                opt => opt.MapFrom(src => src.JobType != null ? src.JobType.Name : null));
 
         // TimeEntry -> TimeEntryDetailDto
         CreateMap<TimeEntry, TimeEntryDetailDto>()
