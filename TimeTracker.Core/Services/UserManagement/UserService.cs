@@ -243,62 +243,69 @@ public class UserService : IUserService
         var user = await _userRepository.GetByIdAsync(id);
         if (user == null)
         {
-            _logger.LogWarning(
-                "Спроба оновлення неіснуючого користувача ID: {UserId}",
-                id);
+            _logger.LogWarning("Спроба оновлення неіснуючого користувача ID: {UserId}", id);
             throw new KeyNotFoundException($"Користувача з ID {id} не знайдено");
         }
 
-        // Валідація - логуємо в консоль
+        // Email uniqueness
         if (await _userRepository.IsEmailExistsAsync(dto.Email, id))
         {
-            _logger.LogWarning(
-                "Спроба зміни email на вже існуючий: {Email} для користувача ID: {UserId}",
-                dto.Email, id);
+            _logger.LogWarning("Спроба зміни email на вже існуючий: {Email} для користувача ID: {UserId}", dto.Email,
+                id);
             throw new InvalidOperationException("Email вже використовується іншим користувачем");
+        }
+
+        // Login uniqueness (тільки якщо передано)
+        if (!string.IsNullOrWhiteSpace(dto.Login) && await _userRepository.IsLoginExistsAsync(dto.Login, id))
+        {
+            _logger.LogWarning("Спроба зміни логіну на вже існуючий: {Login} для користувача ID: {UserId}", dto.Login,
+                id);
+            throw new InvalidOperationException("Логін вже використовується іншим користувачем");
         }
 
         var agency = await _unitOfWork.Agencies.GetByIdAsync(dto.AgencyId);
         if (agency == null)
-        {
-            _logger.LogWarning(
-                "Спроба призначення неіснуючого Agency ID: {AgencyId} для користувача ID: {UserId}",
-                dto.AgencyId, id);
-            throw new KeyNotFoundException($"Agency з ID {dto.AgencyId} не знайдено");
-        }
-
-        if (!agency.IsActive)
-        {
-            _logger.LogWarning(
-                "Спроба призначення неактивного Agency ID: {AgencyId} для користувача ID: {UserId}",
-                dto.AgencyId, id);
-            throw new InvalidOperationException("Неможливо призначити користувача до неактивного Agency");
-        }
+            throw new KeyNotFoundException($"Агенцію з ID {dto.AgencyId} не знайдено");
 
         // Зберігаємо старі значення для аудиту
-        var oldValues = new
-        {
-            Email = user.Email,
-            Name = user.Name,
-            AgencyId = user.AgencyId
-        };
+        var oldValues = new { user.Name, user.Email, user.Login, user.AgencyId };
 
-        // Оновлюємо дані
-        user.Email = dto.Email.Trim();
-        user.Name = dto.Name.Trim();
+        // Оновлюємо основні поля
+        user.Name = dto.Name;
+        user.Email = dto.Email;
         user.AgencyId = dto.AgencyId;
 
-        var newValues = new
-        {
-            Email = user.Email,
-            Name = user.Name,
-            AgencyId = user.AgencyId
-        };
+        if (!string.IsNullOrWhiteSpace(dto.Login))
+            user.Login = dto.Login;
 
+        if (!string.IsNullOrWhiteSpace(dto.NewPassword))
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+
+        user.UpdatedAt = DateTime.UtcNow;
         _userRepository.Update(user);
+
+        // Оновлюємо ролі якщо передано
+        if (dto.RoleIds != null && dto.RoleIds.Any())
+        {
+            // Видаляємо старі ролі
+            user.UserRoles.Clear();
+
+            // Додаємо нові
+            foreach (var roleId in dto.RoleIds)
+            {
+                user.UserRoles.Add(new UserRole
+                {
+                    UserId = user.Id,
+                    RoleId = roleId,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+        }
+
         await _unitOfWork.SaveChangesAsync();
 
-        //АУДИТ - записуємо в БД 
+        var newValues = new { user.Name, user.Email, user.Login, user.AgencyId };
+
         await _auditService.LogUserUpdatedAsync(
             userId: user.Id,
             userName: user.Name,
@@ -309,7 +316,12 @@ public class UserService : IUserService
             ipAddress: ipAddress,
             userAgent: userAgent);
 
-        return _mapper.Map<UserDto>(user);
+        var updatedUser = await _userRepository
+            .GetQueryable()
+            .Include(u => u.Agency)
+            .FirstOrDefaultAsync(u => u.Id == user.Id);
+
+        return _mapper.Map<UserDto>(updatedUser);
     }
 
     public async Task ActivateAsync(
