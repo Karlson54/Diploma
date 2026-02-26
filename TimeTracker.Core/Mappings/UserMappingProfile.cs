@@ -11,12 +11,12 @@ public class UserMappingProfile : Profile
     {
         // User -> UserDto
         CreateMap<User, UserDto>()
-            .ForMember(dest => dest.AgencyName, 
+            .ForMember(dest => dest.AgencyName,
                 opt => opt.MapFrom(src => src.Agency != null ? src.Agency.Name : string.Empty));
 
         // User -> UserDetailDto
         CreateMap<User, UserDetailDto>()
-            .ForMember(dest => dest.AgencyName, 
+            .ForMember(dest => dest.AgencyName,
                 opt => opt.MapFrom(src => src.Agency != null ? src.Agency.Name : string.Empty))
             .ForMember(dest => dest.Roles,
                 opt => opt.MapFrom(src => src.UserRoles.Select(ur => ur.Role)));
@@ -28,7 +28,12 @@ public class UserMappingProfile : Profile
             .ForMember(dest => dest.AgencyName,
                 opt => opt.MapFrom(src => src.Agency != null ? src.Agency.Name : string.Empty))
             .ForMember(dest => dest.RolesCount,
-                opt => opt.MapFrom(src => src.UserRoles.Count));
+                opt => opt.MapFrom(src => src.UserRoles.Count))
+            .ForMember(dest => dest.Roles,
+                opt => opt.MapFrom(src => src.UserRoles
+                    .Where(ur => ur.Role != null)
+                    .Select(ur => ur.Role.Name)
+                    .ToList()));
 
         // CreateUserDto -> User
         CreateMap<CreateUserDto, User>()

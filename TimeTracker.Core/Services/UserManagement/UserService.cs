@@ -47,6 +47,7 @@ public class UserService : IUserService
             .GetQueryable()
             .Include(u => u.Agency)
             .Include(u => u.UserRoles)
+            .ThenInclude(ur => ur.Role)
             .AsNoTracking()
             .OrderBy(u => u.Name)
             .ToListAsync();
@@ -60,6 +61,7 @@ public class UserService : IUserService
             .GetQueryable()
             .Include(u => u.Agency)
             .Include(u => u.UserRoles)
+            .ThenInclude(ur => ur.Role)
             .Where(u => u.IsActive)
             .AsNoTracking()
             .OrderBy(u => u.Name)
@@ -369,28 +371,41 @@ public class UserService : IUserService
         string ipAddress,
         string userAgent)
     {
-        var user = await _userRepository.GetByIdAsync(id);
+        // Завантажуємо з ролями для перевірки адміністратора
+        var user = await _userRepository.GetByIdWithRolesAsync(id);
         if (user == null)
         {
-            _logger.LogWarning(
-                "Спроба деактивації неіснуючого користувача ID: {UserId}",
-                id);
+            _logger.LogWarning("Спроба деактивації неіснуючого користувача ID: {UserId}", id);
             throw new KeyNotFoundException($"Користувача з ID {id} не знайдено");
         }
 
         if (!user.IsActive)
         {
-            _logger.LogInformation(
-                "Користувач ID: {UserId} вже деактивований",
-                id);
+            _logger.LogInformation("Користувач ID: {UserId} вже деактивований", id);
             throw new InvalidOperationException("Користувач вже деактивований");
+        }
+
+        // Захист останнього активного адміністратора
+        var isAdmin = user.UserRoles.Any(ur => ur.Role.IsActive && ur.Role.Name == "Admin");
+        if (isAdmin)
+        {
+            var admins = await _userRepository.GetUsersWithRoleAsync("Admin");
+            var activeAdminsCount = admins.Count(u => u.IsActive);
+
+            if (activeAdminsCount <= 1)
+            {
+                _logger.LogWarning(
+                    "SECURITY: Спроба деактивації останнього активного адміністратора {UserId} ({UserName}) користувачем {RequestingUserId}",
+                    id, user.Name, requestingUserId);
+                throw new InvalidOperationException(
+                    "Неможливо деактивувати останнього активного адміністратора системи.");
+            }
         }
 
         user.IsActive = false;
         _userRepository.Update(user);
         await _unitOfWork.SaveChangesAsync();
 
-        //АУДИТ - записуємо в БД 
         await _auditService.LogUserDeactivatedAsync(
             userId: user.Id,
             userName: user.Name,

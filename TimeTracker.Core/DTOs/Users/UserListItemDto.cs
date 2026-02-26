@@ -44,4 +44,9 @@ public class UserListItemDto
     /// Кількість призначених ролей
     /// </summary>
     public int RolesCount { get; set; }
+    
+    /// <summary>
+    /// Назви ролей користувача
+    /// </summary>
+    public List<string> Roles { get; set; } = new();
 }
