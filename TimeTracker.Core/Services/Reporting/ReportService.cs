@@ -6,6 +6,7 @@ using TimeTracker.Core.DTOs.Reports.Common;
 using TimeTracker.Data.Repositories.TimeEntries;
 using TimeTracker.Data.Repositories.Users;
 using TimeTracker.Data.UnitOfWork;
+using TimeTracker.Core.DTOs.TimeEntries;
 
 namespace TimeTracker.Core.Services.Reporting;
 
@@ -33,6 +34,92 @@ public class ReportService : IReportService
         _unitOfWork = unitOfWork;
         _cache = cache;
         _logger = logger;
+    }
+
+    public async Task<IEnumerable<TimeEntryDto>> GetAllTimeEntriesForExportAsync(
+        DateTime fromDate,
+        DateTime toDate,
+        long requestingUserId)
+    {
+        if (!await CanUserAccessReportAsync(requestingUserId))
+            throw new UnauthorizedAccessException("Вы не имеете доступа к этому отчету");
+
+        var entries = await _timeEntryRepository
+            .GetQueryable()
+            .Include(te => te.User).ThenInclude(u => u.Agency)
+            .Include(te => te.Market)
+            .Include(te => te.ContractingAgency)
+            .Include(te => te.Client)
+            .Include(te => te.ProjectBrand)
+            .Include(te => te.Media)
+            .Include(te => te.JobType)
+            .Where(te => te.EntryDate >= fromDate.Date && te.EntryDate <= toDate.Date)
+            .OrderBy(te => te.EntryDate)
+            .ThenBy(te => te.User.Name)
+            .AsNoTracking()
+            .Select(te => new TimeEntryDto
+            {
+                Id = te.Id,
+                UserId = te.UserId,
+                UserName = te.User.Name,
+                AgencyName = te.User.Agency != null ? te.User.Agency.Name : string.Empty,
+                EntryDate = te.EntryDate,
+                MarketName = te.Market != null ? te.Market.Name : string.Empty,
+                ContractingAgencyName = te.ContractingAgency != null ? te.ContractingAgency.Name : string.Empty,
+                ClientName = te.Client != null ? te.Client.Name : string.Empty,
+                ProjectBrandName = te.ProjectBrand != null ? te.ProjectBrand.Name : string.Empty,
+                MediaName = te.Media != null ? te.Media.Name : string.Empty,
+                JobTypeName = te.JobType != null ? te.JobType.Name : string.Empty,
+                HoursMilliseconds = te.HoursMilliseconds,
+                Comments = te.Comments
+            })
+            .ToListAsync();
+
+        return entries;
+    }
+
+    public async Task<IEnumerable<TimeEntryDto>> GetUserTimeEntriesForExportAsync(
+        long userId,
+        DateTime fromDate,
+        DateTime toDate,
+        long requestingUserId)
+    {
+        if (!await CanUserAccessReportAsync(requestingUserId, userId))
+            throw new UnauthorizedAccessException("Вы не имеете доступа к этому отчету");
+
+        var entries = await _timeEntryRepository
+            .GetQueryable()
+            .Include(te => te.User).ThenInclude(u => u.Agency)
+            .Include(te => te.Market)
+            .Include(te => te.ContractingAgency)
+            .Include(te => te.Client)
+            .Include(te => te.ProjectBrand)
+            .Include(te => te.Media)
+            .Include(te => te.JobType)
+            .Where(te => te.UserId == userId
+                         && te.EntryDate >= fromDate.Date
+                         && te.EntryDate <= toDate.Date)
+            .OrderBy(te => te.EntryDate)
+            .AsNoTracking()
+            .Select(te => new TimeEntryDto
+            {
+                Id = te.Id,
+                UserId = te.UserId,
+                UserName = te.User.Name,
+                AgencyName = te.User.Agency != null ? te.User.Agency.Name : string.Empty,
+                EntryDate = te.EntryDate,
+                MarketName = te.Market != null ? te.Market.Name : string.Empty,
+                ContractingAgencyName = te.ContractingAgency != null ? te.ContractingAgency.Name : string.Empty,
+                ClientName = te.Client != null ? te.Client.Name : string.Empty,
+                ProjectBrandName = te.ProjectBrand != null ? te.ProjectBrand.Name : string.Empty,
+                MediaName = te.Media != null ? te.Media.Name : string.Empty,
+                JobTypeName = te.JobType != null ? te.JobType.Name : string.Empty,
+                HoursMilliseconds = te.HoursMilliseconds,
+                Comments = te.Comments
+            })
+            .ToListAsync();
+
+        return entries;
     }
 
     public async Task<UserLoadReportDto> GetUserLoadReportAsync(

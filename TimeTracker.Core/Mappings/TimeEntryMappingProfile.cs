@@ -54,7 +54,11 @@ public class TimeEntryMappingProfile : Profile
             .ForMember(dest => dest.JobTypeId,
                 opt => opt.MapFrom(src => src.JobTypeId))
             .ForMember(dest => dest.JobTypeName,
-                opt => opt.MapFrom(src => src.JobType != null ? src.JobType.Name : null));
+                opt => opt.MapFrom(src => src.JobType != null ? src.JobType.Name : null))
+            .ForMember(dest => dest.AgencyId,
+                opt => opt.MapFrom(src => src.AgencyId))
+            .ForMember(dest => dest.AgencyName,
+                opt => opt.MapFrom(src => src.Agency != null ? src.Agency.Name : null));
 
         // TimeEntry -> TimeEntryDetailDto
         CreateMap<TimeEntry, TimeEntryDetailDto>()

@@ -197,6 +197,7 @@ public class TimeEntryRepository : Repository<TimeEntry>, ITimeEntryRepository
 
         var entries = await query
             .Include(te => te.User)
+            .Include(te => te.Agency)
             .Include(te => te.Market)
             .Include(te => te.ContractingAgency)
             .Include(te => te.Client)

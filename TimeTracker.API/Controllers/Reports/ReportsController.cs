@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TimeTracker.Core.Services.Reporting;
+using TimeTracker.Core.DTOs.Reports;
 
 namespace TimeTracker.API.Controllers.Reports;
 
@@ -103,6 +104,91 @@ public class ReportsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Помилка при експорті звіту користувача {UserId}", userId);
+            return BadRequest(new { Message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Експорт записів співробітника як плоска таблиця з вибором колонок
+    /// </summary>
+    [HttpGet("user/{userId}/export/flat")]
+    [Authorize(Policy = "CanViewOwnReports")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> ExportUserEntriesFlat(
+        long userId,
+        [FromQuery] DateTime fromDate,
+        [FromQuery] DateTime toDate,
+        [FromQuery] string? columns = null,
+        [FromQuery] string locale = "uk")
+    {
+        try
+        {
+            var currentUserId = GetCurrentUserId();
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
+            var columnsDto = ExportColumnsDto.FromString(columns);
+
+            var fileBytes = await _exportService.ExportUserEntriesFlatToExcelAsync(
+                userId, fromDate, toDate, currentUserId, ipAddress, userAgent, columnsDto, locale);
+
+            var fileName = $"Report_{userId}_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.xlsx";
+
+            return File(
+                fileBytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                fileName);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Помилка при flat-експорті записів користувача {UserId}", userId);
+            return BadRequest(new { Message = ex.Message });
+        }
+    }
+    
+    /// <summary>
+    /// Експорт всіх записів як плоска таблиця з вибором колонок (тільки Admin)
+    /// </summary>
+    [HttpGet("export/flat")]
+    [Authorize(Policy = "CanViewAllReports")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> ExportAllEntriesFlat(
+        [FromQuery] DateTime fromDate,
+        [FromQuery] DateTime toDate,
+        [FromQuery] string? columns = null,
+        [FromQuery] string locale = "uk")
+    {
+        try
+        {
+            var currentUserId = GetCurrentUserId();
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
+            var columnsDto = ExportColumnsDto.FromString(columns);
+
+            var fileBytes = await _exportService.ExportAllEntriesFlatToExcelAsync(
+                fromDate, toDate, currentUserId, ipAddress, userAgent, columnsDto, locale);
+
+            var fileName = $"AllReports_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.xlsx";
+
+            return File(
+                fileBytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                fileName);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Помилка при flat-експорті всіх записів");
             return BadRequest(new { Message = ex.Message });
         }
     }

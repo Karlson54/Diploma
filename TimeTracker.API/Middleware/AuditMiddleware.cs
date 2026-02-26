@@ -67,7 +67,7 @@ public class AuditMiddleware
             stopwatch.Stop();
             context.Response.Body = originalBodyStream;
 
-            // 🔥 ВИПРАВЛЕННЯ: Логуємо помилки ДЛЯ ВСІХ (навіть неавторизованих)
+            // ВИПРАВЛЕННЯ: Логуємо помилки ДЛЯ ВСІХ (навіть неавторизованих)
             await LogErrorAsync(context, auditService, ex, requestBody, stopwatch.ElapsedMilliseconds);
 
             throw; // Пробрасуємо exception далі
@@ -86,7 +86,7 @@ public class AuditMiddleware
             var userId = GetUserId(context);
             var userName = GetUserName(context);
 
-            // 🔥 ВИПРАВЛЕННЯ: Логуємо навіть якщо userId == null
+            // ВИПРАВЛЕННЯ: Логуємо навіть якщо userId == null
             // Для неавторизованих використовуємо userId = 0
             var actualUserId = userId ?? 0;
             var actualUserName = userName ?? "Anonymous";

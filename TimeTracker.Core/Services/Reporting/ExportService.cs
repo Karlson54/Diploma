@@ -8,6 +8,7 @@ using TimeTracker.Core.DTOs.Reports;
 using TimeTracker.Core.DTOs.Reports.Common;
 using TimeTracker.Core.Services.Audit;
 using static TimeTracker.Core.Common.ExportConstants;
+using TimeTracker.Core.DTOs.Reports;
 
 namespace TimeTracker.Core.Services.Reporting;
 
@@ -1371,4 +1372,223 @@ public class ExportService : IExportService
         public int UsersCount { get; set; }
         public double Percentage { get; set; }
     }
+
+    public async Task<byte[]> ExportUserEntriesFlatToExcelAsync(
+        long userId,
+        DateTime fromDate,
+        DateTime toDate,
+        long requestingUserId,
+        string ipAddress,
+        string userAgent,
+        ExportColumnsDto columns,
+        string locale = "uk")
+    {
+        try
+        {
+            var entries = await _reportService.GetUserTimeEntriesForExportAsync(
+                userId, fromDate, toDate, requestingUserId);
+
+            var entriesList = entries.ToList();
+            var userName = entriesList.FirstOrDefault()?.UserName ?? userId.ToString();
+
+            using var workbook = new XLWorkbook();
+            var worksheet = workbook.Worksheets.Add("Report");
+
+            // Динамически строим заголовки и запоминаем номер колонки
+            var col = 1;
+            var colMap = new Dictionary<string, int>();
+
+            void AddHeader(string key, string label)
+            {
+                colMap[key] = col;
+                var cell = worksheet.Cell(1, col);
+                cell.Value = label;
+                cell.Style.Font.Bold = true;
+                cell.Style.Fill.BackgroundColor = XLColor.FromHtml(ExcelStyles.HeaderBackgroundColor);
+                cell.Style.Font.FontColor = XLColor.FromHtml(ExcelStyles.HeaderFontColor);
+                cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                col++;
+            }
+
+            if (columns.Agency) AddHeader("agency", GetLocalizedText("Agency", locale));
+            if (columns.FullName) AddHeader("fullname", GetLocalizedText("Name", locale));
+            if (columns.Date) AddHeader("date", GetLocalizedText("Date", locale));
+            if (columns.Market) AddHeader("market", GetLocalizedText("Market", locale));
+            if (columns.ContractingAgency)
+                AddHeader("contractingagency", GetLocalizedText("Contracting Agency", locale));
+            if (columns.Client) AddHeader("client", GetLocalizedText("Client", locale));
+            if (columns.ProjectBrand) AddHeader("projectbrand", GetLocalizedText("Project / Brand", locale));
+            if (columns.Media) AddHeader("media", GetLocalizedText("Media", locale));
+            if (columns.JobType) AddHeader("jobtype", GetLocalizedText("Job Type", locale));
+            if (columns.Hours) AddHeader("hours", GetLocalizedText("Hours", locale));
+            if (columns.Comments) AddHeader("comments", GetLocalizedText("Comments", locale));
+
+            var row = 2;
+            foreach (var entry in entriesList)
+            {
+                if (columns.Agency) worksheet.Cell(row, colMap["agency"]).Value = entry.AgencyName;
+                if (columns.FullName) worksheet.Cell(row, colMap["fullname"]).Value = entry.UserName;
+                if (columns.Date) worksheet.Cell(row, colMap["date"]).Value = entry.EntryDate.ToString("dd.MM.yyyy");
+                if (columns.Market) worksheet.Cell(row, colMap["market"]).Value = entry.MarketName;
+                if (columns.ContractingAgency)
+                    worksheet.Cell(row, colMap["contractingagency"]).Value = entry.ContractingAgencyName;
+                if (columns.Client) worksheet.Cell(row, colMap["client"]).Value = entry.ClientName;
+                if (columns.ProjectBrand) worksheet.Cell(row, colMap["projectbrand"]).Value = entry.ProjectBrandName;
+                if (columns.Media) worksheet.Cell(row, colMap["media"]).Value = entry.MediaName;
+                if (columns.JobType) worksheet.Cell(row, colMap["jobtype"]).Value = entry.JobTypeName;
+                if (columns.Hours)
+                    worksheet.Cell(row, colMap["hours"]).Value =
+                        Math.Round((double)entry.HoursMilliseconds / 3600000, 2);
+                if (columns.Comments) worksheet.Cell(row, colMap["comments"]).Value = entry.Comments ?? string.Empty;
+
+                // Чередование цветов строк
+                if (row % 2 == 0)
+                {
+                    worksheet.Range(row, 1, row, col - 1).Style.Fill.BackgroundColor =
+                        XLColor.FromHtml(ExcelStyles.AlternateRowColor);
+                }
+
+                row++;
+            }
+
+            worksheet.Columns().AdjustToContents();
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+
+            await _auditService.LogReportExportedAsync(
+                reportType: "UserEntriesFlat",
+                exportFormat: "Excel",
+                requestingUserId: requestingUserId,
+                requestingUserName: userName,
+                reportParams: new { UserId = userId, FromDate = fromDate, ToDate = toDate },
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: true);
+
+            return stream.ToArray();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Помилка при flat-експорті записів користувача {UserId}", userId);
+
+            await _auditService.LogReportExportedAsync(
+                reportType: "UserEntriesFlat",
+                exportFormat: "Excel",
+                requestingUserId: requestingUserId,
+                requestingUserName: "Unknown",
+                reportParams: new { UserId = userId, FromDate = fromDate, ToDate = toDate },
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                success: false,
+                errorMessage: ex.Message);
+
+            throw;
+        }
+    }
+    
+    public async Task<byte[]> ExportAllEntriesFlatToExcelAsync(
+    DateTime fromDate,
+    DateTime toDate,
+    long requestingUserId,
+    string ipAddress,
+    string userAgent,
+    ExportColumnsDto columns,
+    string locale = "uk")
+{
+    try
+    {
+        var entries = await _reportService.GetAllTimeEntriesForExportAsync(
+            fromDate, toDate, requestingUserId);
+
+        var entriesList = entries.ToList();
+
+        using var workbook = new XLWorkbook();
+        var worksheet = workbook.Worksheets.Add("Report");
+
+        var col = 1;
+        var colMap = new Dictionary<string, int>();
+
+        void AddHeader(string key, string label)
+        {
+            colMap[key] = col;
+            var cell = worksheet.Cell(1, col);
+            cell.Value = label;
+            cell.Style.Font.Bold = true;
+            cell.Style.Fill.BackgroundColor = XLColor.FromHtml(ExcelStyles.HeaderBackgroundColor);
+            cell.Style.Font.FontColor = XLColor.FromHtml(ExcelStyles.HeaderFontColor);
+            cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+            col++;
+        }
+
+        if (columns.Agency) AddHeader("agency", GetLocalizedText("Agency", locale));
+        if (columns.FullName) AddHeader("fullname", GetLocalizedText("Name", locale));
+        if (columns.Date) AddHeader("date", GetLocalizedText("Date", locale));
+        if (columns.Market) AddHeader("market", GetLocalizedText("Market", locale));
+        if (columns.ContractingAgency) AddHeader("contractingagency", GetLocalizedText("Contracting Agency", locale));
+        if (columns.Client) AddHeader("client", GetLocalizedText("Client", locale));
+        if (columns.ProjectBrand) AddHeader("projectbrand", GetLocalizedText("Project / Brand", locale));
+        if (columns.Media) AddHeader("media", GetLocalizedText("Media", locale));
+        if (columns.JobType) AddHeader("jobtype", GetLocalizedText("Job Type", locale));
+        if (columns.Hours) AddHeader("hours", GetLocalizedText("Hours", locale));
+        if (columns.Comments) AddHeader("comments", GetLocalizedText("Comments", locale));
+
+        var row = 2;
+        foreach (var entry in entriesList)
+        {
+            if (columns.Agency) worksheet.Cell(row, colMap["agency"]).Value = entry.AgencyName;
+            if (columns.FullName) worksheet.Cell(row, colMap["fullname"]).Value = entry.UserName;
+            if (columns.Date) worksheet.Cell(row, colMap["date"]).Value = entry.EntryDate.ToString("dd.MM.yyyy");
+            if (columns.Market) worksheet.Cell(row, colMap["market"]).Value = entry.MarketName;
+            if (columns.ContractingAgency) worksheet.Cell(row, colMap["contractingagency"]).Value = entry.ContractingAgencyName;
+            if (columns.Client) worksheet.Cell(row, colMap["client"]).Value = entry.ClientName;
+            if (columns.ProjectBrand) worksheet.Cell(row, colMap["projectbrand"]).Value = entry.ProjectBrandName;
+            if (columns.Media) worksheet.Cell(row, colMap["media"]).Value = entry.MediaName;
+            if (columns.JobType) worksheet.Cell(row, colMap["jobtype"]).Value = entry.JobTypeName;
+            if (columns.Hours) worksheet.Cell(row, colMap["hours"]).Value =
+                Math.Round((double)entry.HoursMilliseconds / 3600000, 2);
+            if (columns.Comments) worksheet.Cell(row, colMap["comments"]).Value = entry.Comments ?? string.Empty;
+
+            if (row % 2 == 0)
+                worksheet.Range(row, 1, row, col - 1).Style.Fill.BackgroundColor =
+                    XLColor.FromHtml(ExcelStyles.AlternateRowColor);
+
+            row++;
+        }
+
+        worksheet.Columns().AdjustToContents();
+
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+
+        await _auditService.LogReportExportedAsync(
+            reportType: "AllEntriesFlat",
+            exportFormat: "Excel",
+            requestingUserId: requestingUserId,
+            requestingUserName: "Admin",
+            reportParams: new { FromDate = fromDate, ToDate = toDate },
+            ipAddress: ipAddress,
+            userAgent: userAgent,
+            success: true);
+
+        return stream.ToArray();
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Помилка при flat-експорті всіх записів");
+
+        await _auditService.LogReportExportedAsync(
+            reportType: "AllEntriesFlat",
+            exportFormat: "Excel",
+            requestingUserId: requestingUserId,
+            requestingUserName: "Unknown",
+            reportParams: new { FromDate = fromDate, ToDate = toDate },
+            ipAddress: ipAddress,
+            userAgent: userAgent,
+            success: false,
+            errorMessage: ex.Message);
+
+        throw;
+    }
+}
 }

@@ -1,7 +1,28 @@
+using TimeTracker.Core.DTOs.Reports;
+
 namespace TimeTracker.Core.Services.Reporting;
 
 public interface IExportService
 {
+    Task<byte[]> ExportAllEntriesFlatToExcelAsync(
+        DateTime fromDate,
+        DateTime toDate,
+        long requestingUserId,
+        string ipAddress,
+        string userAgent,
+        ExportColumnsDto columns,
+        string locale = "uk");
+    
+    Task<byte[]> ExportUserEntriesFlatToExcelAsync(
+        long userId,
+        DateTime fromDate,
+        DateTime toDate,
+        long requestingUserId,
+        string ipAddress,
+        string userAgent,
+        ExportColumnsDto columns,
+        string locale = "uk");
+    
     // Export to Excel (з локалізацією)
     Task<byte[]> ExportUserLoadReportToExcelAsync(
         long userId,
