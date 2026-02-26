@@ -14,6 +14,11 @@ public class UserListItemDto
     /// Повне ім'я
     /// </summary>
     public string Name { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Логін
+    /// </summary>
+    public string Login { get; set; } = string.Empty;
 
     /// <summary>
     /// Email
