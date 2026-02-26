@@ -5,6 +5,7 @@ using Moq;
 using TimeTracker.Core.DTOs.Users;
 using TimeTracker.Core.Services.UserManagement;
 using TimeTracker.Data.Entities;
+using TimeTracker.Data.Repositories.Roles;
 using TimeTracker.Data.Repositories.Users;
 using TimeTracker.Tests.Services.TestBase;
 
@@ -13,6 +14,7 @@ namespace TimeTracker.Tests.Services.UserManagement;
 public class UserServiceTests : ServiceTestBase
 {
     private readonly Mock<IUserRepository> _userRepoMock;
+    private readonly Mock<IRoleRepository> _roleRepoMock;
     private readonly UserService _service;
 
     private const string TestIp = "127.0.0.1";
@@ -24,9 +26,11 @@ public class UserServiceTests : ServiceTestBase
     public UserServiceTests()
     {
         _userRepoMock = new Mock<IUserRepository>();
+        _roleRepoMock = new Mock<IRoleRepository>();
 
         _service = new UserService(
             _userRepoMock.Object,
+            _roleRepoMock.Object,
             UnitOfWorkMock.Object,
             Mapper,
             AuditServiceMock.Object,

@@ -5,6 +5,7 @@ using TimeTracker.Core.Common;
 using TimeTracker.Core.DTOs.Users;
 using TimeTracker.Core.Services.Audit;
 using TimeTracker.Data.Entities;
+using TimeTracker.Data.Repositories.Roles;
 using TimeTracker.Data.Repositories.Users;
 using TimeTracker.Data.UnitOfWork;
 
@@ -13,6 +14,7 @@ namespace TimeTracker.Core.Services.UserManagement;
 public class UserService : IUserService
 {
     private readonly IUserRepository _userRepository;
+    private readonly IRoleRepository _roleRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly IAuditService _auditService;
@@ -20,12 +22,14 @@ public class UserService : IUserService
 
     public UserService(
         IUserRepository userRepository,
+        IRoleRepository roleRepository,
         IUnitOfWork unitOfWork,
         IMapper mapper,
         IAuditService auditService,
         ILogger<UserService> logger)
     {
         _userRepository = userRepository;
+        _roleRepository = roleRepository;
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _auditService = auditService;
@@ -289,19 +293,7 @@ public class UserService : IUserService
         // Оновлюємо ролі якщо передано
         if (dto.RoleIds != null && dto.RoleIds.Any())
         {
-            // Видаляємо старі ролі
-            user.UserRoles.Clear();
-
-            // Додаємо нові
-            foreach (var roleId in dto.RoleIds)
-            {
-                user.UserRoles.Add(new UserRole
-                {
-                    UserId = user.Id,
-                    RoleId = roleId,
-                    CreatedAt = DateTime.UtcNow
-                });
-            }
+            await _roleRepository.ReplaceUserRolesAsync(user.Id, dto.RoleIds);
         }
 
         await _unitOfWork.SaveChangesAsync();
