@@ -71,3 +71,4 @@ app.MapControllers();
 app.MapTimeTrackerHealthChecks();
 
 app.Run();
+//check for vercel disconnect

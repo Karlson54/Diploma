@@ -30,6 +30,7 @@ services:
       ConnectionStrings__TimeTracker: "Server=sqlserver,1433;Database=TimeTracker;User=SA;Password=${DB_PASSWORD};TrustServerCertificate=True"
       Cors__AllowedOrigins__0: "http://localhost:3000"
       Cors__AllowedOrigins__1: "https://localhost:3000"
+      Cors__AllowedOrigins__2: "https://timetracker-silk-three.vercel.app"
       JwtSettings__SecretKey: ${JWT_SECRET}
     depends_on:
       sqlserver:
