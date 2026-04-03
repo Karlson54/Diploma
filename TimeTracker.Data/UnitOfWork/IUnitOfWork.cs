@@ -14,7 +14,6 @@ public interface IUnitOfWork : IDisposable
     IRepository<Client> Clients { get; }
     IRepository<Media> Media { get; }
     IRepository<JobType> JobTypes { get; }
-    IRepository<ProjectBrand> ProjectBrands { get; }
     IRepository<Role> Roles { get; }
     IRepository<User> Users { get; }
     IRepository<UserRole> UserRoles { get; }

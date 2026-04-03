@@ -50,7 +50,6 @@ public class ReportService : IReportService
             .Include(te => te.Market)
             .Include(te => te.ContractingAgency)
             .Include(te => te.Client)
-            .Include(te => te.ProjectBrand)
             .Include(te => te.Media)
             .Include(te => te.JobType)
             .Where(te => te.EntryDate >= fromDate.Date && te.EntryDate <= toDate.Date)
@@ -67,7 +66,7 @@ public class ReportService : IReportService
                 MarketName = te.Market != null ? te.Market.Name : string.Empty,
                 ContractingAgencyName = te.ContractingAgency != null ? te.ContractingAgency.Name : string.Empty,
                 ClientName = te.Client != null ? te.Client.Name : string.Empty,
-                ProjectBrandName = te.ProjectBrand != null ? te.ProjectBrand.Name : string.Empty,
+                ProjectBrandName = te.ProjectBrand,
                 MediaName = te.Media != null ? te.Media.Name : string.Empty,
                 JobTypeName = te.JobType != null ? te.JobType.Name : string.Empty,
                 HoursMilliseconds = te.HoursMilliseconds,
@@ -93,7 +92,6 @@ public class ReportService : IReportService
             .Include(te => te.Market)
             .Include(te => te.ContractingAgency)
             .Include(te => te.Client)
-            .Include(te => te.ProjectBrand)
             .Include(te => te.Media)
             .Include(te => te.JobType)
             .Where(te => te.UserId == userId
@@ -111,7 +109,7 @@ public class ReportService : IReportService
                 MarketName = te.Market != null ? te.Market.Name : string.Empty,
                 ContractingAgencyName = te.ContractingAgency != null ? te.ContractingAgency.Name : string.Empty,
                 ClientName = te.Client != null ? te.Client.Name : string.Empty,
-                ProjectBrandName = te.ProjectBrand != null ? te.ProjectBrand.Name : string.Empty,
+                ProjectBrandName = te.ProjectBrand,
                 MediaName = te.Media != null ? te.Media.Name : string.Empty,
                 JobTypeName = te.JobType != null ? te.JobType.Name : string.Empty,
                 HoursMilliseconds = te.HoursMilliseconds,
@@ -160,7 +158,6 @@ public class ReportService : IReportService
         var entries = await _timeEntryRepository
             .GetQueryable()
             .Include(te => te.Client)
-            .Include(te => te.ProjectBrand)
             .Include(te => te.JobType)
             .Where(te => te.UserId == userId &&
                          te.EntryDate >= fromDate.Date &&
@@ -200,7 +197,7 @@ public class ReportService : IReportService
                     HoursMs = g.Sum(e => e.HoursMilliseconds),
                     EntriesCount = g.Count(),
                     Clients = g.Select(e => e.Client.Name).Distinct().ToList(),
-                    Projects = g.Select(e => e.ProjectBrand.Name).Distinct().ToList()
+                    Projects = g.Select(e => e.ProjectBrand).Distinct().ToList()
                 })
                 .OrderBy(d => d.Date)
                 .ToList(),
@@ -217,7 +214,7 @@ public class ReportService : IReportService
                     Percentage = totalHoursMs > 0
                         ? Math.Round((double)g.Sum(e => e.HoursMilliseconds) / totalHoursMs * 100, 2)
                         : 0,
-                    Projects = g.Select(e => e.ProjectBrand.Name).Distinct().ToList()
+                    Projects = g.Select(e => e.ProjectBrand).Distinct().ToList()
                 })
                 .OrderByDescending(c => c.TotalHoursMs)
                 .ToList(),
@@ -242,12 +239,12 @@ public class ReportService : IReportService
             ProjectBreakdown = entries
                 .GroupBy(e => new
                 {
-                    e.ProjectBrandId, ProjectBrandName = e.ProjectBrand.Name,
+                    ProjectBrandName = e.ProjectBrand,
                     ClientName = e.Client.Name
                 })
                 .Select(g => new ProjectBreakdownDto
                 {
-                    ProjectBrandId = g.Key.ProjectBrandId,
+                    ProjectBrandId = 0, // больше нет ID
                     ProjectBrandName = g.Key.ProjectBrandName,
                     ClientName = g.Key.ClientName,
                     TotalHoursMs = g.Sum(e => e.HoursMilliseconds),
@@ -433,7 +430,6 @@ public class ReportService : IReportService
             .GetQueryable()
             .Include(te => te.User)
             .ThenInclude(u => u.Agency)
-            .Include(te => te.ProjectBrand)
             .Include(te => te.JobType)
             .Include(te => te.Media)
             .Where(te => te.ClientId == clientId &&
@@ -455,7 +451,7 @@ public class ReportService : IReportService
             TotalHoursMs = totalHours,
             TotalEntries = entries.Count,
             UniqueUsers = entries.Select(e => e.UserId).Distinct().Count(),
-            UniqueProjects = entries.Select(e => e.ProjectBrandId).Distinct().Count(),
+            UniqueProjects = entries.Select(e => e.ProjectBrand).Distinct().Count(),
 
             // User Contributions
             UserContributions = entries
@@ -476,11 +472,11 @@ public class ReportService : IReportService
 
             // Project Breakdown
             ProjectBreakdown = entries
-                .GroupBy(e => new { e.ProjectBrandId, e.ProjectBrand.Name })
+                .GroupBy(e => e.ProjectBrand)
                 .Select(g => new ProjectBreakdownDto
                 {
-                    ProjectBrandId = g.Key.ProjectBrandId,
-                    ProjectBrandName = g.Key.Name,
+                    ProjectBrandId = 0,
+                    ProjectBrandName = g.Key,
                     TotalHoursMs = g.Sum(e => e.HoursMilliseconds),
                     EntriesCount = g.Count(),
                     Percentage = totalHours > 0
@@ -531,7 +527,7 @@ public class ReportService : IReportService
                     Date = g.Key,
                     HoursMs = g.Sum(e => e.HoursMilliseconds),
                     EntriesCount = g.Count(),
-                    Projects = g.Select(e => e.ProjectBrand.Name).Distinct().ToList()
+                    Projects = g.Select(e => e.ProjectBrand).Distinct().ToList()
                 })
                 .OrderBy(d => d.Date)
                 .ToList()
@@ -589,7 +585,7 @@ public class ReportService : IReportService
                 ClientId = g.Key.ClientId,
                 ClientName = g.Key.Name,
                 TotalHoursMs = g.Sum(e => e.HoursMilliseconds),
-                ProjectsCount = g.Select(e => e.ProjectBrandId).Distinct().Count(),
+                ProjectsCount = g.Select(e => e.ProjectBrand).Distinct().Count(),
                 UsersCount = g.Select(e => e.UserId).Distinct().Count(),
                 Percentage = totalHours > 0
                     ? Math.Round((double)g.Sum(e => e.HoursMilliseconds) / totalHours * 100, 2)
@@ -606,40 +602,26 @@ public class ReportService : IReportService
     }
 
     public async Task<ProjectReportDto> GetProjectReportAsync(
-        long projectBrandId,
+        string projectBrandName, // было: long projectBrandId
         DateTime fromDate,
         DateTime toDate,
         long requestingUserId)
     {
-        // Проверка прав доступа
         if (!await CanUserAccessReportAsync(requestingUserId))
-        {
             throw new UnauthorizedAccessException("Вы не имеете доступа к отчетам по проектам");
-        }
 
-        // Проверка кеша
-        var cacheKey = $"{CacheKeyPrefix}project:{projectBrandId}:{fromDate:yyyyMMdd}:{toDate:yyyyMMdd}";
+        var cacheKey = $"{CacheKeyPrefix}project:{projectBrandName}:{fromDate:yyyyMMdd}:{toDate:yyyyMMdd}";
         if (_cache.TryGetValue(cacheKey, out ProjectReportDto? cachedReport) && cachedReport != null)
-        {
             return cachedReport;
-        }
 
-        // Получаем проект
-        var project = await _unitOfWork.ProjectBrands.GetByIdAsync(projectBrandId);
-        if (project == null)
-        {
-            throw new KeyNotFoundException($"Проект с ID {projectBrandId} не найден");
-        }
-
-        // Получаем записи времени по проекту
+        // Получаем записи по текстовому названию проекта
         var entries = await _timeEntryRepository
             .GetQueryable()
-            .Include(te => te.User)
-            .ThenInclude(u => u.Agency)
+            .Include(te => te.User).ThenInclude(u => u.Agency)
             .Include(te => te.Client)
             .Include(te => te.JobType)
             .Include(te => te.Media)
-            .Where(te => te.ProjectBrandId == projectBrandId &&
+            .Where(te => te.ProjectBrand == projectBrandName &&
                          te.EntryDate >= fromDate.Date &&
                          te.EntryDate <= toDate.Date)
             .AsNoTracking()
@@ -649,8 +631,8 @@ public class ReportService : IReportService
 
         var report = new ProjectReportDto
         {
-            ProjectBrandId = projectBrandId,
-            ProjectBrandName = project.Name,
+            ProjectBrandId = 0,
+            ProjectBrandName = projectBrandName,
             FromDate = fromDate.Date,
             ToDate = toDate.Date,
             TotalHoursMs = totalHours,
@@ -659,7 +641,6 @@ public class ReportService : IReportService
             Clients = entries.Select(e => e.Client.Name).Distinct().ToList(),
             Agencies = entries.Select(e => e.User.Agency.Name).Distinct().ToList(),
 
-            // User Contributions
             UserContributions = entries
                 .GroupBy(e => new { e.UserId, UserName = e.User.Name, AgencyName = e.User.Agency.Name })
                 .Select(g => new UserContributionDto
@@ -676,7 +657,6 @@ public class ReportService : IReportService
                 .OrderByDescending(u => u.TotalHoursMs)
                 .ToList(),
 
-            // Job Type Breakdown
             JobTypeBreakdown = entries
                 .GroupBy(e => new { e.JobTypeId, e.JobType.Name })
                 .Select(g => new JobTypeBreakdownDto
@@ -692,7 +672,6 @@ public class ReportService : IReportService
                 .OrderByDescending(j => j.TotalHoursMs)
                 .ToList(),
 
-            // Media Breakdown
             MediaBreakdown = entries
                 .GroupBy(e => new { e.MediaId, e.Media.Name })
                 .Select(g => new MediaBreakdownDto
@@ -708,18 +687,12 @@ public class ReportService : IReportService
                 .OrderByDescending(m => m.TotalHoursMs)
                 .ToList(),
 
-            // Weekly Breakdown
             WeeklyBreakdown = entries
-                .GroupBy(e =>
-                {
-                    var weekStart = e.EntryDate.AddDays(-(int)e.EntryDate.DayOfWeek + (int)DayOfWeek.Monday);
-                    return weekStart;
-                })
+                .GroupBy(e => e.EntryDate.AddDays(-(int)e.EntryDate.DayOfWeek + (int)DayOfWeek.Monday))
                 .Select(g =>
                 {
                     var weekHours = g.Sum(e => e.HoursMilliseconds);
                     var workingDays = g.Select(e => e.EntryDate.Date).Distinct().Count();
-
                     return new WeeklyBreakdownDto
                     {
                         WeekStart = g.Key,
@@ -734,18 +707,14 @@ public class ReportService : IReportService
                 .ToList()
         };
 
-        // Вычисляем номера недель
         for (int i = 0; i < report.WeeklyBreakdown.Count; i++)
-        {
             report.WeeklyBreakdown[i].WeekNumber = i + 1;
-        }
 
-        // Кешируем
         _cache.Set(cacheKey, report, TimeSpan.FromMinutes(CacheDurationMinutes));
 
         _logger.LogInformation(
-            "Создан отчет по проекту {ProjectBrandId} за период {FromDate} - {ToDate}",
-            projectBrandId, fromDate, toDate);
+            "Создан отчет по проекту '{ProjectBrandName}' за период {FromDate} - {ToDate}",
+            projectBrandName, fromDate, toDate);
 
         return report;
     }
@@ -776,7 +745,6 @@ public class ReportService : IReportService
             .Include(te => te.User)
             .ThenInclude(u => u.Agency)
             .Include(te => te.Client)
-            .Include(te => te.ProjectBrand)
             .Include(te => te.JobType)
             .Include(te => te.Media)
             .Where(te => te.EntryDate >= fromDate.Date && te.EntryDate <= toDate.Date);
@@ -824,7 +792,7 @@ public class ReportService : IReportService
             TotalEntries = entries.Count,
             TotalUsers = entries.Select(e => e.UserId).Distinct().Count(),
             TotalClients = entries.Select(e => e.ClientId).Distinct().Count(),
-            TotalProjects = entries.Select(e => e.ProjectBrandId).Distinct().Count(),
+            TotalProjects = entries.Select(e => e.ProjectBrand).Distinct().Count(),
 
             // Top Users
             TopUsers = entries
@@ -860,7 +828,7 @@ public class ReportService : IReportService
                     ClientId = g.Key.ClientId,
                     ClientName = g.Key.Name,
                     TotalHoursMs = g.Sum(e => e.HoursMilliseconds),
-                    ProjectsCount = g.Select(e => e.ProjectBrandId).Distinct().Count(),
+                    ProjectsCount = g.Select(e => e.ProjectBrand).Distinct().Count(),
                     UsersCount = g.Select(e => e.UserId).Distinct().Count(),
                     Percentage = totalHours > 0
                         ? Math.Round((double)g.Sum(e => e.HoursMilliseconds) / totalHours * 100, 2)
@@ -872,11 +840,10 @@ public class ReportService : IReportService
 
             // Top Projects
             TopProjects = entries
-                .GroupBy(e => new
-                    { e.ProjectBrandId, ProjectBrandName = e.ProjectBrand.Name, ClientName = e.Client.Name })
+                .GroupBy(e => new { ProjectBrandName = e.ProjectBrand, ClientName = e.Client.Name })
                 .Select(g => new ProjectSummaryDto
                 {
-                    ProjectBrandId = g.Key.ProjectBrandId,
+                    ProjectBrandId = 0,
                     ProjectBrandName = g.Key.ProjectBrandName,
                     ClientName = g.Key.ClientName,
                     TotalHoursMs = g.Sum(e => e.HoursMilliseconds),

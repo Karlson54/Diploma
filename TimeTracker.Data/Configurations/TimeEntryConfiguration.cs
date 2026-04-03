@@ -47,10 +47,11 @@ public class TimeEntryConfiguration : IEntityTypeConfiguration<TimeEntry>
             .HasColumnType("bigint")
             .IsRequired();
 
-        builder.Property(e => e.ProjectBrandId)
-            .HasColumnName("project_brand_id")
-            .HasColumnType("bigint")
-            .IsRequired();
+        // было: ProjectBrandId (bigint FK) — стало: project_brand (nvarchar)
+        builder.Property(e => e.ProjectBrand)
+            .HasColumnName("project_brand")
+            .IsRequired()
+            .HasMaxLength(200);
 
         builder.Property(e => e.MediaId)
             .HasColumnName("media_id")
@@ -79,10 +80,10 @@ public class TimeEntryConfiguration : IEntityTypeConfiguration<TimeEntry>
         builder.Property(e => e.UpdatedAt)
             .HasColumnName("updated_at");
 
-        builder.HasCheckConstraint("ck_time_entries_hours", 
+        builder.HasCheckConstraint("ck_time_entries_hours",
             "hours_milliseconds > 0 AND hours_milliseconds <= 86400000");
-            
-        builder.HasCheckConstraint("ck_time_entries_date", 
+
+        builder.HasCheckConstraint("ck_time_entries_date",
             "entry_date <= DATEADD(day, 1, GETDATE())");
 
         builder.HasIndex(e => e.UserId)
@@ -133,11 +134,7 @@ public class TimeEntryConfiguration : IEntityTypeConfiguration<TimeEntry>
             .HasConstraintName("fk_time_entries_client_id")
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne(e => e.ProjectBrand)
-            .WithMany(pb => pb.TimeEntries)
-            .HasForeignKey(e => e.ProjectBrandId)
-            .HasConstraintName("fk_time_entries_project_brand_id")
-            .OnDelete(DeleteBehavior.Restrict);
+        // FK на ProjectBrand убран — это теперь просто строка
 
         builder.HasOne(e => e.Media)
             .WithMany(m => m.TimeEntries)

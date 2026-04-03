@@ -150,7 +150,7 @@ public class ReportsController : ControllerBase
             return BadRequest(new { Message = ex.Message });
         }
     }
-    
+
     /// <summary>
     /// Експорт всіх записів як плоска таблиця з вибором колонок (тільки Admin)
     /// </summary>
@@ -496,13 +496,13 @@ public class ReportsController : ControllerBase
         }
     }
 
-    [HttpGet("project/{projectBrandId}")]
+    [HttpGet("project")]
     [Authorize(Policy = "CanViewAllReports")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetProjectReport(
-        long projectBrandId,
+        [FromQuery] string projectBrandName,
         [FromQuery] DateTime fromDate,
         [FromQuery] DateTime toDate)
     {
@@ -510,8 +510,7 @@ public class ReportsController : ControllerBase
         {
             var currentUserId = GetCurrentUserId();
             var report = await _reportService.GetProjectReportAsync(
-                projectBrandId, fromDate, toDate, currentUserId);
-
+                projectBrandName, fromDate, toDate, currentUserId);
             return Ok(report);
         }
         catch (UnauthorizedAccessException ex)
@@ -524,7 +523,7 @@ public class ReportsController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Помилка при генерації звіту проєкту {ProjectBrandId}", projectBrandId);
+            _logger.LogError(ex, "Помилка при генерації звіту проєкту {ProjectBrandName}", projectBrandName);
             return BadRequest(new { Message = ex.Message });
         }
     }

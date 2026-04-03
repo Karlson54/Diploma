@@ -27,9 +27,9 @@ public class UpdateTimeEntryDto : IValidatableObject
     [Range(1, long.MaxValue, ErrorMessage = "ClientId має бути додатним числом")]
     public long ClientId { get; set; }
 
-    [Required(ErrorMessage = "ProjectBrandId обов'язковий")]
-    [Range(1, long.MaxValue, ErrorMessage = "ProjectBrandId має бути додатним числом")]
-    public long ProjectBrandId { get; set; }
+    [Required(ErrorMessage = "ProjectBrand обов'язковий")]
+    [StringLength(200, MinimumLength = 1, ErrorMessage = "ProjectBrand має бути від 1 до 200 символів")]
+    public string ProjectBrand { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "MediaId обов'язковий")]
     [Range(1, long.MaxValue, ErrorMessage = "MediaId має бути додатним числом")]
@@ -40,12 +40,12 @@ public class UpdateTimeEntryDto : IValidatableObject
     public long JobTypeId { get; set; }
 
     [Required(ErrorMessage = "Кількість годин обов'язкова")]
-    [Range(ValidationConstants.MinHoursMs, ValidationConstants.MaxHoursPerDayMs, 
+    [Range(ValidationConstants.MinHoursMs, ValidationConstants.MaxHoursPerDayMs,
         ErrorMessage = "Час має бути від 1 мілісекунди до 24 годин (86400000 мс)")]
     [MaxDailyHours]
     public long HoursMilliseconds { get; set; }
 
-    [StringLength(ValidationConstants.MaxCommentsLength, 
+    [StringLength(ValidationConstants.MaxCommentsLength,
         ErrorMessage = "Коментар не може перевищувати {1} символів")]
     public string? Comments { get; set; }
 
@@ -58,7 +58,7 @@ public class UpdateTimeEntryDto : IValidatableObject
                 ValidationConstants.MaxDailyHoursError,
                 new[] { nameof(HoursMilliseconds) });
         }
-        
+
         // Перевірка що EntryDate не дуже давня
         var oneYearAgo = DateTime.UtcNow.AddYears(-1);
         if (EntryDate < oneYearAgo)

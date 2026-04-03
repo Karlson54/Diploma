@@ -22,7 +22,6 @@ public interface ITimeEntryRepository : IRepository<TimeEntry>
     // Статистика
     Task<Dictionary<long, long>> GetUserTotalHoursAsync(DateTime fromDate, DateTime toDate);
     Task<Dictionary<long, long>> GetClientTotalHoursAsync(DateTime fromDate, DateTime toDate);
-    Task<Dictionary<long, long>> GetProjectTotalHoursAsync(DateTime fromDate, DateTime toDate);
     
     // Фильтрация с пагинацией
     Task<(IEnumerable<TimeEntry> Entries, int TotalCount)> GetTimeEntriesPagedAsync(

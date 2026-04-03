@@ -18,7 +18,6 @@ public class TimeTrackerDbContext : DbContext, ITimeTrackerDbContext
     public DbSet<Client> Clients { get; set; }
     public DbSet<Media> Media { get; set; }
     public DbSet<JobType> JobTypes { get; set; }
-    public DbSet<ProjectBrand> ProjectBrands { get; set; }
     public DbSet<Role> Roles { get; set; }
     public DbSet<User> Users { get; set; }
     public DbSet<UserRole> UserRoles { get; set; }

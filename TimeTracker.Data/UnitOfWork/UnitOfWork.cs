@@ -19,7 +19,6 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<Client>? _clients;
     private IRepository<Media>? _media;
     private IRepository<JobType>? _jobTypes;
-    private IRepository<ProjectBrand>? _projectBrands;
     private IRepository<Role>? _roles;
     private IRepository<User>? _users;
     private IRepository<UserRole>? _userRoles;
@@ -50,9 +49,6 @@ public class UnitOfWork : IUnitOfWork
 
     public IRepository<JobType> JobTypes =>
         _jobTypes ??= new Repository<JobType>(_context);
-
-    public IRepository<ProjectBrand> ProjectBrands =>
-        _projectBrands ??= new Repository<ProjectBrand>(_context);
 
     public IRepository<Role> Roles =>
         _roles ??= new Repository<Role>(_context);

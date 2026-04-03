@@ -5,7 +5,6 @@ using TimeTracker.Core.DTOs.Dictionaries.ContractingAgencies;
 using TimeTracker.Core.DTOs.Dictionaries.JobTypes;
 using TimeTracker.Core.DTOs.Dictionaries.Markets;
 using TimeTracker.Core.DTOs.Dictionaries.Media;
-using TimeTracker.Core.DTOs.Dictionaries.ProjectBrands;
 using TimeTracker.Data.Entities;
 
 namespace TimeTracker.Core.Mappings;
@@ -53,21 +52,6 @@ public class DictionaryMappingProfile : Profile
             .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.TimeEntries, opt => opt.Ignore());
         CreateMap<UpdateJobTypeDto, JobType>()
-            .ForMember(dest => dest.Id, opt => opt.Ignore())
-            .ForMember(dest => dest.IsActive, opt => opt.Ignore())
-            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
-            .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
-            .ForMember(dest => dest.TimeEntries, opt => opt.Ignore());
-
-        // ProjectBrand mappings
-        CreateMap<ProjectBrand, ProjectBrandDto>();
-        CreateMap<CreateProjectBrandDto, ProjectBrand>()
-            .ForMember(dest => dest.Id, opt => opt.Ignore())
-            .ForMember(dest => dest.IsActive, opt => opt.Ignore())
-            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
-            .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
-            .ForMember(dest => dest.TimeEntries, opt => opt.Ignore());
-        CreateMap<UpdateProjectBrandDto, ProjectBrand>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.IsActive, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())

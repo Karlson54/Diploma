@@ -10,7 +10,7 @@ public interface IReportService
         DateTime fromDate,
         DateTime toDate,
         long requestingUserId);
-    
+
     Task<IEnumerable<TimeEntryDto>> GetUserTimeEntriesForExportAsync(
         long userId,
         DateTime fromDate,
@@ -43,7 +43,7 @@ public interface IReportService
         int top = 10);
 
     Task<ProjectReportDto> GetProjectReportAsync(
-        long projectBrandId,
+        string projectBrandName,
         DateTime fromDate,
         DateTime toDate,
         long requestingUserId);

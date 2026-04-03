@@ -18,7 +18,6 @@ public interface ITimeValidationService
         long marketId,
         long contractingAgencyId,
         long clientId,
-        long projectBrandId,
         long mediaId,
         long jobTypeId);
 

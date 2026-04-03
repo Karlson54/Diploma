@@ -11,7 +11,6 @@ public interface ITimeTrackerDbContext
     DbSet<Client> Clients { get; }
     DbSet<Media> Media { get; }
     DbSet<JobType> JobTypes { get; }
-    DbSet<ProjectBrand> ProjectBrands { get; }
     DbSet<Role> Roles { get; }
     DbSet<User> Users { get; }
     DbSet<UserRole> UserRoles { get; }

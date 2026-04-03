@@ -23,7 +23,6 @@ public class TimeEntryListItemDto
     public long? ClientId { get; set; }
     public string? ClientName { get; set; }
 
-    public long? ProjectBrandId { get; set; }
     public string? ProjectBrandName { get; set; }
 
     public long? MediaId { get; set; }

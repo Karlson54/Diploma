@@ -27,8 +27,8 @@ public class TimeValidationService : ITimeValidationService
     }
 
     public async Task<ValidationResult> ValidateCreateAsync(
-        long userId, 
-        DateTime entryDate, 
+        long userId,
+        DateTime entryDate,
         long hoursMilliseconds)
     {
         var result = new ValidationResult { IsValid = true };
@@ -70,7 +70,7 @@ public class TimeValidationService : ITimeValidationService
             var existingHours = TimeHelper.FormatHours(totalHoursForDay);
             var newHours = TimeHelper.FormatHours(hoursMilliseconds);
             var totalHours = TimeHelper.FormatHours(totalWithNew);
-            
+
             result.AddError(
                 $"Перевищено ліміт часу за день. " +
                 $"Вже зареєстровано: {existingHours}, додається: {newHours}, " +
@@ -82,8 +82,8 @@ public class TimeValidationService : ITimeValidationService
 
     public async Task<ValidationResult> ValidateUpdateAsync(
         long entryId,
-        long userId, 
-        DateTime entryDate, 
+        long userId,
+        DateTime entryDate,
         long hoursMilliseconds)
     {
         var result = new ValidationResult { IsValid = true };
@@ -126,7 +126,7 @@ public class TimeValidationService : ITimeValidationService
             var existingHours = TimeHelper.FormatHours(totalHoursForDay);
             var newHours = TimeHelper.FormatHours(hoursMilliseconds);
             var totalHours = TimeHelper.FormatHours(totalWithUpdated);
-            
+
             result.AddError(
                 $"Перевищено ліміт часу за день. " +
                 $"Інші записи за день: {existingHours}, оновлюється на: {newHours}, " +
@@ -141,96 +141,53 @@ public class TimeValidationService : ITimeValidationService
         long marketId,
         long contractingAgencyId,
         long clientId,
-        long projectBrandId,
         long mediaId,
         long jobTypeId)
     {
         var result = new ValidationResult { IsValid = true };
 
-        // Загружаем все сущности последовательно (исправлено!)
         var agency = await _unitOfWork.Agencies.GetByIdAsync(agencyId);
         var market = await _unitOfWork.Markets.GetByIdAsync(marketId);
         var contractingAgency = await _unitOfWork.ContractingAgencies.GetByIdAsync(contractingAgencyId);
         var client = await _unitOfWork.Clients.GetByIdAsync(clientId);
-        var projectBrand = await _unitOfWork.ProjectBrands.GetByIdAsync(projectBrandId);
         var media = await _unitOfWork.Media.GetByIdAsync(mediaId);
         var jobType = await _unitOfWork.JobTypes.GetByIdAsync(jobTypeId);
 
-        // Проверяем Agency
         if (agency == null)
-        {
             result.AddError($"Agency з ID {agencyId} не знайдено");
-        }
         else if (!agency.IsActive)
-        {
             result.AddError($"Agency '{agency.Name}' деактивований");
-        }
 
-        // Проверяем Market
         if (market == null)
-        {
             result.AddError($"Market з ID {marketId} не знайдено");
-        }
         else if (!market.IsActive)
-        {
             result.AddError($"Market '{market.Name}' деактивований");
-        }
 
-        // Проверяем ContractingAgency
         if (contractingAgency == null)
-        {
             result.AddError($"ContractingAgency з ID {contractingAgencyId} не знайдено");
-        }
         else if (!contractingAgency.IsActive)
-        {
             result.AddError($"ContractingAgency '{contractingAgency.Name}' деактивований");
-        }
 
-        // Проверяем Client
         if (client == null)
-        {
             result.AddError($"Client з ID {clientId} не знайдено");
-        }
         else if (!client.IsActive)
-        {
             result.AddError($"Client '{client.Name}' деактивований");
-        }
 
-        // Проверяем ProjectBrand
-        if (projectBrand == null)
-        {
-            result.AddError($"ProjectBrand з ID {projectBrandId} не знайдено");
-        }
-        else if (!projectBrand.IsActive)
-        {
-            result.AddError($"ProjectBrand '{projectBrand.Name}' деактивований");
-        }
-
-        // Проверяем Media
         if (media == null)
-        {
             result.AddError($"Media з ID {mediaId} не знайдено");
-        }
         else if (!media.IsActive)
-        {
             result.AddError($"Media '{media.Name}' деактивований");
-        }
 
-        // Проверяем JobType
         if (jobType == null)
-        {
             result.AddError($"JobType з ID {jobTypeId} не знайдено");
-        }
         else if (!jobType.IsActive)
-        {
             result.AddError($"JobType '{jobType.Name}' деактивований");
-        }
 
         return result;
     }
 
     public async Task<ValidationResult> ValidateUserPermissionsAsync(
-        long userId, 
+        long userId,
         long? targetUserId = null)
     {
         var result = new ValidationResult { IsValid = true };

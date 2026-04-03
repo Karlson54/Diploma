@@ -12,8 +12,6 @@ public static class CacheKeys
     public const string MediaActive = "media_active";
     public const string JobTypesAll = "jobtypes_all";
     public const string JobTypesActive = "jobtypes_active";
-    public const string ProjectBrandsAll = "projectbrands_all";
-    public const string ProjectBrandsActive = "projectbrands_active";
     public const string ContractingAgenciesAll = "contractingagencies_all";
     public const string ContractingAgenciesActive = "contractingagencies_active";
 

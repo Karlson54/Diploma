@@ -8,7 +8,7 @@ public class TimeEntry : BaseEntity
     public long MarketId { get; set; }
     public long ContractingAgencyId { get; set; }
     public long ClientId { get; set; }
-    public long ProjectBrandId { get; set; }
+    public string ProjectBrand { get; set; } = string.Empty; // было: public long ProjectBrandId
     public long MediaId { get; set; }
     public long JobTypeId { get; set; }
     public long HoursMilliseconds { get; set; }
@@ -19,7 +19,7 @@ public class TimeEntry : BaseEntity
     public virtual Market Market { get; set; } = null!;
     public virtual ContractingAgency ContractingAgency { get; set; } = null!;
     public virtual Client Client { get; set; } = null!;
-    public virtual ProjectBrand ProjectBrand { get; set; } = null!;
+    // убрали: public virtual ProjectBrand ProjectBrand
     public virtual Media Media { get; set; } = null!;
     public virtual JobType JobType { get; set; } = null!;
 }

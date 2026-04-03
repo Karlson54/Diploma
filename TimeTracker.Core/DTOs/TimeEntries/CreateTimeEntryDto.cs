@@ -53,11 +53,11 @@ public class CreateTimeEntryDto : IValidatableObject
     public long ClientId { get; set; }
 
     /// <summary>
-    /// ID проекту/бренду
+    /// Назва проекту/бренду
     /// </summary>
-    [Required(ErrorMessage = "ProjectBrandId обов'язковий")]
-    [Range(1, long.MaxValue, ErrorMessage = "ProjectBrandId має бути додатним числом")]
-    public long ProjectBrandId { get; set; }
+    [Required(ErrorMessage = "ProjectBrand обов'язковий")]
+    [StringLength(200, MinimumLength = 1, ErrorMessage = "ProjectBrand має бути від 1 до 200 символів")]
+    public string ProjectBrand { get; set; } = string.Empty;
 
     /// <summary>
     /// ID медіаканалу

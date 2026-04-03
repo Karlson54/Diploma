@@ -49,7 +49,6 @@ public class TimeEntryService : ITimeEntryService
             .Include(te => te.Market)
             .Include(te => te.ContractingAgency)
             .Include(te => te.Client)
-            .Include(te => te.ProjectBrand)
             .Include(te => te.Media)
             .Include(te => te.JobType)
             .FirstOrDefaultAsync(te => te.Id == id);
@@ -119,7 +118,6 @@ public class TimeEntryService : ITimeEntryService
             dto.MarketId,
             dto.ContractingAgencyId,
             dto.ClientId,
-            dto.ProjectBrandId,
             dto.MediaId,
             dto.JobTypeId);
 
@@ -156,7 +154,7 @@ public class TimeEntryService : ITimeEntryService
                 dto.MarketId,
                 dto.ContractingAgencyId,
                 dto.ClientId,
-                dto.ProjectBrandId,
+                dto.ProjectBrand,
                 dto.MediaId,
                 dto.JobTypeId,
                 dto.Comments
@@ -231,7 +229,7 @@ public class TimeEntryService : ITimeEntryService
             timeEntry.MarketId,
             timeEntry.ContractingAgencyId,
             timeEntry.ClientId,
-            timeEntry.ProjectBrandId,
+            timeEntry.ProjectBrand,
             timeEntry.MediaId,
             timeEntry.JobTypeId,
             timeEntry.Comments
@@ -259,7 +257,6 @@ public class TimeEntryService : ITimeEntryService
             dto.MarketId,
             dto.ContractingAgencyId,
             dto.ClientId,
-            dto.ProjectBrandId,
             dto.MediaId,
             dto.JobTypeId);
 
@@ -301,7 +298,7 @@ public class TimeEntryService : ITimeEntryService
                 timeEntry.MarketId,
                 timeEntry.ContractingAgencyId,
                 timeEntry.ClientId,
-                timeEntry.ProjectBrandId,
+                timeEntry.ProjectBrand,
                 timeEntry.MediaId,
                 timeEntry.JobTypeId,
                 timeEntry.Comments,
@@ -375,7 +372,7 @@ public class TimeEntryService : ITimeEntryService
             timeEntry.MarketId,
             timeEntry.ContractingAgencyId,
             timeEntry.ClientId,
-            timeEntry.ProjectBrandId,
+            timeEntry.ProjectBrand,
             timeEntry.MediaId,
             timeEntry.JobTypeId,
             timeEntry.Comments
@@ -507,7 +504,6 @@ public class TimeEntryService : ITimeEntryService
                 dto.MarketId,
                 dto.ContractingAgencyId,
                 dto.ClientId,
-                dto.ProjectBrandId,
                 dto.MediaId,
                 dto.JobTypeId);
 
@@ -814,7 +810,7 @@ public class TimeEntryService : ITimeEntryService
                 MarketId = sourceEntry.MarketId,
                 ContractingAgencyId = sourceEntry.ContractingAgencyId,
                 ClientId = sourceEntry.ClientId,
-                ProjectBrandId = sourceEntry.ProjectBrandId,
+                ProjectBrand = sourceEntry.ProjectBrand,
                 MediaId = sourceEntry.MediaId,
                 JobTypeId = sourceEntry.JobTypeId,
                 HoursMilliseconds = sourceEntry.HoursMilliseconds,
@@ -998,7 +994,7 @@ public class TimeEntryService : ITimeEntryService
                 MarketId = sourceEntry.MarketId,
                 ContractingAgencyId = sourceEntry.ContractingAgencyId,
                 ClientId = sourceEntry.ClientId,
-                ProjectBrandId = sourceEntry.ProjectBrandId,
+                ProjectBrand = sourceEntry.ProjectBrand,
                 MediaId = sourceEntry.MediaId,
                 JobTypeId = sourceEntry.JobTypeId,
                 HoursMilliseconds = sourceEntry.HoursMilliseconds,
@@ -1067,7 +1063,7 @@ public class TimeEntryService : ITimeEntryService
                 {
                     te.Id,
                     ClientName = te.Client.Name,
-                    ProjectName = te.ProjectBrand.Name,
+                    ProjectName = te.ProjectBrand,
                     te.HoursMilliseconds,
                     FormattedHours = TimeHelper.FormatHours(te.HoursMilliseconds),
                     te.Comments
@@ -1114,7 +1110,6 @@ public class TimeEntryService : ITimeEntryService
                          te.EntryDate >= monday &&
                          te.EntryDate <= sunday)
             .Include(te => te.Client)
-            .Include(te => te.ProjectBrand)
             .ToListAsync();
 
         var dailySummaries = weekEntries
@@ -1166,7 +1161,6 @@ public class TimeEntryService : ITimeEntryService
                          te.EntryDate >= firstDay &&
                          te.EntryDate <= lastDay)
             .Include(te => te.Client)
-            .Include(te => te.ProjectBrand)
             .Include(te => te.JobType)
             .AsNoTracking()
             .ToListAsync();

@@ -36,7 +36,6 @@ public class TimeEntryRepository : Repository<TimeEntry>, ITimeEntryRepository
             .Include(te => te.Market)
             .Include(te => te.ContractingAgency)
             .Include(te => te.Client)
-            .Include(te => te.ProjectBrand)
             .Include(te => te.Media)
             .Include(te => te.JobType)
             .Where(te => te.UserId == userId);
@@ -153,16 +152,6 @@ public class TimeEntryRepository : Repository<TimeEntry>, ITimeEntryRepository
             .ToDictionaryAsync(x => x.ClientId, x => x.TotalHours);
     }
 
-    public async Task<Dictionary<long, long>> GetProjectTotalHoursAsync(DateTime fromDate, DateTime toDate)
-    {
-        return await _dbSet
-            .AsNoTracking()
-            .Where(te => te.EntryDate >= fromDate.Date && te.EntryDate <= toDate.Date)
-            .GroupBy(te => te.ProjectBrandId)
-            .Select(g => new { ProjectId = g.Key, TotalHours = g.Sum(te => te.HoursMilliseconds) })
-            .ToDictionaryAsync(x => x.ProjectId, x => x.TotalHours);
-    }
-
     #endregion
 
     #region Фильтрация с пагинацией
@@ -201,7 +190,6 @@ public class TimeEntryRepository : Repository<TimeEntry>, ITimeEntryRepository
             .Include(te => te.Market)
             .Include(te => te.ContractingAgency)
             .Include(te => te.Client)
-            .Include(te => te.ProjectBrand)
             .Include(te => te.Media)
             .Include(te => te.JobType)
             .OrderByDescending(te => te.EntryDate)
@@ -232,7 +220,6 @@ public class TimeEntryRepository : Repository<TimeEntry>, ITimeEntryRepository
             .Include(te => te.User)
             .Include(te => te.Agency)
             .Include(te => te.Client)
-            .Include(te => te.ProjectBrand)
             .Include(te => te.Media)
             .Include(te => te.JobType)
             .Include(te => te.Market)

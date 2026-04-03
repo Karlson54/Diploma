@@ -66,11 +66,6 @@ public class TimeEntryDto
     public string ClientName { get; set; } = string.Empty;
 
     /// <summary>
-    /// ID проекту/бренду
-    /// </summary>
-    public long ProjectBrandId { get; set; }
-
-    /// <summary>
     /// Назва проекту/бренду
     /// </summary>
     public string ProjectBrandName { get; set; } = string.Empty;
