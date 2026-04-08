@@ -59,26 +59,41 @@ public class TimeEntriesController : ControllerBase
     }
 
     /// <summary>
-    /// Отримати власні записи часу поточного користувача
+    /// Отримати власні записи часу поточного користувача з пагінацією
     /// </summary>
     /// <param name="fromDate">Початок діапазону дат</param>
     /// <param name="toDate">Кінець діапазону дат</param>
     [HttpGet("my")]
     [Authorize(Policy = "CanCreateTimeEntry")]
-    [ProducesResponseType(typeof(IEnumerable<TimeEntryListItemDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMyEntries(
         [FromQuery] DateTime? fromDate = null,
-        [FromQuery] DateTime? toDate = null)
+        [FromQuery] DateTime? toDate = null,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 50)
     {
         try
         {
             var currentUserId = GetCurrentUserId();
-            var entries = await _timeEntryService.GetUserEntriesAsync(
-                currentUserId,
-                fromDate,
-                toDate);
 
-            return Ok(entries);
+            var (entries, totalCount) = await _timeEntryService.GetPagedAsync(
+                pageNumber,
+                pageSize,
+                userId: currentUserId,
+                agencyId: null,
+                clientId: null,
+                fromDate,
+                toDate,
+                requestingUserId: currentUserId);
+
+            return Ok(new
+            {
+                entries,
+                totalCount,
+                pageNumber,
+                pageSize,
+                totalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+            });
         }
         catch (Exception ex)
         {
