@@ -496,6 +496,27 @@ public class ReportsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Активні користувачі без записів на поточному тижні
+    /// </summary>
+    [HttpGet("inactive-users")]
+    [Authorize(Policy = "CanViewAllReports")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetInactiveUsersThisWeek()
+    {
+        try
+        {
+            var currentUserId = GetCurrentUserId();
+            var users = await _reportService.GetInactiveUsersThisWeekAsync(currentUserId);
+            return Ok(users);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Помилка при отриманні неактивних користувачів");
+            return BadRequest(new { Message = ex.Message });
+        }
+    }
+
     [HttpGet("project")]
     [Authorize(Policy = "CanViewAllReports")]
     [ProducesResponseType(StatusCodes.Status200OK)]

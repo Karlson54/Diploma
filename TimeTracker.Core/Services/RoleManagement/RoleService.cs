@@ -250,10 +250,6 @@ public class RoleService : IRoleService
         await _roleRepository.AddAsync(role);
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogInformation(
-            "Роль створена. Id: {Id}, Name: {Name}, створена користувачем {UserId} ({UserName})",
-            role.Id, role.Name, requestingUserId, requestingUser.Name);
-
         var newValues = new
         {
             role.Id,
@@ -395,10 +391,6 @@ public class RoleService : IRoleService
         _roleRepository.Update(role);
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogInformation(
-            "Роль оновлена. Id: {Id}, Name: {Name}, оновлена користувачем {UserId} ({UserName})",
-            role.Id, role.Name, requestingUserId, requestingUser.Name);
-
         var newValues = new
         {
             role.Id,
@@ -515,10 +507,6 @@ public class RoleService : IRoleService
         _roleRepository.Delete(role);
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogInformation(
-            "Роль видалена. Id: {Id}, Name: {Name}, видалена користувачем {UserId} ({UserName})",
-            role.Id, role.Name, requestingUserId, requestingUser.Name);
-
         await _auditService.LogDeleteAsync(
             entityName: "Role",
             entityId: role.Id,
@@ -583,10 +571,6 @@ public class RoleService : IRoleService
         role.IsActive = true;
         _roleRepository.Update(role);
         await _unitOfWork.SaveChangesAsync();
-
-        _logger.LogInformation(
-            "Роль активована. Id: {Id}, Name: {Name}, активована користувачем {UserId} ({UserName})",
-            role.Id, role.Name, requestingUserId, requestingUser.Name);
 
         var newValues = new
         {
@@ -711,10 +695,6 @@ public class RoleService : IRoleService
         _roleRepository.Update(role);
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogInformation(
-            "Роль деактивована. Id: {Id}, Name: {Name}, деактивована користувачем {UserId} ({UserName})",
-            role.Id, role.Name, requestingUserId, requestingUser.Name);
-
         var newValues = new
         {
             role.Id,
@@ -821,10 +801,6 @@ public class RoleService : IRoleService
 
         await _roleRepository.AssignRoleAsync(userId, roleId);
         await _unitOfWork.SaveChangesAsync();
-
-        _logger.LogInformation(
-            "Роль {RoleName} (ID: {RoleId}) призначена користувачу {UserId} ({UserName}) користувачем {RequestingUserId} ({RequestingUserName})",
-            role.Name, roleId, userId, user.Name, requestingUserId, requestingUser.Name);
 
         await _auditService.LogRoleAssignedAsync(
             userId: requestingUserId,
@@ -955,10 +931,6 @@ public class RoleService : IRoleService
 
         await _roleRepository.RemoveRoleAsync(userId, roleId);
         await _unitOfWork.SaveChangesAsync();
-
-        _logger.LogInformation(
-            "Роль {RoleName} (ID: {RoleId}) видалена у користувача {UserId} ({UserName}) користувачем {RequestingUserId} ({RequestingUserName})",
-            role.Name, roleId, userId, user.Name, requestingUserId, requestingUser.Name);
 
         await _auditService.LogRoleRemovedAsync(
             userId: requestingUserId,
@@ -1128,10 +1100,6 @@ public class RoleService : IRoleService
         await _roleRepository.ReplaceUserRolesAsync(userId, roleIdsList);
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogInformation(
-            "Ролі користувача {UserId} ({UserName}) замінені користувачем {RequestingUserId} ({RequestingUserName}). Нові ролі: {NewRoles}",
-            userId, user.Name, requestingUserId, requestingUser.Name, string.Join(", ", roles.Select(r => r.Name)));
-
         var oldRoleNames = string.Join(", ", currentRoles.Select(r => r.Name));
         var newRoleNames = string.Join(", ", roles.Select(r => r.Name));
 
@@ -1219,10 +1187,6 @@ public class RoleService : IRoleService
 
         _roleRepository.Update(role);
         await _unitOfWork.SaveChangesAsync();
-
-        _logger.LogInformation(
-            "Permissions ролі {RoleName} (ID: {RoleId}) оновлені користувачем {RequestingUserId} ({RequestingUserName})",
-            role.Name, roleId, requestingUserId, requestingUser.Name);
 
         var oldValues = new
         {

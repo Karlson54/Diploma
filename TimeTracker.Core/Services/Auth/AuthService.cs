@@ -145,13 +145,6 @@ public class AuthService : IAuthService
             ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpirationMinutes)
         };
 
-        _logger.LogInformation(
-            "User login successful. UserId: {UserId}, Email: {Email}, Agency: {AgencyId}, Roles: {Roles}",
-            user.Id,
-            user.Email,
-            user.AgencyId,
-            string.Join(", ", activeRoles));
-
         return response;
     }
 
@@ -163,10 +156,6 @@ public class AuthService : IAuthService
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(
-                "Спроба реєстрації з існуючими даними. Email: {Email}, Login: {Login}, Error: {Error}",
-                dto.Email, dto.Login, ex.Message);
-
             await _auditService.LogRegistrationAsync(
                 userName: dto.Name,
                 email: dto.Email,
@@ -320,10 +309,6 @@ public class AuthService : IAuthService
                 userAgent: userAgent,
                 success: true,
                 userId: user.Id);
-
-            _logger.LogInformation(
-                "Новий користувач успішно зареєстрований. UserId: {UserId}, Email: {Email}, Login: {Login}, AgencyId: {AgencyId}, AgencyName: {AgencyName}",
-                user.Id, user.Email, user.Login, user.AgencyId, agency.Name);
         }
         catch (Exception ex)
         {

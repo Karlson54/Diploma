@@ -136,12 +136,6 @@ public class TimeEntryService : ITimeEntryService
         await _timeEntryRepository.AddAsync(timeEntry);
         await _unitOfWork.SaveChangesAsync();
 
-        // Логування в консоль - менее важная информация
-        _logger.LogInformation(
-            "TimeEntry створено. Id: {Id}, UserId: {UserId}, Date: {Date}, Hours: {Hours}",
-            timeEntry.Id, timeEntry.UserId, timeEntry.EntryDate,
-            TimeHelper.FormatHours(timeEntry.HoursMilliseconds));
-
         // 5. АУДИТ В БД - бізнес-логіка
         var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
         var targetUser = await _userRepository.GetByIdAsync(dto.UserId);
@@ -174,7 +168,7 @@ public class TimeEntryService : ITimeEntryService
         }
         else
         {
-            _logger.LogWarning(
+            _logger.LogError(
                 "Не вдалося знайти користувачів для аудиту створення TimeEntry. RequestingUserId: {RequestingUserId}, TargetUserId: {TargetUserId}",
                 requestingUserId, dto.UserId);
         }
@@ -275,12 +269,6 @@ public class TimeEntryService : ITimeEntryService
         _timeEntryRepository.Update(timeEntry);
         await _unitOfWork.SaveChangesAsync();
 
-        // Логування в консоль - менее важная информация
-        _logger.LogInformation(
-            "TimeEntry оновлено. Id: {Id}, UserId: {UserId}, Date: {Date}, Hours: {Hours}",
-            timeEntry.Id, timeEntry.UserId, timeEntry.EntryDate,
-            TimeHelper.FormatHours(timeEntry.HoursMilliseconds));
-
         // 7. АУДИТ В БД - бізнес-логіка
         var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
         var targetUser = await _userRepository.GetByIdAsync(timeEntry.UserId);
@@ -318,7 +306,7 @@ public class TimeEntryService : ITimeEntryService
         }
         else
         {
-            _logger.LogWarning(
+            _logger.LogError(
                 "Не вдалося знайти користувачів для аудиту оновлення TimeEntry. RequestingUserId: {RequestingUserId}, TargetUserId: {TargetUserId}",
                 requestingUserId, timeEntry.UserId);
         }
@@ -386,11 +374,6 @@ public class TimeEntryService : ITimeEntryService
         await _timeEntryRepository.DeleteAsync(id);
         await _unitOfWork.SaveChangesAsync();
 
-        // Логування в консоль - менее важная информация
-        _logger.LogInformation(
-            "TimeEntry видалено. Id: {Id}, UserId: {UserId}, Date: {Date}",
-            id, targetUserId, timeEntry.EntryDate);
-
         // 6. АУДИТ В БД - бізнес-логіка
         var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
 
@@ -408,7 +391,7 @@ public class TimeEntryService : ITimeEntryService
         }
         else
         {
-            _logger.LogWarning(
+            _logger.LogError(
                 "Не вдалося знайти користувача для аудиту видалення TimeEntry. RequestingUserId: {RequestingUserId}",
                 requestingUserId);
         }
@@ -520,10 +503,6 @@ public class TimeEntryService : ITimeEntryService
         await _timeEntryRepository.AddRangeAsync(timeEntries);
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogInformation(
-            "TimeEntries створено масово. Кількість: {Count}",
-            timeEntries.Count);
-
         // АУДИТ В БД - бізнес-логіка
         var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
 
@@ -613,10 +592,6 @@ public class TimeEntryService : ITimeEntryService
         _timeEntryRepository.UpdateRange(timeEntries);
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogInformation(
-            "TimeEntries оновлено масово. Кількість: {Count}",
-            timeEntries.Count);
-
         // АУДИТ В БД - бізнес-логіка
         var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
 
@@ -686,10 +661,6 @@ public class TimeEntryService : ITimeEntryService
 
         _timeEntryRepository.DeleteRange(timeEntries);
         await _unitOfWork.SaveChangesAsync();
-
-        _logger.LogInformation(
-            "TimeEntries видалено масово. Кількість: {Count}",
-            timeEntries.Count);
 
         // АУДИТ В БД - бізнес-логіка
         var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
@@ -824,10 +795,6 @@ public class TimeEntryService : ITimeEntryService
         await _timeEntryRepository.AddRangeAsync(newEntries);
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogInformation(
-            "TimeEntries скопійовано. UserId: {UserId}, From: {SourceDate}, To: {TargetDate}, Count: {Count}",
-            userId, sourceDate.Date, targetDate.Date, newEntries.Count);
-
         // 8. АУДИТ В БД - бізнес-логіка
         var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
         var targetUser = await _userRepository.GetByIdAsync(userId);
@@ -848,7 +815,7 @@ public class TimeEntryService : ITimeEntryService
         }
         else
         {
-            _logger.LogWarning(
+            _logger.LogError(
                 "Не вдалося знайти користувачів для аудиту копіювання. RequestingUserId: {RequestingUserId}, TargetUserId: {TargetUserId}",
                 requestingUserId, userId);
         }
@@ -964,7 +931,7 @@ public class TimeEntryService : ITimeEntryService
             // Перевіряємо, що нова дата не в майбутньому
             if (newEntryDate > DateTime.UtcNow.Date)
             {
-                _logger.LogInformation(
+                _logger.LogWarning(
                     "Пропускаємо копіювання запису на майбутню дату. SourceEntryId: {SourceId}, TargetDate: {TargetDate}",
                     sourceEntry.Id, newEntryDate);
                 continue; // Пропускаємо майбутні дати
@@ -1016,10 +983,6 @@ public class TimeEntryService : ITimeEntryService
         await _timeEntryRepository.AddRangeAsync(newEntries);
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogInformation(
-            "TimeEntries скопійовано (тиждень). UserId: {UserId}, From: {SourceWeekStart}, To: {TargetWeekStart}, Count: {Count}",
-            userId, normalizedSourceStart, normalizedTargetStart, newEntries.Count);
-
         // 9. АУДИТ В БД - бізнес-логіка
         var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
         var targetUser = await _userRepository.GetByIdAsync(userId);
@@ -1040,7 +1003,7 @@ public class TimeEntryService : ITimeEntryService
         }
         else
         {
-            _logger.LogWarning(
+            _logger.LogError(
                 "Не вдалося знайти користувачів для аудиту копіювання тижня. RequestingUserId: {RequestingUserId}, TargetUserId: {TargetUserId}",
                 requestingUserId, userId);
         }

@@ -42,7 +42,6 @@ public class UpdateTimeEntryDto : IValidatableObject
     [Required(ErrorMessage = "Кількість годин обов'язкова")]
     [Range(ValidationConstants.MinHoursMs, ValidationConstants.MaxHoursPerDayMs,
         ErrorMessage = "Час має бути від 1 мілісекунди до 24 годин (86400000 мс)")]
-    [MaxDailyHours]
     public long HoursMilliseconds { get; set; }
 
     [StringLength(ValidationConstants.MaxCommentsLength,

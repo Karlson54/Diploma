@@ -342,4 +342,24 @@ public class TimeEntryRepository : Repository<TimeEntry>, ITimeEntryRepository
     }
 
     #endregion
+
+    public async Task<IEnumerable<long>> GetUserIdsWithEntriesAsync(DateTime fromDate, DateTime toDate)
+    {
+        return await _dbSet
+            .AsNoTracking()
+            .Where(te => te.EntryDate >= fromDate && te.EntryDate <= toDate)
+            .Select(te => te.UserId)
+            .Distinct()
+            .ToListAsync();
+    }
+
+    public async Task<Dictionary<long, DateTime>> GetLastEntryDatesAsync(IEnumerable<long> userIds)
+    {
+        return await _dbSet
+            .AsNoTracking()
+            .Where(te => userIds.Contains(te.UserId))
+            .GroupBy(te => te.UserId)
+            .Select(g => new { UserId = g.Key, LastDate = g.Max(te => te.EntryDate) })
+            .ToDictionaryAsync(x => x.UserId, x => x.LastDate);
+    }
 }

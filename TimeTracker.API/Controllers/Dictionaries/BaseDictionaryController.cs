@@ -173,7 +173,6 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Помилка при створенні {EntityName}", _entityName);
             return BadRequest(new { Message = ex.Message });
         }
     }
@@ -218,7 +217,6 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Помилка при оновленні {EntityName} {Id}", _entityName, id);
             return BadRequest(new { Message = ex.Message });
         }
     }
@@ -259,7 +257,6 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Помилка при видаленні {EntityName} {Id}", _entityName, id);
             return BadRequest(new { Message = ex.Message });
         }
     }
@@ -299,7 +296,6 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Помилка при активації {EntityName} {Id}", _entityName, id);
             return BadRequest(new { Message = ex.Message });
         }
     }
@@ -340,7 +336,6 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Помилка при деактивації {EntityName} {Id}", _entityName, id);
             return BadRequest(new { Message = ex.Message });
         }
     }

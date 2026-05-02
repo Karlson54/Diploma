@@ -50,14 +50,6 @@ public class AuditMiddleware
             await _next(context);
             stopwatch.Stop();
 
-            // Логуємо успішні запити (тільки для авторизованих)
-            if (context.User.Identity?.IsAuthenticated == true &&
-                context.Response.StatusCode >= 200 &&
-                context.Response.StatusCode < 300)
-            {
-                await LogSuccessAsync(context, auditService, requestBody, stopwatch.ElapsedMilliseconds);
-            }
-
             // Копіюємо response назад
             responseBody.Seek(0, SeekOrigin.Begin);
             await responseBody.CopyToAsync(originalBodyStream);
@@ -115,49 +107,10 @@ public class AuditMiddleware
                 ipAddress: ipAddress,
                 userAgent: userAgent);
 
-            // Логуємо в консоль
-            _logger.LogError(
-                exception,
-                "Error in {Method} {Path} by User {UserId} ({UserName}): {Message}",
-                context.Request.Method,
-                context.Request.Path,
-                actualUserId,
-                actualUserName,
-                exception.Message);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to log error audit");
-        }
-    }
-
-    private async Task LogSuccessAsync(
-        HttpContext context,
-        IAuditService auditService,
-        string? requestBody,
-        long elapsedMs)
-    {
-        try
-        {
-            var userId = GetUserId(context);
-            var userName = GetUserName(context);
-
-            if (!userId.HasValue)
-            {
-                return;
-            }
-
-            _logger.LogInformation(
-                "{Method} {Path} by User {UserId} - {StatusCode} ({ElapsedMs}ms)",
-                context.Request.Method,
-                context.Request.Path,
-                userId,
-                context.Response.StatusCode,
-                elapsedMs);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to log success audit");
         }
     }
 

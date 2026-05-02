@@ -226,15 +226,10 @@ public class RolesController : ControllerBase
             //Передаем параметры аудита
             var role = await _roleService.CreateAsync(dto, requestingUserId, ipAddress, userAgent);
 
-            _logger.LogInformation(
-                "Роль {RoleName} створена користувачем {UserId}",
-                role.Name, requestingUserId);
-
             return CreatedAtAction(nameof(GetById), new { id = role.Id }, role);
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Конфлікт при створенні ролі");
             return Conflict(new { Message = ex.Message });
         }
         catch (Exception ex)
@@ -272,10 +267,6 @@ public class RolesController : ControllerBase
             //Передаем параметры аудита
             var role = await _roleService.UpdateAsync(id, dto, requestingUserId, ipAddress, userAgent);
 
-            _logger.LogInformation(
-                "Роль {RoleId} оновлена користувачем {UserId}",
-                id, requestingUserId);
-
             return Ok(role);
         }
         catch (KeyNotFoundException ex)
@@ -284,7 +275,6 @@ public class RolesController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Конфлікт при оновленні ролі {RoleId}", id);
             return Conflict(new { Message = ex.Message });
         }
         catch (Exception ex)
@@ -316,10 +306,6 @@ public class RolesController : ControllerBase
 
             //Передаем параметры аудита
             await _roleService.DeleteAsync(id, requestingUserId, ipAddress, userAgent);
-
-            _logger.LogInformation(
-                "Роль {RoleId} видалена користувачем {UserId}",
-                id, requestingUserId);
 
             return Ok(new { Message = "Роль успішно видалено" });
         }
@@ -362,10 +348,6 @@ public class RolesController : ControllerBase
             //Передаем параметры аудита
             await _roleService.ActivateAsync(id, requestingUserId, ipAddress, userAgent);
 
-            _logger.LogInformation(
-                "Роль {RoleId} активована користувачем {UserId}",
-                id, requestingUserId);
-
             return Ok(new { Message = "Роль успішно активовано" });
         }
         catch (KeyNotFoundException ex)
@@ -406,10 +388,6 @@ public class RolesController : ControllerBase
             //Передаем параметры аудита
             await _roleService.DeactivateAsync(id, requestingUserId, ipAddress, userAgent);
 
-            _logger.LogInformation(
-                "Роль {RoleId} деактивована користувачем {UserId}",
-                id, requestingUserId);
-
             return Ok(new { Message = "Роль успішно деактивовано" });
         }
         catch (KeyNotFoundException ex)
@@ -418,7 +396,6 @@ public class RolesController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Неможливо деактивувати роль {RoleId}", id);
             return BadRequest(new { Message = ex.Message });
         }
         catch (Exception ex)
@@ -458,10 +435,6 @@ public class RolesController : ControllerBase
                 requestingUserId,
                 ipAddress,
                 userAgent);
-
-            _logger.LogInformation(
-                "Роль {RoleId} призначена користувачу {UserId} користувачем {RequestingUserId}",
-                dto.RoleId, dto.UserId, requestingUserId);
 
             return Ok(new { Message = "Роль успішно призначено" });
         }
@@ -509,10 +482,6 @@ public class RolesController : ControllerBase
                 ipAddress,
                 userAgent);
 
-            _logger.LogInformation(
-                "Роль {RoleId} видалена у користувача {UserId} користувачем {RequestingUserId}",
-                dto.RoleId, dto.UserId, requestingUserId);
-
             return Ok(new { Message = "Роль успішно видалено" });
         }
         catch (KeyNotFoundException ex)
@@ -521,7 +490,6 @@ public class RolesController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Неможливо видалити роль {RoleId} у користувача {UserId}", dto.RoleId, dto.UserId);
             return BadRequest(new { Message = ex.Message });
         }
         catch (Exception ex)
@@ -563,10 +531,6 @@ public class RolesController : ControllerBase
                 ipAddress,
                 userAgent);
 
-            _logger.LogInformation(
-                "Ролі користувача {UserId} замінені користувачем {RequestingUserId}",
-                userId, requestingUserId);
-
             return Ok(new { Message = "Ролі користувача успішно оновлено" });
         }
         catch (KeyNotFoundException ex)
@@ -579,7 +543,6 @@ public class RolesController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Конфлікт при заміні ролей користувача {UserId}", userId);
             return BadRequest(new { Message = ex.Message });
         }
         catch (Exception ex)
@@ -620,10 +583,6 @@ public class RolesController : ControllerBase
                 requestingUserId,
                 ipAddress,
                 userAgent);
-
-            _logger.LogInformation(
-                "Permissions ролі {RoleId} оновлені користувачем {UserId}",
-                roleId, requestingUserId);
 
             return Ok(new { Message = "Permissions успішно оновлено" });
         }

@@ -1,6 +1,6 @@
 using AutoMapper;
+using TimeTracker.Core.DTOs.Reports;
 using TimeTracker.Core.DTOs.Users;
-using TimeTracker.Core.DTOs.Roles;
 using TimeTracker.Data.Entities;
 
 namespace TimeTracker.Core.Mappings;
@@ -57,5 +57,10 @@ public class UserMappingProfile : Profile
             .ForMember(dest => dest.Agency, opt => opt.Ignore())
             .ForMember(dest => dest.UserRoles, opt => opt.Ignore())
             .ForMember(dest => dest.TimeEntries, opt => opt.Ignore());
+
+        CreateMap<User, InactiveUserDto>()
+            .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.Id))
+            .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.Name))
+            .ForMember(dest => dest.LastEntryDate, opt => opt.Ignore());
     }
 }

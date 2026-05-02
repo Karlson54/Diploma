@@ -81,10 +81,6 @@ public class JobTypeService : DictionaryService<JobType, JobTypeDto, CreateJobTy
         await _repository.DeleteAsync(id);
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogInformation(
-            "JobType видалено. Id: {Id}, Name: {Name}",
-            id, jobType.Name);
-
         //АУДИТ В БД
         await _auditService.LogDeleteAsync(
             entityName: _entityName,
@@ -137,10 +133,6 @@ public class JobTypeService : DictionaryService<JobType, JobTypeDto, CreateJobTy
 
         await _repository.DeactivateAsync(id);
         await _unitOfWork.SaveChangesAsync();
-
-        _logger.LogInformation(
-            "JobType деактивовано. Id: {Id}, Name: {Name}",
-            id, jobType.Name);
 
         //АУДИТ В БД
         await _auditService.LogDictionaryDeactivatedAsync(

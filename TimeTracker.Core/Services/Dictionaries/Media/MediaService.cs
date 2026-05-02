@@ -80,10 +80,6 @@ public class MediaService : DictionaryService<Data.Entities.Media, MediaDto, Cre
         await _repository.DeleteAsync(id);
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogInformation(
-            "Media видалено. Id: {Id}, Name: {Name}",
-            id, media.Name);
-
         //АУДИТ В БД
         await _auditService.LogDeleteAsync(
             entityName: _entityName,
@@ -136,10 +132,6 @@ public class MediaService : DictionaryService<Data.Entities.Media, MediaDto, Cre
 
         await _repository.DeactivateAsync(id);
         await _unitOfWork.SaveChangesAsync();
-
-        _logger.LogInformation(
-            "Media деактивовано. Id: {Id}, Name: {Name}",
-            id, media.Name);
 
         //АУДИТ В БД
         await _auditService.LogDictionaryDeactivatedAsync(

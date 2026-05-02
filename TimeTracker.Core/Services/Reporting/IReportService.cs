@@ -55,5 +55,7 @@ public interface IReportService
         long? agencyId = null,
         long? clientId = null);
 
+    Task<IEnumerable<InactiveUserDto>> GetInactiveUsersThisWeekAsync(long requestingUserId);
+
     Task<bool> CanUserAccessReportAsync(long requestingUserId, long? targetUserId = null);
 }

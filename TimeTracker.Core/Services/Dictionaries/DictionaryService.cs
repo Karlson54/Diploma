@@ -88,10 +88,6 @@ public class DictionaryService<TEntity, TDto, TCreateDto, TUpdateDto>
         await _repository.AddAsync(entity);
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogInformation(
-            "{EntityName} створено успішно. Id: {Id}, Name: {Name}",
-            _entityName, entity.Id, entity.Name);
-
         //АУДИТ В БД - бізнес-логіка
         await _auditService.LogDictionaryCreatedAsync(
             dictionaryType: _entityName,
@@ -148,10 +144,6 @@ public class DictionaryService<TEntity, TDto, TCreateDto, TUpdateDto>
          _repository.Update(entity);
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogInformation(
-            "{EntityName} оновлено успішно. Id: {Id}, Name: {Name}",
-            _entityName, id, entity.Name);
-
         //АУДИТ В БД - бізнес-логіка
         await _auditService.LogDictionaryUpdatedAsync(
             dictionaryType: _entityName,
@@ -206,10 +198,6 @@ public class DictionaryService<TEntity, TDto, TCreateDto, TUpdateDto>
         await _repository.DeleteAsync(id);
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogInformation(
-            "{EntityName} видалено. Id: {Id}, Name: {Name}",
-            _entityName, id, entity.Name);
-
         //АУДИТ В БД - бізнес-логіка (Delete)
         await _auditService.LogDeleteAsync(
             entityName: _entityName,
@@ -244,10 +232,6 @@ public class DictionaryService<TEntity, TDto, TCreateDto, TUpdateDto>
 
         await _repository.ActivateAsync(id);
         await _unitOfWork.SaveChangesAsync();
-
-        _logger.LogInformation(
-            "{EntityName} активовано. Id: {Id}, Name: {Name}",
-            _entityName, id, entity.Name);
 
         //АУДИТ В БД - бізнес-логіка
         await _auditService.LogDictionaryActivatedAsync(
@@ -294,10 +278,6 @@ public class DictionaryService<TEntity, TDto, TCreateDto, TUpdateDto>
 
         await _repository.DeactivateAsync(id);
         await _unitOfWork.SaveChangesAsync();
-
-        _logger.LogInformation(
-            "{EntityName} деактивовано. Id: {Id}, Name: {Name}",
-            _entityName, id, entity.Name);
 
         //АУДИТ В БД - бізнес-логіка
         await _auditService.LogDictionaryDeactivatedAsync(

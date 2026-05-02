@@ -214,10 +214,6 @@ public class TimeEntriesController : ControllerBase
                 ipAddress,
                 userAgent);
 
-            _logger.LogInformation(
-                "TimeEntry створено успішно. Id: {Id}, UserId: {UserId}, Date: {Date}",
-                entry.Id, entry.UserId, entry.EntryDate);
-
             return CreatedAtAction(
                 nameof(GetById),
                 new { id = entry.Id },
@@ -258,10 +254,6 @@ public class TimeEntriesController : ControllerBase
                 currentUserId,
                 ipAddress,
                 userAgent);
-
-            _logger.LogInformation(
-                "TimeEntries створено масово. Кількість: {Count}",
-                entries.Count());
 
             return CreatedAtAction(
                 nameof(GetMyEntries),
@@ -305,10 +297,6 @@ public class TimeEntriesController : ControllerBase
                 ipAddress,
                 userAgent);
 
-            _logger.LogInformation(
-                "TimeEntries скопійовано за день. UserId: {UserId}, From: {SourceDate}, To: {TargetDate}, Count: {Count}",
-                userId, sourceDate, targetDate, entries.Count());
-
             return CreatedAtAction(
                 nameof(GetUserEntries),
                 new { userId },
@@ -351,10 +339,6 @@ public class TimeEntriesController : ControllerBase
                 currentUserId,
                 ipAddress,
                 userAgent);
-
-            _logger.LogInformation(
-                "TimeEntries скопійовано за тиждень. UserId: {UserId}, From: {SourceWeekStart}, To: {TargetWeekStart}, Count: {Count}",
-                userId, sourceWeekStart, targetWeekStart, entries.Count());
 
             return CreatedAtAction(
                 nameof(GetUserEntries),
@@ -405,10 +389,6 @@ public class TimeEntriesController : ControllerBase
                 ipAddress,
                 userAgent);
 
-            _logger.LogInformation(
-                "TimeEntry оновлено. Id: {Id}, UserId: {UserId}",
-                id, entry.UserId);
-
             return Ok(entry);
         }
         catch (KeyNotFoundException ex)
@@ -450,10 +430,6 @@ public class TimeEntriesController : ControllerBase
                 currentUserId,
                 ipAddress,
                 userAgent);
-
-            _logger.LogInformation(
-                "TimeEntries оновлено масово. Кількість: {Count}",
-                entries.Count());
 
             return Ok(entries);
         }
@@ -499,8 +475,6 @@ public class TimeEntriesController : ControllerBase
                 ipAddress,
                 userAgent);
 
-            _logger.LogInformation("TimeEntry видалено. Id: {Id}", id);
-
             return Ok(new { Message = "Запис часу успішно видалено" });
         }
         catch (KeyNotFoundException ex)
@@ -541,10 +515,6 @@ public class TimeEntriesController : ControllerBase
                 currentUserId,
                 ipAddress,
                 userAgent);
-
-            _logger.LogInformation(
-                "Bulk видалення завершено. Видалено {Count} записів",
-                ids.Count);
 
             return Ok(new { Message = $"Успішно видалено {ids.Count} записів" });
         }

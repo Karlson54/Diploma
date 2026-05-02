@@ -1,3 +1,4 @@
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -17,6 +18,7 @@ public class ReportService : IReportService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMemoryCache _cache;
     private readonly ILogger<ReportService> _logger;
+    private readonly IMapper _mapper;
 
     // Настройки кеширования
     private const int CacheDurationMinutes = 15;
@@ -27,13 +29,15 @@ public class ReportService : IReportService
         IUserRepository userRepository,
         IUnitOfWork unitOfWork,
         IMemoryCache cache,
-        ILogger<ReportService> logger)
+        ILogger<ReportService> logger,
+        IMapper mapper)
     {
         _timeEntryRepository = timeEntryRepository;
         _userRepository = userRepository;
         _unitOfWork = unitOfWork;
         _cache = cache;
         _logger = logger;
+        _mapper = mapper;
     }
 
     public async Task<IEnumerable<TimeEntryDto>> GetAllTimeEntriesForExportAsync(
@@ -139,7 +143,6 @@ public class ReportService : IReportService
         var cacheKey = $"{CacheKeyPrefix}user-load:{userId}:{fromDate:yyyyMMdd}:{toDate:yyyyMMdd}";
         if (_cache.TryGetValue(cacheKey, out UserLoadReportDto? cachedReport) && cachedReport != null)
         {
-            _logger.LogInformation("Отчет загружен из кеша: {CacheKey}", cacheKey);
             return cachedReport;
         }
 
@@ -259,10 +262,6 @@ public class ReportService : IReportService
 
         // Кешируем результат
         _cache.Set(cacheKey, report, TimeSpan.FromMinutes(CacheDurationMinutes));
-
-        _logger.LogInformation(
-            "Создан отчет по загрузке пользователя {UserId} за период {FromDate} - {ToDate}",
-            userId, fromDate, toDate);
 
         return report;
     }
@@ -391,10 +390,6 @@ public class ReportService : IReportService
 
         // Кешируем
         _cache.Set(cacheKey, report, TimeSpan.FromMinutes(CacheDurationMinutes));
-
-        _logger.LogInformation(
-            "Создан отчет по команде {AgencyId} за период {FromDate} - {ToDate}",
-            agencyId, fromDate, toDate);
 
         return report;
     }
@@ -536,10 +531,6 @@ public class ReportService : IReportService
         // Кешируем
         _cache.Set(cacheKey, report, TimeSpan.FromMinutes(CacheDurationMinutes));
 
-        _logger.LogInformation(
-            "Создан отчет по клиенту {ClientId} за период {FromDate} - {ToDate}",
-            clientId, fromDate, toDate);
-
         return report;
     }
 
@@ -554,13 +545,6 @@ public class ReportService : IReportService
         if (!await CanUserAccessReportAsync(requestingUserId))
         {
             throw new UnauthorizedAccessException("Вы не имеете доступа к этому отчету");
-        }
-
-        // Проверка кеша
-        var cacheKey = $"{CacheKeyPrefix}top-clients:{fromDate:yyyyMMdd}:{toDate:yyyyMMdd}:{agencyId}:{top}";
-        if (_cache.TryGetValue(cacheKey, out IEnumerable<ClientSummaryDto>? cachedReport) && cachedReport != null)
-        {
-            return cachedReport;
         }
 
         // Базовый запрос
@@ -595,10 +579,35 @@ public class ReportService : IReportService
             .Take(top)
             .ToList();
 
-        // Кешируем
-        _cache.Set(cacheKey, report, TimeSpan.FromMinutes(CacheDurationMinutes));
-
         return report;
+    }
+
+    public async Task<IEnumerable<InactiveUserDto>> GetInactiveUsersThisWeekAsync(long requestingUserId)
+    {
+        var today = DateTime.UtcNow.Date;
+        var dayOfWeek = (int)today.DayOfWeek;
+        var monday = today.AddDays(dayOfWeek == 0 ? -6 : -(dayOfWeek - 1));
+        var sunday = monday.AddDays(6);
+
+        var activeUsers = await _userRepository.GetActiveUsersAsync();
+        var usersWithEntries = await _timeEntryRepository.GetUserIdsWithEntriesAsync(monday, sunday);
+        var withEntriesSet = usersWithEntries.ToHashSet();
+
+        var inactiveUsers = activeUsers
+            .Where(u => !withEntriesSet.Contains(u.Id))
+            .ToList();
+
+        var inactiveIds = inactiveUsers.Select(u => u.Id).ToList();
+        var lastDates = await _timeEntryRepository.GetLastEntryDatesAsync(inactiveIds);
+
+        return inactiveUsers
+            .Select(u =>
+            {
+                var dto = _mapper.Map<InactiveUserDto>(u);
+                dto.LastEntryDate = lastDates.GetValueOrDefault(u.Id);
+                return dto;
+            })
+            .OrderBy(u => u.LastEntryDate ?? DateTime.MinValue);
     }
 
     public async Task<ProjectReportDto> GetProjectReportAsync(
@@ -711,10 +720,6 @@ public class ReportService : IReportService
             report.WeeklyBreakdown[i].WeekNumber = i + 1;
 
         _cache.Set(cacheKey, report, TimeSpan.FromMinutes(CacheDurationMinutes));
-
-        _logger.LogInformation(
-            "Создан отчет по проекту '{ProjectBrandName}' за период {FromDate} - {ToDate}",
-            projectBrandName, fromDate, toDate);
 
         return report;
     }
@@ -940,10 +945,6 @@ public class ReportService : IReportService
 
         // Кешируем
         _cache.Set(cacheKey, report, TimeSpan.FromMinutes(CacheDurationMinutes));
-
-        _logger.LogInformation(
-            "Создан сводный отчет за период {FromDate} - {ToDate}, AgencyId: {AgencyId}, ClientId: {ClientId}",
-            fromDate, toDate, agencyId, clientId);
 
         return report;
     }

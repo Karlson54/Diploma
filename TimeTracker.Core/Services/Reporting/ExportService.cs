@@ -83,10 +83,6 @@ public class ExportService : IExportService
             using var stream = new MemoryStream();
             workbook.SaveAs(stream);
 
-            _logger.LogInformation(
-                "Експортовано User Load Report для користувача {UserId} у форматі Excel",
-                userId);
-
             // Аудит успішного експорту
             await _auditService.LogReportExportedAsync(
                 reportType: "UserLoad",
@@ -173,10 +169,6 @@ public class ExportService : IExportService
 
             using var stream = new MemoryStream();
             workbook.SaveAs(stream);
-
-            _logger.LogInformation(
-                "Експортовано Team Load Report для агентства {AgencyId} у форматі Excel",
-                agencyId);
 
             // Аудит успішного експорту
             await _auditService.LogReportExportedAsync(
@@ -272,10 +264,6 @@ public class ExportService : IExportService
 
             using var stream = new MemoryStream();
             workbook.SaveAs(stream);
-
-            _logger.LogInformation(
-                "Експортовано Client Report для клієнта {ClientId} у форматі Excel",
-                clientId);
 
             // Аудит успішного експорту
             await _auditService.LogReportExportedAsync(
@@ -377,9 +365,6 @@ public class ExportService : IExportService
             using var stream = new MemoryStream();
             workbook.SaveAs(stream);
 
-            _logger.LogInformation(
-                "Експортовано Time Summary Report у форматі Excel");
-
             // Аудит успішного експорту
             await _auditService.LogReportExportedAsync(
                 reportType: "TimeSummary",
@@ -446,10 +431,6 @@ public class ExportService : IExportService
 
             var result = ExportToCsvInternal(records, locale);
 
-            _logger.LogInformation(
-                "Експортовано User Load Report для користувача {UserId} у форматі CSV",
-                userId);
-
             // Аудит успішного експорту
             await _auditService.LogReportExportedAsync(
                 reportType: "UserLoad",
@@ -513,10 +494,6 @@ public class ExportService : IExportService
 
             var result = ExportToCsvInternal(records, locale);
 
-            _logger.LogInformation(
-                "Експортовано Team Load Report для агентства {AgencyId} у форматі CSV",
-                agencyId);
-
             // Аудит успішного експорту
             await _auditService.LogReportExportedAsync(
                 reportType: "TeamLoad",
@@ -576,10 +553,6 @@ public class ExportService : IExportService
             }).ToList();
 
             var result = ExportToCsvInternal(records, locale);
-
-            _logger.LogInformation(
-                "Експортовано Client Report для клієнта {ClientId} у форматі CSV",
-                clientId);
 
             // Аудит успішного експорту
             await _auditService.LogReportExportedAsync(
@@ -641,9 +614,6 @@ public class ExportService : IExportService
             }).ToList();
 
             var result = ExportToCsvInternal(records, locale);
-
-            _logger.LogInformation(
-                "Експортовано Time Summary Report у форматі CSV");
 
             // Аудит успішного експорту
             await _auditService.LogReportExportedAsync(

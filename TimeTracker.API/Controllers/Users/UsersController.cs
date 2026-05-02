@@ -168,10 +168,6 @@ public class UsersController : ControllerBase
                 ipAddress,
                 userAgent);
 
-            _logger.LogInformation(
-                "Користувача {UserId} створено користувачем {RequestingUserId}",
-                user.Id, requestingUserId);
-
             return CreatedAtAction(nameof(GetById), new { id = user.Id }, user);
         }
         catch (ArgumentException ex)
@@ -180,7 +176,6 @@ public class UsersController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Конфлікт при створенні користувача");
             return Conflict(new { Message = ex.Message });
         }
         catch (KeyNotFoundException ex)
@@ -229,10 +224,6 @@ public class UsersController : ControllerBase
                 ipAddress,
                 userAgent);
 
-            _logger.LogInformation(
-                "Користувача {UserId} оновлено користувачем {RequestingUserId}",
-                id, requestingUserId);
-
             return Ok(user);
         }
         catch (KeyNotFoundException ex)
@@ -245,7 +236,6 @@ public class UsersController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Конфлікт при оновленні користувача {UserId}", id);
             return Conflict(new { Message = ex.Message });
         }
         catch (Exception ex)
@@ -283,10 +273,6 @@ public class UsersController : ControllerBase
                 requestingUserName,
                 ipAddress,
                 userAgent);
-
-            _logger.LogInformation(
-                "Користувача {UserId} активовано користувачем {RequestingUserId}",
-                id, requestingUserId);
 
             return Ok(new { Message = "Користувача активовано" });
         }
@@ -333,10 +319,6 @@ public class UsersController : ControllerBase
                 requestingUserName,
                 ipAddress,
                 userAgent);
-
-            _logger.LogInformation(
-                "Користувача {UserId} деактивовано користувачем {RequestingUserId}",
-                id, requestingUserId);
 
             return Ok(new { Message = "Користувача деактивовано" });
         }
@@ -398,10 +380,6 @@ public class UsersController : ControllerBase
                 currentUserName,
                 ipAddress,
                 userAgent);
-
-            _logger.LogInformation(
-                "Пароль користувача {UserId} змінено користувачем {RequestingUserId}",
-                id, currentUserId);
 
             return Ok(new { Message = "Пароль успішно змінено" });
         }

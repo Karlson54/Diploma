@@ -48,8 +48,6 @@ public class AuthController : ControllerBase
 
             var response = await _authService.RegisterAsync(dto, ipAddress, userAgent);
 
-            _logger.LogInformation("Користувач {Email} успішно зареєстрований", dto.Email);
-
             return CreatedAtAction(
                 nameof(ValidateToken),
                 new { userId = response.UserId },
@@ -87,8 +85,6 @@ public class AuthController : ControllerBase
             var userAgent = GetUserAgent();
 
             var response = await _authService.LoginAsync(dto, ipAddress, userAgent);
-
-            _logger.LogInformation("Користувач {Email} успішно увійшов", response.Email);
 
             return Ok(response);
         }
@@ -145,8 +141,6 @@ public class AuthController : ControllerBase
             var userAgent = GetUserAgent();
 
             await _authService.ChangePasswordAsync(userId, dto.CurrentPassword, dto.NewPassword, ipAddress, userAgent);
-
-            _logger.LogInformation("Користувач {UserId} успішно змінив пароль", userId);
 
             return Ok(new { Message = "Пароль успішно змінено" });
         }

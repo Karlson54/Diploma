@@ -55,9 +55,6 @@ public class AuditService : IAuditService
             await _auditLogRepository.AddAsync(auditLog);
             await _unitOfWork.SaveChangesAsync();
 
-            _logger.LogInformation(
-                "Audit: {Action} {EntityName} (ID: {EntityId}) by User {UserId}",
-                AuditAction.Create, entityName, entityId, userId);
         }
         catch (Exception ex)
         {
@@ -100,12 +97,6 @@ public class AuditService : IAuditService
             await _auditLogRepository.AddAsync(auditLog);
             await _unitOfWork.SaveChangesAsync();
 
-            _logger.LogInformation(
-                "Audit: {Action} - User: {UserName}, Email: {Email}, Success: {Success}",
-                success ? AuditAction.Register : AuditAction.RegisterFailed,
-                userName,
-                email,
-                success);
         }
         catch (Exception ex)
         {
@@ -145,9 +136,6 @@ public class AuditService : IAuditService
             await _auditLogRepository.AddAsync(auditLog);
             await _unitOfWork.SaveChangesAsync();
 
-            _logger.LogInformation(
-                "Audit: {Action} {EntityName} (ID: {EntityId}) by User {UserId}",
-                AuditAction.Update, entityName, entityId, userId);
         }
         catch (Exception ex)
         {
@@ -184,9 +172,6 @@ public class AuditService : IAuditService
             await _auditLogRepository.AddAsync(auditLog);
             await _unitOfWork.SaveChangesAsync();
 
-            _logger.LogInformation(
-                "Audit: {Action} {EntityName} (ID: {EntityId}) by User {UserId}",
-                AuditAction.Delete, entityName, entityId, userId);
         }
         catch (Exception ex)
         {
@@ -221,11 +206,6 @@ public class AuditService : IAuditService
             await _auditLogRepository.AddAsync(auditLog);
             await _unitOfWork.SaveChangesAsync();
 
-            _logger.LogInformation(
-                "Audit: {Action} by User {UserId} - Success: {Success}",
-                success ? AuditAction.Login : AuditAction.LoginFailed,
-                userId,
-                success);
         }
         catch (Exception ex)
         {
@@ -255,7 +235,6 @@ public class AuditService : IAuditService
             await _auditLogRepository.AddAsync(auditLog);
             await _unitOfWork.SaveChangesAsync();
 
-            _logger.LogInformation("Audit: {Action} by User {UserId}", AuditAction.Logout, userId);
         }
         catch (Exception ex)
         {
@@ -286,9 +265,6 @@ public class AuditService : IAuditService
             await _auditLogRepository.AddAsync(auditLog);
             await _unitOfWork.SaveChangesAsync();
 
-            _logger.LogInformation(
-                "Audit: {Action} by User {UserId}",
-                AuditAction.PasswordChanged, userId);
         }
         catch (Exception ex)
         {
@@ -332,9 +308,6 @@ public class AuditService : IAuditService
             await _auditLogRepository.AddAsync(auditLog);
             await _unitOfWork.SaveChangesAsync();
 
-            _logger.LogInformation(
-                "Audit: {Action} - Role {RoleName} assigned to User {TargetUserId} by User {UserId}",
-                AuditAction.RoleAssigned, roleName, targetUserId, userId);
         }
         catch (Exception ex)
         {
@@ -378,9 +351,6 @@ public class AuditService : IAuditService
             await _auditLogRepository.AddAsync(auditLog);
             await _unitOfWork.SaveChangesAsync();
 
-            _logger.LogInformation(
-                "Audit: {Action} - Role {RoleName} removed from User {TargetUserId} by User {UserId}",
-                AuditAction.RoleRemoved, roleName, targetUserId, userId);
         }
         catch (Exception ex)
         {
@@ -420,9 +390,6 @@ public class AuditService : IAuditService
             await _auditLogRepository.AddAsync(auditLog);
             await _unitOfWork.SaveChangesAsync();
 
-            _logger.LogInformation(
-                "Audit: {Action} {EntityName} - {AffectedCount} records by User {UserId}",
-                action, entityName, affectedCount, userId);
         }
         catch (Exception ex)
         {
@@ -545,9 +512,6 @@ public class AuditService : IAuditService
             await _auditLogRepository.AddAsync(auditLog);
             await _unitOfWork.SaveChangesAsync();
 
-            _logger.LogInformation(
-                "Audit: TimeEntry Created - ID: {TimeEntryId}, User: {UserId} ({UserName}), Date: {Date}, Hours: {Hours}ms by {CreatedBy}",
-                timeEntryId, userId, userName, entryDate, hoursMilliseconds, createdByUserName);
         }
         catch (Exception ex)
         {
@@ -587,9 +551,6 @@ public class AuditService : IAuditService
             await _auditLogRepository.AddAsync(auditLog);
             await _unitOfWork.SaveChangesAsync();
 
-            _logger.LogInformation(
-                "Audit: TimeEntry Updated - ID: {TimeEntryId}, User: {UserId} ({UserName}) by {UpdatedBy}",
-                timeEntryId, userId, userName, updatedByUserName);
         }
         catch (Exception ex)
         {
@@ -627,9 +588,6 @@ public class AuditService : IAuditService
             await _auditLogRepository.AddAsync(auditLog);
             await _unitOfWork.SaveChangesAsync();
 
-            _logger.LogInformation(
-                "Audit: TimeEntry Deleted - ID: {TimeEntryId}, User: {UserId} ({UserName}) by {DeletedBy}",
-                timeEntryId, userId, userName, deletedByUserName);
         }
         catch (Exception ex)
         {
@@ -680,9 +638,6 @@ public class AuditService : IAuditService
             await _auditLogRepository.AddAsync(auditLog);
             await _unitOfWork.SaveChangesAsync();
 
-            _logger.LogInformation(
-                "Audit: TimeEntries Copied ({CopyType}) - User: {UserId} ({UserName}), From: {SourceDate}, To: {TargetDate}, Count: {Count} by {RequestedBy}",
-                copyType, userId, userName, sourceDate, targetDate, copiedCount, requestingUserName);
         }
         catch (Exception ex)
         {
@@ -729,9 +684,6 @@ public class AuditService : IAuditService
             await _auditLogRepository.AddAsync(auditLog);
             await _unitOfWork.SaveChangesAsync();
 
-            _logger.LogInformation(
-                "Audit: TimeEntries {Operation} - User: {UserId} ({UserName}), Count: {AffectedCount} by {RequestedBy}",
-                operation, userId, userName, affectedCount, requestingUserName);
         }
         catch (Exception ex)
         {
@@ -769,9 +721,6 @@ public class AuditService : IAuditService
             await _auditLogRepository.AddAsync(auditLog);
             await _unitOfWork.SaveChangesAsync();
 
-            _logger.LogInformation(
-                "Audit: {Action} {EntityName} '{Name}' (ID: {EntityId}) by User {UserId}",
-                AuditAction.Create, dictionaryType, dictionaryName, dictionaryId, userId);
         }
         catch (Exception ex)
         {
@@ -811,9 +760,6 @@ public class AuditService : IAuditService
             await _auditLogRepository.AddAsync(auditLog);
             await _unitOfWork.SaveChangesAsync();
 
-            _logger.LogInformation(
-                "Audit: {Action} {EntityName} '{Name}' (ID: {EntityId}) by User {UserId}",
-                AuditAction.Update, dictionaryType, dictionaryName, dictionaryId, userId);
         }
         catch (Exception ex)
         {
@@ -850,9 +796,6 @@ public class AuditService : IAuditService
             await _auditLogRepository.AddAsync(auditLog);
             await _unitOfWork.SaveChangesAsync();
 
-            _logger.LogInformation(
-                "Audit: {Action} {EntityName} '{Name}' (ID: {EntityId}) by User {UserId}",
-                AuditAction.DictionaryActivated, dictionaryType, dictionaryName, dictionaryId, userId);
         }
         catch (Exception ex)
         {
@@ -890,9 +833,6 @@ public class AuditService : IAuditService
             await _auditLogRepository.AddAsync(auditLog);
             await _unitOfWork.SaveChangesAsync();
 
-            _logger.LogInformation(
-                "Audit: {Action} {EntityName} '{Name}' (ID: {EntityId}) by User {UserId}",
-                AuditAction.DictionaryDeactivated, dictionaryType, dictionaryName, dictionaryId, userId);
         }
         catch (Exception ex)
         {
@@ -938,9 +878,6 @@ public class AuditService : IAuditService
             await _auditLogRepository.AddAsync(auditLog);
             await _unitOfWork.SaveChangesAsync();
 
-            _logger.LogInformation(
-                "Audit: User Created - ID: {UserId}, Name: '{UserName}', Email: '{Email}' by User {CreatedBy}",
-                userId, userName, email, createdByUserId);
         }
         catch (Exception ex)
         {
@@ -979,9 +916,6 @@ public class AuditService : IAuditService
             await _auditLogRepository.AddAsync(auditLog);
             await _unitOfWork.SaveChangesAsync();
 
-            _logger.LogInformation(
-                "Audit: User Updated - ID: {UserId}, Name: '{UserName}' by User {UpdatedBy}",
-                userId, userName, updatedByUserId);
         }
         catch (Exception ex)
         {
@@ -1024,9 +958,6 @@ public class AuditService : IAuditService
             await _auditLogRepository.AddAsync(auditLog);
             await _unitOfWork.SaveChangesAsync();
 
-            _logger.LogInformation(
-                "Audit: User Activated - ID: {UserId}, Name: '{UserName}' by User {ActivatedBy}",
-                userId, userName, activatedByUserId);
         }
         catch (Exception ex)
         {
@@ -1077,9 +1008,6 @@ public class AuditService : IAuditService
             await _auditLogRepository.AddAsync(auditLog);
             await _unitOfWork.SaveChangesAsync();
 
-            _logger.LogInformation(
-                "Audit: User Deactivated - ID: {UserId}, Name: '{UserName}' by User {DeactivatedBy}",
-                userId, userName, deactivatedByUserId);
         }
         catch (Exception ex)
         {
@@ -1124,9 +1052,6 @@ public class AuditService : IAuditService
             await _auditLogRepository.AddAsync(auditLog);
             await _unitOfWork.SaveChangesAsync();
 
-            _logger.LogInformation(
-                "Audit: User Password Changed - ID: {UserId}, Name: '{UserName}', IsSelfChange: {IsSelfChange}, ChangedBy: {ChangedBy}",
-                userId, userName, isSelfChange, changedByUserId);
         }
         catch (Exception ex)
         {
@@ -1170,18 +1095,6 @@ public class AuditService : IAuditService
             await _auditLogRepository.AddAsync(auditLog);
             await _unitOfWork.SaveChangesAsync();
 
-            if (success)
-            {
-                _logger.LogInformation(
-                    "Audit: Report {ReportType} exported as {Format} by User {UserId}",
-                    reportType, exportFormat, requestingUserId);
-            }
-            else
-            {
-                _logger.LogWarning(
-                    "Audit: Report {ReportType} export failed for User {UserId} - {ErrorMessage}",
-                    reportType, requestingUserId, errorMessage);
-            }
         }
         catch (Exception ex)
         {

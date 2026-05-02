@@ -147,10 +147,6 @@ public class AgencyService : DictionaryService<Agency, AgencyDto, CreateAgencyDt
         await _repository.DeactivateAsync(id);
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogInformation(
-            "Agency деактивовано. Id: {Id}, Name: {Name}",
-            id, agency.Name);
-
         //АУДИТ В БД
         await _auditService.LogDictionaryDeactivatedAsync(
             dictionaryType: _entityName,
@@ -202,10 +198,6 @@ public class AgencyService : DictionaryService<Agency, AgencyDto, CreateAgencyDt
 
         await _repository.DeleteAsync(id);
         await _unitOfWork.SaveChangesAsync();
-
-        _logger.LogInformation(
-            "Agency видалено. Id: {Id}, Name: {Name}",
-            id, agency.Name);
 
         //АУДИТ В БД
         await _auditService.LogDeleteAsync(

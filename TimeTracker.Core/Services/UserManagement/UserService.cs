@@ -336,7 +336,7 @@ public class UserService : IUserService
 
         if (user.IsActive)
         {
-            _logger.LogInformation(
+            _logger.LogWarning(
                 "Користувач ID: {UserId} вже активний",
                 id);
             throw new InvalidOperationException("Користувач вже активний");
@@ -373,7 +373,7 @@ public class UserService : IUserService
 
         if (!user.IsActive)
         {
-            _logger.LogInformation("Користувач ID: {UserId} вже деактивований", id);
+            _logger.LogWarning("Користувач ID: {UserId} вже деактивований", id);
             throw new InvalidOperationException("Користувач вже деактивований");
         }
 

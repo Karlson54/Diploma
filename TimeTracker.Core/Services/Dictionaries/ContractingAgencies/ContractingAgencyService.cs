@@ -81,10 +81,6 @@ public class ContractingAgencyService : DictionaryService<ContractingAgency, Con
         await _repository.DeleteAsync(id);
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogInformation(
-            "ContractingAgency видалено. Id: {Id}, Name: {Name}",
-            id, contractingAgency.Name);
-
         //АУДИТ В БД
         await _auditService.LogDeleteAsync(
             entityName: _entityName,
@@ -137,10 +133,6 @@ public class ContractingAgencyService : DictionaryService<ContractingAgency, Con
 
         await _repository.DeactivateAsync(id);
         await _unitOfWork.SaveChangesAsync();
-
-        _logger.LogInformation(
-            "ContractingAgency деактивовано. Id: {Id}, Name: {Name}",
-            id, contractingAgency.Name);
 
         //АУДИТ В БД
         await _auditService.LogDictionaryDeactivatedAsync(
