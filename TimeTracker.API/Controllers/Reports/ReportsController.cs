@@ -78,8 +78,7 @@ public class ReportsController : ControllerBase
     public async Task<IActionResult> ExportUserLoadReportExcel(
         long userId,
         [FromQuery] DateTime fromDate,
-        [FromQuery] DateTime toDate,
-        [FromQuery] string locale = "uk")
+        [FromQuery] DateTime toDate)
     {
         try
         {
@@ -88,7 +87,7 @@ public class ReportsController : ControllerBase
             var userAgent = GetUserAgent();
 
             var fileBytes = await _exportService.ExportUserLoadReportToExcelAsync(
-                userId, fromDate, toDate, currentUserId, ipAddress, userAgent, locale);
+                userId, fromDate, toDate, currentUserId, ipAddress, userAgent);
 
             var fileName = $"UserLoadReport_{userId}_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.xlsx";
 
@@ -119,8 +118,7 @@ public class ReportsController : ControllerBase
         long userId,
         [FromQuery] DateTime fromDate,
         [FromQuery] DateTime toDate,
-        [FromQuery] string? columns = null,
-        [FromQuery] string locale = "uk")
+        [FromQuery] string? columns = null)
     {
         try
         {
@@ -131,7 +129,7 @@ public class ReportsController : ControllerBase
             var columnsDto = ExportColumnsDto.FromString(columns);
 
             var fileBytes = await _exportService.ExportUserEntriesFlatToExcelAsync(
-                userId, fromDate, toDate, currentUserId, ipAddress, userAgent, columnsDto, locale);
+                userId, fromDate, toDate, currentUserId, ipAddress, userAgent, columnsDto);
 
             var fileName = $"Report_{userId}_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.xlsx";
 
@@ -161,8 +159,7 @@ public class ReportsController : ControllerBase
     public async Task<IActionResult> ExportAllEntriesFlat(
         [FromQuery] DateTime fromDate,
         [FromQuery] DateTime toDate,
-        [FromQuery] string? columns = null,
-        [FromQuery] string locale = "uk")
+        [FromQuery] string? columns = null)
     {
         try
         {
@@ -173,7 +170,7 @@ public class ReportsController : ControllerBase
             var columnsDto = ExportColumnsDto.FromString(columns);
 
             var fileBytes = await _exportService.ExportAllEntriesFlatToExcelAsync(
-                fromDate, toDate, currentUserId, ipAddress, userAgent, columnsDto, locale);
+                fromDate, toDate, currentUserId, ipAddress, userAgent, columnsDto);
 
             var fileName = $"AllReports_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.xlsx";
 
@@ -189,43 +186,6 @@ public class ReportsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Помилка при flat-експорті всіх записів");
-            return BadRequest(new { Message = ex.Message });
-        }
-    }
-
-    /// <summary>
-    /// Експортувати звіт співробітника у CSV
-    /// </summary>
-    [HttpGet("user/{userId}/export/csv")]
-    [Authorize(Policy = "CanViewOwnReports")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> ExportUserLoadReportCsv(
-        long userId,
-        [FromQuery] DateTime fromDate,
-        [FromQuery] DateTime toDate,
-        [FromQuery] string locale = "uk")
-    {
-        try
-        {
-            var currentUserId = GetCurrentUserId();
-            var ipAddress = GetIpAddress();
-            var userAgent = GetUserAgent();
-
-            var fileBytes = await _exportService.ExportUserLoadReportToCsvAsync(
-                userId, fromDate, toDate, currentUserId, ipAddress, userAgent, locale);
-
-            var fileName = $"UserLoadReport_{userId}_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.csv";
-
-            return File(fileBytes, "text/csv", fileName);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Forbid(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Помилка при експорті звіту користувача {UserId}", userId);
             return BadRequest(new { Message = ex.Message });
         }
     }
@@ -277,8 +237,7 @@ public class ReportsController : ControllerBase
     public async Task<IActionResult> ExportTeamLoadReportExcel(
         long agencyId,
         [FromQuery] DateTime fromDate,
-        [FromQuery] DateTime toDate,
-        [FromQuery] string locale = "uk")
+        [FromQuery] DateTime toDate)
     {
         try
         {
@@ -287,7 +246,7 @@ public class ReportsController : ControllerBase
             var userAgent = GetUserAgent();
 
             var fileBytes = await _exportService.ExportTeamLoadReportToExcelAsync(
-                agencyId, fromDate, toDate, currentUserId, ipAddress, userAgent, locale);
+                agencyId, fromDate, toDate, currentUserId, ipAddress, userAgent);
 
             var fileName = $"TeamLoadReport_{agencyId}_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.xlsx";
 
@@ -295,40 +254,6 @@ public class ReportsController : ControllerBase
                 fileBytes,
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 fileName);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Forbid(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Помилка при експорті звіту команди {AgencyId}", agencyId);
-            return BadRequest(new { Message = ex.Message });
-        }
-    }
-
-    [HttpGet("team/{agencyId}/export/csv")]
-    [Authorize(Policy = "CanViewAllReports")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> ExportTeamLoadReportCsv(
-        long agencyId,
-        [FromQuery] DateTime fromDate,
-        [FromQuery] DateTime toDate,
-        [FromQuery] string locale = "uk")
-    {
-        try
-        {
-            var currentUserId = GetCurrentUserId();
-            var ipAddress = GetIpAddress();
-            var userAgent = GetUserAgent();
-
-            var fileBytes = await _exportService.ExportTeamLoadReportToCsvAsync(
-                agencyId, fromDate, toDate, currentUserId, ipAddress, userAgent, locale);
-
-            var fileName = $"TeamLoadReport_{agencyId}_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.csv";
-
-            return File(fileBytes, "text/csv", fileName);
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -388,8 +313,7 @@ public class ReportsController : ControllerBase
     public async Task<IActionResult> ExportClientReportExcel(
         long clientId,
         [FromQuery] DateTime fromDate,
-        [FromQuery] DateTime toDate,
-        [FromQuery] string locale = "uk")
+        [FromQuery] DateTime toDate)
     {
         try
         {
@@ -398,7 +322,7 @@ public class ReportsController : ControllerBase
             var userAgent = GetUserAgent();
 
             var fileBytes = await _exportService.ExportClientReportToExcelAsync(
-                clientId, fromDate, toDate, currentUserId, ipAddress, userAgent, locale);
+                clientId, fromDate, toDate, currentUserId, ipAddress, userAgent);
 
             var fileName = $"ClientReport_{clientId}_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.xlsx";
 
@@ -406,43 +330,6 @@ public class ReportsController : ControllerBase
                 fileBytes,
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 fileName);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Forbid(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Помилка при експорті звіту клієнта {ClientId}", clientId);
-            return BadRequest(new { Message = ex.Message });
-        }
-    }
-
-    /// <summary>
-    /// Експортувати звіт по клієнту у CSV
-    /// </summary>
-    [HttpGet("client/{clientId}/export/csv")]
-    [Authorize(Policy = "CanViewAllReports")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> ExportClientReportCsv(
-        long clientId,
-        [FromQuery] DateTime fromDate,
-        [FromQuery] DateTime toDate,
-        [FromQuery] string locale = "uk")
-    {
-        try
-        {
-            var currentUserId = GetCurrentUserId();
-            var ipAddress = GetIpAddress();
-            var userAgent = GetUserAgent();
-
-            var fileBytes = await _exportService.ExportClientReportToCsvAsync(
-                clientId, fromDate, toDate, currentUserId, ipAddress, userAgent, locale);
-
-            var fileName = $"ClientReport_{clientId}_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.csv";
-
-            return File(fileBytes, "text/csv", fileName);
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -586,8 +473,7 @@ public class ReportsController : ControllerBase
         [FromQuery] DateTime fromDate,
         [FromQuery] DateTime toDate,
         [FromQuery] long? agencyId = null,
-        [FromQuery] long? clientId = null,
-        [FromQuery] string locale = "uk")
+        [FromQuery] long? clientId = null)
     {
         try
         {
@@ -596,7 +482,7 @@ public class ReportsController : ControllerBase
             var userAgent = GetUserAgent();
 
             var fileBytes = await _exportService.ExportTimeSummaryReportToExcelAsync(
-                fromDate, toDate, currentUserId, ipAddress, userAgent, agencyId, clientId, locale);
+                fromDate, toDate, currentUserId, ipAddress, userAgent, agencyId, clientId);
 
             var fileName = $"TimeSummary_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.xlsx";
 
@@ -612,41 +498,6 @@ public class ReportsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Помилка при експорті зведеного звіту");
-            return BadRequest(new { Message = ex.Message });
-        }
-    }
-
-    [HttpGet("summary/export/csv")]
-    [Authorize(Policy = "CanExportData")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> ExportTimeSummaryReportCsv(
-        [FromQuery] DateTime fromDate,
-        [FromQuery] DateTime toDate,
-        [FromQuery] long? agencyId = null,
-        [FromQuery] long? clientId = null,
-        [FromQuery] string locale = "uk")
-    {
-        try
-        {
-            var currentUserId = GetCurrentUserId();
-            var ipAddress = GetIpAddress();
-            var userAgent = GetUserAgent();
-
-            var fileBytes = await _exportService.ExportTimeSummaryReportToCsvAsync(
-                fromDate, toDate, currentUserId, ipAddress, userAgent, agencyId, clientId, locale);
-
-            var fileName = $"TimeSummary_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.csv";
-
-            return File(fileBytes, "text/csv", fileName);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Forbid(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Помилка при експорті зведеного звіту CSV");
             return BadRequest(new { Message = ex.Message });
         }
     }

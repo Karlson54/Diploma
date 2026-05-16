@@ -10,9 +10,8 @@ public interface IExportService
         long requestingUserId,
         string ipAddress,
         string userAgent,
-        ExportColumnsDto columns,
-        string locale = "uk");
-    
+        ExportColumnsDto columns);
+
     Task<byte[]> ExportUserEntriesFlatToExcelAsync(
         long userId,
         DateTime fromDate,
@@ -20,18 +19,15 @@ public interface IExportService
         long requestingUserId,
         string ipAddress,
         string userAgent,
-        ExportColumnsDto columns,
-        string locale = "uk");
-    
-    // Export to Excel (з локалізацією)
+        ExportColumnsDto columns);
+
     Task<byte[]> ExportUserLoadReportToExcelAsync(
         long userId,
         DateTime fromDate,
         DateTime toDate,
         long requestingUserId,
         string ipAddress,
-        string userAgent,
-        string locale = "uk");
+        string userAgent);
 
     Task<byte[]> ExportTeamLoadReportToExcelAsync(
         long agencyId,
@@ -39,8 +35,7 @@ public interface IExportService
         DateTime toDate,
         long requestingUserId,
         string ipAddress,
-        string userAgent,
-        string locale = "uk");
+        string userAgent);
 
     Task<byte[]> ExportClientReportToExcelAsync(
         long clientId,
@@ -48,8 +43,7 @@ public interface IExportService
         DateTime toDate,
         long requestingUserId,
         string ipAddress,
-        string userAgent,
-        string locale = "uk");
+        string userAgent);
 
     Task<byte[]> ExportTimeSummaryReportToExcelAsync(
         DateTime fromDate,
@@ -58,56 +52,11 @@ public interface IExportService
         string ipAddress,
         string userAgent,
         long? agencyId = null,
-        long? clientId = null,
-        string locale = "uk");
+        long? clientId = null);
 
-    // Export to CSV (з локалізацією)
-    Task<byte[]> ExportUserLoadReportToCsvAsync(
-        long userId,
-        DateTime fromDate,
-        DateTime toDate,
-        long requestingUserId,
-        string ipAddress,
-        string userAgent,
-        string locale = "uk");
-
-    Task<byte[]> ExportTeamLoadReportToCsvAsync(
-        long agencyId,
-        DateTime fromDate,
-        DateTime toDate,
-        long requestingUserId,
-        string ipAddress,
-        string userAgent,
-        string locale = "uk");
-
-    Task<byte[]> ExportClientReportToCsvAsync(
-        long clientId,
-        DateTime fromDate,
-        DateTime toDate,
-        long requestingUserId,
-        string ipAddress,
-        string userAgent,
-        string locale = "uk");
-
-    Task<byte[]> ExportTimeSummaryReportToCsvAsync(
-        DateTime fromDate,
-        DateTime toDate,
-        long requestingUserId,
-        string ipAddress,
-        string userAgent,
-        long? agencyId = null,
-        long? clientId = null,
-        string locale = "uk");
-
-    // Generic export (з опціями стилізації)
     Task<byte[]> ExportToExcelAsync<T>(
         IEnumerable<T> data,
         string sheetName,
         string? title = null,
-        string locale = "uk",
         bool applyFormatting = true) where T : class;
-
-    Task<byte[]> ExportToCsvAsync<T>(
-        IEnumerable<T> data,
-        string locale = "uk") where T : class;
 }
