@@ -5,6 +5,8 @@ public class ExportColumnsDto
     public bool Agency { get; set; } = true;
     public bool FullName { get; set; } = true;
     public bool Date { get; set; } = true;
+    public bool Month { get; set; } = true;
+    public bool Year { get; set; } = true;
     public bool Market { get; set; } = true;
     public bool ContractingAgency { get; set; } = true;
     public bool Client { get; set; } = true;
@@ -21,9 +23,9 @@ public class ExportColumnsDto
 
         var dto = new ExportColumnsDto
         {
-            Agency = false, FullName = false, Date = false, Market = false,
-            ContractingAgency = false, Client = false, ProjectBrand = false,
-            Media = false, JobType = false, Hours = false, Comments = false
+            Agency = false, FullName = false, Date = false, Month = false,
+            Year = false, Market = false, ContractingAgency = false, Client = false,
+            ProjectBrand = false, Media = false, JobType = false, Hours = false, Comments = false
         };
 
         foreach (var col in columns.Split(',',
@@ -34,6 +36,8 @@ public class ExportColumnsDto
                 case "agency": dto.Agency = true; break;
                 case "fullname": dto.FullName = true; break;
                 case "date": dto.Date = true; break;
+                case "month": dto.Month = true; break;
+                case "year": dto.Year = true; break;
                 case "market": dto.Market = true; break;
                 case "contractingagency": dto.ContractingAgency = true; break;
                 case "client": dto.Client = true; break;

@@ -921,6 +921,8 @@ public class ExportService : IExportService
             if (columns.Agency) AddHeader("agency", "Agency");
             if (columns.FullName) AddHeader("fullname", "Name");
             if (columns.Date) AddHeader("date", "Date");
+            if (columns.Month) AddHeader("month", "Month");
+            if (columns.Year) AddHeader("year", "Year");
             if (columns.Market) AddHeader("market", "Market");
             if (columns.ContractingAgency) AddHeader("contractingagency", "Contracting Agency");
             if (columns.Client) AddHeader("client", "Client");
@@ -936,6 +938,10 @@ public class ExportService : IExportService
                 if (columns.Agency) worksheet.Cell(row, colMap["agency"]).Value = entry.AgencyName;
                 if (columns.FullName) worksheet.Cell(row, colMap["fullname"]).Value = entry.UserName;
                 if (columns.Date) worksheet.Cell(row, colMap["date"]).Value = entry.EntryDate.ToString("dd.MM.yyyy");
+                if (columns.Month)
+                    worksheet.Cell(row, colMap["month"]).Value =
+                        entry.EntryDate.ToString("MMMM", System.Globalization.CultureInfo.InvariantCulture);
+                if (columns.Year) worksheet.Cell(row, colMap["year"]).Value = entry.EntryDate.Year;
                 if (columns.Market) worksheet.Cell(row, colMap["market"]).Value = entry.MarketName;
                 if (columns.ContractingAgency)
                     worksheet.Cell(row, colMap["contractingagency"]).Value = entry.ContractingAgencyName;
@@ -1029,6 +1035,8 @@ public class ExportService : IExportService
             if (columns.Agency) AddHeader("agency", "Agency");
             if (columns.FullName) AddHeader("fullname", "Name");
             if (columns.Date) AddHeader("date", "Date");
+            if (columns.Month) AddHeader("month", "Month");
+            if (columns.Year) AddHeader("year", "Year");
             if (columns.Market) AddHeader("market", "Market");
             if (columns.ContractingAgency) AddHeader("contractingagency", "Contracting Agency");
             if (columns.Client) AddHeader("client", "Client");
@@ -1044,6 +1052,10 @@ public class ExportService : IExportService
                 if (columns.Agency) worksheet.Cell(row, colMap["agency"]).Value = entry.AgencyName;
                 if (columns.FullName) worksheet.Cell(row, colMap["fullname"]).Value = entry.UserName;
                 if (columns.Date) worksheet.Cell(row, colMap["date"]).Value = entry.EntryDate.ToString("dd.MM.yyyy");
+                if (columns.Month)
+                    worksheet.Cell(row, colMap["month"]).Value =
+                        entry.EntryDate.ToString("MMMM", System.Globalization.CultureInfo.InvariantCulture);
+                if (columns.Year) worksheet.Cell(row, colMap["year"]).Value = entry.EntryDate.Year;
                 if (columns.Market) worksheet.Cell(row, colMap["market"]).Value = entry.MarketName;
                 if (columns.ContractingAgency)
                     worksheet.Cell(row, colMap["contractingagency"]).Value = entry.ContractingAgencyName;
