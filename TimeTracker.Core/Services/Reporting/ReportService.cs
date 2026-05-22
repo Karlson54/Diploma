@@ -863,12 +863,11 @@ public class ReportService : IReportService
 
             // Agency Breakdown
             AgencyBreakdown = entries
-                .GroupBy(e => new { e.User.AgencyId, e.User.Agency.Name, e.User.Agency.Country })
+                .GroupBy(e => new { e.User.AgencyId, e.User.Agency.Name })
                 .Select(g => new AgencyBreakdownDto
                 {
                     AgencyId = g.Key.AgencyId,
                     AgencyName = g.Key.Name,
-                    Country = g.Key.Country,
                     TotalHoursMs = g.Sum(e => e.HoursMilliseconds),
                     TotalUsers = g.Select(e => e.UserId).Distinct().Count(),
                     EntriesCount = g.Count(),

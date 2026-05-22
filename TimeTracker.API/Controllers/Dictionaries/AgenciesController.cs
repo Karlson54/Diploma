@@ -38,13 +38,4 @@ public class AgenciesController : BaseDictionaryController<AgencyDto, CreateAgen
         var hasActive = await _agencyService.HasActiveUsersAsync(id);
         return Ok(new { HasActiveUsers = hasActive });
     }
-
-    [HttpGet("by-country/{country}")]
-    [Authorize(Policy = "CanViewDictionaries")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetByCountry(string country)
-    {
-        var agencies = await _agencyService.GetByCountryAsync(country);
-        return Ok(agencies);
-    }
 }

@@ -6,7 +6,6 @@ public class AgencyBreakdownDto
 {
     public long AgencyId { get; set; }
     public string AgencyName { get; set; } = string.Empty;
-    public string Country { get; set; } = string.Empty;
     
     public long TotalHoursMs { get; set; }
     public string TotalHours => TimeHelper.FormatHours(TotalHoursMs);

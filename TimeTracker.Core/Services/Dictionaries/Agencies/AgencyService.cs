@@ -28,10 +28,10 @@ public class AgencyService : DictionaryService<Agency, AgencyDto, CreateAgencyDt
             return null;
 
         var dto = _mapper.Map<AgencyDto>(agency);
-        
+
         // Додаємо кількість користувачів
         dto.UsersCount = await GetUsersCountAsync(id);
-        
+
         return dto;
     }
 
@@ -41,26 +41,6 @@ public class AgencyService : DictionaryService<Agency, AgencyDto, CreateAgencyDt
         var dtos = _mapper.Map<List<AgencyDto>>(agencies);
 
         // Додаємо кількість користувачів для кожного agency
-        foreach (var dto in dtos)
-        {
-            dto.UsersCount = await GetUsersCountAsync(dto.Id);
-        }
-
-        return dtos;
-    }
-
-    public async Task<IEnumerable<AgencyDto>> GetByCountryAsync(string country)
-    {
-        if (string.IsNullOrWhiteSpace(country))
-            return Enumerable.Empty<AgencyDto>();
-
-        var agencies = await _repository
-            .GetQueryable()
-            .Where(a => a.Country.ToLower() == country.ToLower())
-            .ToListAsync();
-
-        var dtos = _mapper.Map<List<AgencyDto>>(agencies);
-
         foreach (var dto in dtos)
         {
             dto.UsersCount = await GetUsersCountAsync(dto.Id);
@@ -137,7 +117,7 @@ public class AgencyService : DictionaryService<Agency, AgencyDto, CreateAgencyDt
             _logger.LogWarning(
                 "Неможливо деактивувати Agency '{Name}' (ID: {Id}) - є {Count} активних користувачів",
                 agency.Name, id, activeUsersCount);
-            
+
             throw new InvalidOperationException(
                 $"Неможливо деактивувати Agency '{agency.Name}', " +
                 $"оскільки є {activeUsersCount} активних користувачів. " +
@@ -174,18 +154,11 @@ public class AgencyService : DictionaryService<Agency, AgencyDto, CreateAgencyDt
 
         // Перевірка наявності користувачів
         var usersCount = await GetUsersCountAsync(id);
-        
         if (usersCount > 0)
-        {
-            _logger.LogWarning(
-                "Спроба видалення Agency '{Name}' (ID: {Id}), який має {Count} користувачів",
-                agency.Name, id, usersCount);
-            
             throw new InvalidOperationException(
                 $"Неможливо видалити Agency '{agency.Name}', " +
                 $"оскільки до нього прив'язано {usersCount} користувачів. " +
                 "Спочатку перемістіть або видаліть всіх користувачів.");
-        }
 
         // Зберігаємо дані для аудиту - ТІЛЬКИ реальні поля Agency
         var oldValues = new
@@ -193,7 +166,6 @@ public class AgencyService : DictionaryService<Agency, AgencyDto, CreateAgencyDt
             agency.Id,
             agency.Name,
             agency.IsActive,
-            agency.Country
         };
 
         await _repository.DeleteAsync(id);

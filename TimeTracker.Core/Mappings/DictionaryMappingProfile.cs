@@ -29,14 +29,14 @@ public class DictionaryMappingProfile : Profile
             .ForMember(dest => dest.TimeEntries, opt => opt.Ignore());
 
         // Media mappings
-        CreateMap<Data.Entities.Media, MediaDto>();
-        CreateMap<CreateMediaDto, Data.Entities.Media>()
+        CreateMap<Media, MediaDto>();
+        CreateMap<CreateMediaDto, Media>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.IsActive, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.TimeEntries, opt => opt.Ignore());
-        CreateMap<UpdateMediaDto, Data.Entities.Media>()
+        CreateMap<UpdateMediaDto, Media>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.IsActive, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())

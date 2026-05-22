@@ -48,10 +48,10 @@ public class DictionarySeed : ISeeder
 
         var agencies = new[]
         {
-            new Agency { Name = "GroupM",    Country = "Ukraine", IsActive = true, CreatedAt = DateTime.UtcNow },
-            new Agency { Name = "MediaCom",  Country = "Ukraine", IsActive = true, CreatedAt = DateTime.UtcNow },
-            new Agency { Name = "Mindshare", Country = "Ukraine", IsActive = true, CreatedAt = DateTime.UtcNow },
-            new Agency { Name = "Wavemaker", Country = "Ukraine", IsActive = true, CreatedAt = DateTime.UtcNow }
+            new Agency { Name = "GroupM", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new Agency { Name = "MediaCom", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new Agency { Name = "Mindshare", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new Agency { Name = "Wavemaker", IsActive = true, CreatedAt = DateTime.UtcNow }
         };
 
         await _context.Agencies.AddRangeAsync(agencies);
@@ -65,21 +65,21 @@ public class DictionarySeed : ISeeder
 
         var contractingAgencies = new[]
         {
-            new ContractingAgency { Name = "Acceleration",        IsActive = true, CreatedAt = DateTime.UtcNow },
-            new ContractingAgency { Name = "Choreograph",         IsActive = true, CreatedAt = DateTime.UtcNow },
-            new ContractingAgency { Name = "Essence",             IsActive = true, CreatedAt = DateTime.UtcNow },
-            new ContractingAgency { Name = "Finecast",            IsActive = true, CreatedAt = DateTime.UtcNow },
-            new ContractingAgency { Name = "GroupM",              IsActive = true, CreatedAt = DateTime.UtcNow },
-            new ContractingAgency { Name = "GroupM Services",     IsActive = true, CreatedAt = DateTime.UtcNow },
-            new ContractingAgency { Name = "Keyade",              IsActive = true, CreatedAt = DateTime.UtcNow },
-            new ContractingAgency { Name = "Kinetic",             IsActive = true, CreatedAt = DateTime.UtcNow },
-            new ContractingAgency { Name = "m/Six",               IsActive = true, CreatedAt = DateTime.UtcNow },
-            new ContractingAgency { Name = "MediaCom",            IsActive = true, CreatedAt = DateTime.UtcNow },
-            new ContractingAgency { Name = "MFuse",               IsActive = true, CreatedAt = DateTime.UtcNow },
-            new ContractingAgency { Name = "Mindshare",           IsActive = true, CreatedAt = DateTime.UtcNow },
-            new ContractingAgency { Name = "Motion Content Group",IsActive = true, CreatedAt = DateTime.UtcNow },
-            new ContractingAgency { Name = "Wavemaker",           IsActive = true, CreatedAt = DateTime.UtcNow },
-            new ContractingAgency { Name = "Xaxis",               IsActive = true, CreatedAt = DateTime.UtcNow }
+            new ContractingAgency { Name = "Acceleration", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new ContractingAgency { Name = "Choreograph", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new ContractingAgency { Name = "Essence", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new ContractingAgency { Name = "Finecast", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new ContractingAgency { Name = "GroupM", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new ContractingAgency { Name = "GroupM Services", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new ContractingAgency { Name = "Keyade", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new ContractingAgency { Name = "Kinetic", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new ContractingAgency { Name = "m/Six", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new ContractingAgency { Name = "MediaCom", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new ContractingAgency { Name = "MFuse", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new ContractingAgency { Name = "Mindshare", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new ContractingAgency { Name = "Motion Content Group", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new ContractingAgency { Name = "Wavemaker", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new ContractingAgency { Name = "Xaxis", IsActive = true, CreatedAt = DateTime.UtcNow }
         };
 
         await _context.ContractingAgencies.AddRangeAsync(contractingAgencies);
@@ -93,24 +93,24 @@ public class DictionarySeed : ISeeder
 
         var media = new[]
         {
-            new Media { Name = "All media",           IsActive = true, CreatedAt = DateTime.UtcNow },
-            new Media { Name = "OOH",                 IsActive = true, CreatedAt = DateTime.UtcNow },
-            new Media { Name = "Other",               IsActive = true, CreatedAt = DateTime.UtcNow },
-            new Media { Name = "Print",               IsActive = true, CreatedAt = DateTime.UtcNow },
-            new Media { Name = "Radio",               IsActive = true, CreatedAt = DateTime.UtcNow },
-            new Media { Name = "Research",            IsActive = true, CreatedAt = DateTime.UtcNow },
-            new Media { Name = "Trading",             IsActive = true, CreatedAt = DateTime.UtcNow },
-            new Media { Name = "TV",                  IsActive = true, CreatedAt = DateTime.UtcNow },
-            new Media { Name = "TVs",                 IsActive = true, CreatedAt = DateTime.UtcNow },
-            new Media { Name = "Digital - all",       IsActive = true, CreatedAt = DateTime.UtcNow },
-            new Media { Name = "Digital - Paid Social",  IsActive = true, CreatedAt = DateTime.UtcNow },
-            new Media { Name = "Digital - Paid Search",  IsActive = true, CreatedAt = DateTime.UtcNow },
-            new Media { Name = "Digital - Display",   IsActive = true, CreatedAt = DateTime.UtcNow },
-            new Media { Name = "Digital - Video",     IsActive = true, CreatedAt = DateTime.UtcNow },
-            new Media { Name = "Digital SP",          IsActive = true, CreatedAt = DateTime.UtcNow },
-            new Media { Name = "Digital Commerce",    IsActive = true, CreatedAt = DateTime.UtcNow },
+            new Media { Name = "All media", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new Media { Name = "OOH", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new Media { Name = "Other", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new Media { Name = "Print", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new Media { Name = "Radio", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new Media { Name = "Research", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new Media { Name = "Trading", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new Media { Name = "TV", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new Media { Name = "TVs", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new Media { Name = "Digital - all", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new Media { Name = "Digital - Paid Social", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new Media { Name = "Digital - Paid Search", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new Media { Name = "Digital - Display", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new Media { Name = "Digital - Video", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new Media { Name = "Digital SP", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new Media { Name = "Digital Commerce", IsActive = true, CreatedAt = DateTime.UtcNow },
             new Media { Name = "Digital Influencers", IsActive = true, CreatedAt = DateTime.UtcNow },
-            new Media { Name = "Digital other",       IsActive = true, CreatedAt = DateTime.UtcNow }
+            new Media { Name = "Digital other", IsActive = true, CreatedAt = DateTime.UtcNow }
         };
 
         await _context.Media.AddRangeAsync(media);
@@ -124,15 +124,15 @@ public class DictionarySeed : ISeeder
 
         var jobTypes = new[]
         {
-            new JobType { Name = "Strategy planning",  IsActive = true, CreatedAt = DateTime.UtcNow },
-            new JobType { Name = "Media plans",        IsActive = true, CreatedAt = DateTime.UtcNow },
-            new JobType { Name = "Campaign running",   IsActive = true, CreatedAt = DateTime.UtcNow },
-            new JobType { Name = "Reporting",          IsActive = true, CreatedAt = DateTime.UtcNow },
-            new JobType { Name = "Docs and finances",  IsActive = true, CreatedAt = DateTime.UtcNow },
-            new JobType { Name = "Research",           IsActive = true, CreatedAt = DateTime.UtcNow },
-            new JobType { Name = "Self education",     IsActive = true, CreatedAt = DateTime.UtcNow },
-            new JobType { Name = "Vacation",           IsActive = true, CreatedAt = DateTime.UtcNow },
-            new JobType { Name = "Other",              IsActive = true, CreatedAt = DateTime.UtcNow }
+            new JobType { Name = "Strategy planning", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new JobType { Name = "Media plans", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new JobType { Name = "Campaign running", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new JobType { Name = "Reporting", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new JobType { Name = "Docs and finances", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new JobType { Name = "Research", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new JobType { Name = "Self education", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new JobType { Name = "Vacation", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new JobType { Name = "Other", IsActive = true, CreatedAt = DateTime.UtcNow }
         };
 
         await _context.JobTypes.AddRangeAsync(jobTypes);

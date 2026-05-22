@@ -22,12 +22,6 @@ namespace TimeTracker.Data.Configurations
                 .IsRequired()
                 .HasMaxLength(100);
 
-            builder.Property(e => e.Country)
-                .HasColumnName("country")
-                .IsRequired()
-                .HasMaxLength(50)
-                .HasDefaultValue("Ukraine");
-
             builder.Property(e => e.IsActive)
                 .HasColumnName("is_active")
                 .IsRequired()
