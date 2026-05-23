@@ -25,13 +25,6 @@ public class CreateTimeEntryDto : IValidatableObject
     public DateTime EntryDate { get; set; }
 
     /// <summary>
-    /// ID агентства
-    /// </summary>
-    [Required(ErrorMessage = "AgencyId обов'язковий")]
-    [Range(1, long.MaxValue, ErrorMessage = "AgencyId має бути додатним числом")]
-    public long AgencyId { get; set; }
-
-    /// <summary>
     /// ID ринку
     /// </summary>
     [Required(ErrorMessage = "MarketId обов'язковий")]

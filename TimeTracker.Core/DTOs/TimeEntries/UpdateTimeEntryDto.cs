@@ -11,10 +11,6 @@ public class UpdateTimeEntryDto : IValidatableObject
     [NotFutureDate]
     public DateTime EntryDate { get; set; }
 
-    [Required(ErrorMessage = "AgencyId обов'язковий")]
-    [Range(1, long.MaxValue, ErrorMessage = "AgencyId має бути додатним числом")]
-    public long AgencyId { get; set; }
-
     [Required(ErrorMessage = "MarketId обов'язковий")]
     [Range(1, long.MaxValue, ErrorMessage = "MarketId має бути додатним числом")]
     public long MarketId { get; set; }

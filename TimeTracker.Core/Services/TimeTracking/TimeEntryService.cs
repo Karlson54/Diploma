@@ -80,6 +80,7 @@ public class TimeEntryService : ITimeEntryService
     public async Task<TimeEntryDto> CreateAsync(
         CreateTimeEntryDto dto,
         long requestingUserId,
+        long agencyId,
         string ipAddress,
         string userAgent)
     {
@@ -114,7 +115,7 @@ public class TimeEntryService : ITimeEntryService
 
         // 3. Валідація зовнішніх ключів
         var referencesValidationResult = await _validationService.ValidateReferencesAsync(
-            dto.AgencyId,
+            agencyId,
             dto.MarketId,
             dto.ContractingAgencyId,
             dto.ClientId,
@@ -132,11 +133,12 @@ public class TimeEntryService : ITimeEntryService
 
         // 4. Створення запису
         var timeEntry = _mapper.Map<TimeEntry>(dto);
+        timeEntry.AgencyId = agencyId; // явно з токена
 
         await _timeEntryRepository.AddAsync(timeEntry);
         await _unitOfWork.SaveChangesAsync();
 
-        // 5. АУДИТ В БД - бізнес-логіка
+        // 5. Аудит
         var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
         var targetUser = await _userRepository.GetByIdAsync(dto.UserId);
 
@@ -144,7 +146,7 @@ public class TimeEntryService : ITimeEntryService
         {
             var entryDetails = new
             {
-                dto.AgencyId,
+                agencyId,
                 dto.MarketId,
                 dto.ContractingAgencyId,
                 dto.ClientId,
@@ -180,6 +182,7 @@ public class TimeEntryService : ITimeEntryService
         long id,
         UpdateTimeEntryDto dto,
         long requestingUserId,
+        long agencyId,
         string ipAddress,
         string userAgent)
     {
@@ -247,7 +250,7 @@ public class TimeEntryService : ITimeEntryService
 
         // 5. Валідація зовнішніх ключів
         var referencesValidationResult = await _validationService.ValidateReferencesAsync(
-            dto.AgencyId,
+            agencyId,
             dto.MarketId,
             dto.ContractingAgencyId,
             dto.ClientId,
@@ -265,6 +268,7 @@ public class TimeEntryService : ITimeEntryService
 
         // 6. Оновлення entity
         _mapper.Map(dto, timeEntry);
+        timeEntry.AgencyId = agencyId;
 
         _timeEntryRepository.Update(timeEntry);
         await _unitOfWork.SaveChangesAsync();
@@ -440,6 +444,7 @@ public class TimeEntryService : ITimeEntryService
     public async Task<IEnumerable<TimeEntryDto>> CreateBulkAsync(
         IEnumerable<CreateTimeEntryDto> dtos,
         long requestingUserId,
+        long agencyId,
         string ipAddress,
         string userAgent)
     {
@@ -483,7 +488,7 @@ public class TimeEntryService : ITimeEntryService
             }
 
             var referencesValidationResult = await _validationService.ValidateReferencesAsync(
-                dto.AgencyId,
+                agencyId,
                 dto.MarketId,
                 dto.ContractingAgencyId,
                 dto.ClientId,
@@ -498,15 +503,18 @@ public class TimeEntryService : ITimeEntryService
         }
 
         // Створення записів
-        var timeEntries = dtosList.Select(dto => _mapper.Map<TimeEntry>(dto)).ToList();
+        var timeEntries = dtosList.Select(dto =>
+        {
+            var entry = _mapper.Map<TimeEntry>(dto);
+            entry.AgencyId = agencyId; // явно з токена
+            return entry;
+        }).ToList();
 
         await _timeEntryRepository.AddRangeAsync(timeEntries);
         await _unitOfWork.SaveChangesAsync();
 
-        // АУДИТ В БД - бізнес-логіка
+        // Аудит
         var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
-
-        // Групуємо по UserId для аудиту
         var groupedByUser = timeEntries.GroupBy(te => te.UserId);
 
         foreach (var userGroup in groupedByUser)

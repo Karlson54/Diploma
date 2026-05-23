@@ -199,25 +199,18 @@ public class TimeEntriesController : ControllerBase
         try
         {
             var currentUserId = GetCurrentUserId();
+            var agencyId = GetCurrentAgencyId();
             var ipAddress = GetIpAddress();
             var userAgent = GetUserAgent();
-
-            // Якщо UserId не вказаний або користувач намагається створити запис для себе
-            if (dto.UserId == 0 || dto.UserId == currentUserId)
-            {
-                dto.UserId = currentUserId;
-            }
 
             var entry = await _timeEntryService.CreateAsync(
                 dto,
                 currentUserId,
+                agencyId,
                 ipAddress,
                 userAgent);
 
-            return CreatedAtAction(
-                nameof(GetById),
-                new { id = entry.Id },
-                entry);
+            return CreatedAtAction(nameof(GetById), new { id = entry.Id }, entry);
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -246,18 +239,18 @@ public class TimeEntriesController : ControllerBase
         try
         {
             var currentUserId = GetCurrentUserId();
+            var agencyId = GetCurrentAgencyId();
             var ipAddress = GetIpAddress();
             var userAgent = GetUserAgent();
 
             var entries = await _timeEntryService.CreateBulkAsync(
                 dtos,
                 currentUserId,
+                agencyId,
                 ipAddress,
                 userAgent);
 
-            return CreatedAtAction(
-                nameof(GetMyEntries),
-                entries);
+            return CreatedAtAction(nameof(GetMyEntries), entries);
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -379,6 +372,7 @@ public class TimeEntriesController : ControllerBase
         try
         {
             var currentUserId = GetCurrentUserId();
+            var agencyId = GetCurrentAgencyId();
             var ipAddress = GetIpAddress();
             var userAgent = GetUserAgent();
 
@@ -386,6 +380,7 @@ public class TimeEntriesController : ControllerBase
                 id,
                 dto,
                 currentUserId,
+                agencyId,
                 ipAddress,
                 userAgent);
 
@@ -583,5 +578,13 @@ public class TimeEntriesController : ControllerBase
         return userAgent.Length > 500
             ? userAgent.Substring(0, 500)
             : userAgent;
+    }
+
+    private long GetCurrentAgencyId()
+    {
+        var claim = User.FindFirst("AgencyId")?.Value;
+        if (string.IsNullOrEmpty(claim) || !long.TryParse(claim, out var agencyId))
+            throw new UnauthorizedAccessException("Невалідний токен");
+        return agencyId;
     }
 }
