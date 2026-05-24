@@ -15,11 +15,11 @@ public interface ITimeValidationService
 
     Task<ValidationResult> ValidateReferencesAsync(
         long agencyId,
-        long marketId,
-        long contractingAgencyId,
-        long clientId,
-        long mediaId,
-        long jobTypeId);
+        long? marketId,
+        long? contractingAgencyId,
+        long? clientId,
+        long? mediaId,
+        long? jobTypeId);
 
     Task<ValidationResult> ValidateUserPermissionsAsync(
         long userId,

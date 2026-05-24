@@ -11,29 +11,19 @@ public class UpdateTimeEntryDto : IValidatableObject
     [NotFutureDate]
     public DateTime EntryDate { get; set; }
 
-    [Required(ErrorMessage = "MarketId обов'язковий")]
-    [Range(1, long.MaxValue, ErrorMessage = "MarketId має бути додатним числом")]
-    public long MarketId { get; set; }
+    public long? MarketId { get; set; }
 
-    [Required(ErrorMessage = "ContractingAgencyId обов'язковий")]
-    [Range(1, long.MaxValue, ErrorMessage = "ContractingAgencyId має бути додатним числом")]
-    public long ContractingAgencyId { get; set; }
+    public long? ContractingAgencyId { get; set; }
 
-    [Required(ErrorMessage = "ClientId обов'язковий")]
-    [Range(1, long.MaxValue, ErrorMessage = "ClientId має бути додатним числом")]
-    public long ClientId { get; set; }
+    public long? ClientId { get; set; }
 
     [Required(ErrorMessage = "ProjectBrand обов'язковий")]
     [StringLength(200, MinimumLength = 1, ErrorMessage = "ProjectBrand має бути від 1 до 200 символів")]
     public string ProjectBrand { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "MediaId обов'язковий")]
-    [Range(1, long.MaxValue, ErrorMessage = "MediaId має бути додатним числом")]
-    public long MediaId { get; set; }
+    public long? MediaId { get; set; }
 
-    [Required(ErrorMessage = "JobTypeId обов'язковий")]
-    [Range(1, long.MaxValue, ErrorMessage = "JobTypeId має бути додатним числом")]
-    public long JobTypeId { get; set; }
+    public long? JobTypeId { get; set; }
 
     [Required(ErrorMessage = "Кількість годин обов'язкова")]
     [Range(ValidationConstants.MinHoursMs, ValidationConstants.MaxHoursPerDayMs,
@@ -46,21 +36,40 @@ public class UpdateTimeEntryDto : IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        // Перевірка валідності часу
+        if (MarketId == null || MarketId <= 0)
+            yield return new ValidationResult(
+                "Оберіть Market зі списку",
+                new[] { nameof(MarketId) });
+
+        if (ContractingAgencyId == null || ContractingAgencyId <= 0)
+            yield return new ValidationResult(
+                "Оберіть Agency/Unit зі списку",
+                new[] { nameof(ContractingAgencyId) });
+
+        if (ClientId == null || ClientId <= 0)
+            yield return new ValidationResult(
+                "Оберіть Client зі списку",
+                new[] { nameof(ClientId) });
+
+        if (MediaId == null || MediaId <= 0)
+            yield return new ValidationResult(
+                "Оберіть Media зі списку",
+                new[] { nameof(MediaId) });
+
+        if (JobTypeId == null || JobTypeId <= 0)
+            yield return new ValidationResult(
+                "Оберіть JobType зі списку",
+                new[] { nameof(JobTypeId) });
+
         if (HoursMilliseconds > 0 && !TimeHelper.IsValidDailyHours(HoursMilliseconds))
-        {
             yield return new ValidationResult(
                 ValidationConstants.MaxDailyHoursError,
                 new[] { nameof(HoursMilliseconds) });
-        }
 
-        // Перевірка що EntryDate не дуже давня
         var oneYearAgo = DateTime.UtcNow.AddYears(-1);
         if (EntryDate < oneYearAgo)
-        {
             yield return new ValidationResult(
                 "Дата запису не може бути більше року назад",
                 new[] { nameof(EntryDate) });
-        }
     }
 }

@@ -60,6 +60,16 @@ public class TimeEntryMappingProfile : Profile
             .IncludeBase<TimeEntry, TimeEntryDto>();
 
         CreateMap<CreateTimeEntryDto, TimeEntry>()
+            .ForMember(dest => dest.MarketId,
+                opt => opt.MapFrom(src => src.MarketId ?? 0))
+            .ForMember(dest => dest.ContractingAgencyId,
+                opt => opt.MapFrom(src => src.ContractingAgencyId ?? 0))
+            .ForMember(dest => dest.ClientId,
+                opt => opt.MapFrom(src => src.ClientId ?? 0))
+            .ForMember(dest => dest.MediaId,
+                opt => opt.MapFrom(src => src.MediaId ?? 0))
+            .ForMember(dest => dest.JobTypeId,
+                opt => opt.MapFrom(src => src.JobTypeId ?? 0))
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
@@ -72,6 +82,16 @@ public class TimeEntryMappingProfile : Profile
             .ForMember(dest => dest.JobType, opt => opt.Ignore());
 
         CreateMap<UpdateTimeEntryDto, TimeEntry>()
+            .ForMember(dest => dest.MarketId,
+                opt => opt.MapFrom(src => src.MarketId ?? 0))
+            .ForMember(dest => dest.ContractingAgencyId,
+                opt => opt.MapFrom(src => src.ContractingAgencyId ?? 0))
+            .ForMember(dest => dest.ClientId,
+                opt => opt.MapFrom(src => src.ClientId ?? 0))
+            .ForMember(dest => dest.MediaId,
+                opt => opt.MapFrom(src => src.MediaId ?? 0))
+            .ForMember(dest => dest.JobTypeId,
+                opt => opt.MapFrom(src => src.JobTypeId ?? 0))
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.UserId, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())

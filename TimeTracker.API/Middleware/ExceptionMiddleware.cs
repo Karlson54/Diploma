@@ -26,9 +26,9 @@ public class ExceptionMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, 
-                "Unhandled exception. Path: {Path}, Method: {Method}", 
-                context.Request.Path, 
+            _logger.LogError(ex,
+                "Unhandled exception. Path: {Path}, Method: {Method}",
+                context.Request.Path,
                 context.Request.Method);
 
             await HandleExceptionAsync(context, ex);
@@ -38,26 +38,30 @@ public class ExceptionMiddleware
     private async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
         context.Response.ContentType = "application/json";
-        
+
         var (statusCode, error, message) = exception switch
         {
-            UnauthorizedAccessException => 
+            UnauthorizedAccessException =>
                 (StatusCodes.Status401Unauthorized, "Unauthorized", exception.Message),
-                
-            KeyNotFoundException => 
+
+            KeyNotFoundException =>
                 (StatusCodes.Status404NotFound, "Not Found", exception.Message),
-                
-            InvalidOperationException => 
+
+            InvalidOperationException =>
                 (StatusCodes.Status409Conflict, "Conflict", exception.Message),
-                
-            ArgumentException => 
+
+            ArgumentException =>
                 (StatusCodes.Status400BadRequest, "Bad Request", exception.Message),
-                
-            _ => (StatusCodes.Status500InternalServerError, 
-                  "Internal Server Error",
-                  _environment.IsDevelopment() 
-                      ? exception.Message 
-                      : "Виникла внутрішня помилка. Спробуйте пізніше.")
+
+            System.Text.Json.JsonException =>
+                (StatusCodes.Status400BadRequest, "Bad Request",
+                    "Некоректні дані форми. Переконайтесь що всі поля заповнені правильно"),
+
+            _ => (StatusCodes.Status500InternalServerError,
+                "Internal Server Error",
+                _environment.IsDevelopment()
+                    ? exception.Message
+                    : "Виникла внутрішня помилка. Спробуйте пізніше.")
         };
 
         context.Response.StatusCode = statusCode;

@@ -138,50 +138,64 @@ public class TimeValidationService : ITimeValidationService
 
     public async Task<ValidationResult> ValidateReferencesAsync(
         long agencyId,
-        long marketId,
-        long contractingAgencyId,
-        long clientId,
-        long mediaId,
-        long jobTypeId)
+        long? marketId,
+        long? contractingAgencyId,
+        long? clientId,
+        long? mediaId,
+        long? jobTypeId)
     {
         var result = new ValidationResult { IsValid = true };
 
         var agency = await _unitOfWork.Agencies.GetByIdAsync(agencyId);
-        var market = await _unitOfWork.Markets.GetByIdAsync(marketId);
-        var contractingAgency = await _unitOfWork.ContractingAgencies.GetByIdAsync(contractingAgencyId);
-        var client = await _unitOfWork.Clients.GetByIdAsync(clientId);
-        var media = await _unitOfWork.Media.GetByIdAsync(mediaId);
-        var jobType = await _unitOfWork.JobTypes.GetByIdAsync(jobTypeId);
-
         if (agency == null)
             result.AddError($"Agency з ID {agencyId} не знайдено");
         else if (!agency.IsActive)
             result.AddError($"Agency '{agency.Name}' деактивований");
 
-        if (market == null)
-            result.AddError($"Market з ID {marketId} не знайдено");
-        else if (!market.IsActive)
-            result.AddError($"Market '{market.Name}' деактивований");
+        if (marketId.HasValue)
+        {
+            var market = await _unitOfWork.Markets.GetByIdAsync(marketId.Value);
+            if (market == null)
+                result.AddError($"Market з ID {marketId} не знайдено");
+            else if (!market.IsActive)
+                result.AddError($"Market '{market.Name}' деактивований");
+        }
 
-        if (contractingAgency == null)
-            result.AddError($"ContractingAgency з ID {contractingAgencyId} не знайдено");
-        else if (!contractingAgency.IsActive)
-            result.AddError($"ContractingAgency '{contractingAgency.Name}' деактивований");
+        if (contractingAgencyId.HasValue)
+        {
+            var contractingAgency = await _unitOfWork.ContractingAgencies.GetByIdAsync(contractingAgencyId.Value);
+            if (contractingAgency == null)
+                result.AddError($"ContractingAgency з ID {contractingAgencyId} не знайдено");
+            else if (!contractingAgency.IsActive)
+                result.AddError($"ContractingAgency '{contractingAgency.Name}' деактивований");
+        }
 
-        if (client == null)
-            result.AddError($"Client з ID {clientId} не знайдено");
-        else if (!client.IsActive)
-            result.AddError($"Client '{client.Name}' деактивований");
+        if (clientId.HasValue)
+        {
+            var client = await _unitOfWork.Clients.GetByIdAsync(clientId.Value);
+            if (client == null)
+                result.AddError($"Client з ID {clientId} не знайдено");
+            else if (!client.IsActive)
+                result.AddError($"Client '{client.Name}' деактивований");
+        }
 
-        if (media == null)
-            result.AddError($"Media з ID {mediaId} не знайдено");
-        else if (!media.IsActive)
-            result.AddError($"Media '{media.Name}' деактивований");
+        if (mediaId.HasValue)
+        {
+            var media = await _unitOfWork.Media.GetByIdAsync(mediaId.Value);
+            if (media == null)
+                result.AddError($"Media з ID {mediaId} не знайдено");
+            else if (!media.IsActive)
+                result.AddError($"Media '{media.Name}' деактивований");
+        }
 
-        if (jobType == null)
-            result.AddError($"JobType з ID {jobTypeId} не знайдено");
-        else if (!jobType.IsActive)
-            result.AddError($"JobType '{jobType.Name}' деактивований");
+        if (jobTypeId.HasValue)
+        {
+            var jobType = await _unitOfWork.JobTypes.GetByIdAsync(jobTypeId.Value);
+            if (jobType == null)
+                result.AddError($"JobType з ID {jobTypeId} не знайдено");
+            else if (!jobType.IsActive)
+                result.AddError($"JobType '{jobType.Name}' деактивований");
+        }
 
         return result;
     }
