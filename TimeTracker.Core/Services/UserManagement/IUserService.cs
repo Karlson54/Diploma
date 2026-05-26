@@ -53,6 +53,12 @@ public interface IUserService
         string ipAddress,
         string userAgent);
 
+    Task<UserDto> UpdateProfileAsync(
+        long userId,
+        UpdateProfileDto dto,
+        string ipAddress,
+        string userAgent);
+
     Task<bool> IsEmailExistsAsync(string email, long? excludeUserId = null);
     Task<bool> IsLoginExistsAsync(string login, long? excludeUserId = null);
 }

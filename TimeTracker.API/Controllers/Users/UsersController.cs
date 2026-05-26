@@ -430,6 +430,72 @@ public class UsersController : ControllerBase
         return Ok(new { Exists = exists });
     }
 
+    /// <summary>
+    /// Отримати профіль поточного користувача
+    /// </summary>
+    [HttpGet("me")]
+    [Authorize(Policy = "AuthenticatedUser")]
+    [ProducesResponseType(typeof(UserDetailDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMyProfile()
+    {
+        try
+        {
+            var currentUserId = GetCurrentUserId();
+            var user = await _userService.GetByIdAsync(currentUserId);
+            if (user == null)
+                return NotFound(new { Message = "Користувача не знайдено" });
+
+            return Ok(user);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Помилка при отриманні профілю");
+            return BadRequest(new { Message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Оновити профіль поточного користувача (ім'я, email, логін)
+    /// </summary>
+    [HttpPut("me/profile")]
+    [Authorize(Policy = "AuthenticatedUser")]
+    [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> UpdateMyProfile([FromBody] UpdateProfileDto dto)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        try
+        {
+            var currentUserId = GetCurrentUserId();
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
+            var user = await _userService.UpdateProfileAsync(
+                currentUserId,
+                dto,
+                ipAddress,
+                userAgent);
+
+            return Ok(user);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { Message = ex.Message });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Помилка при оновленні профілю");
+            return StatusCode(500, new { Message = "Внутрішня помилка сервера" });
+        }
+    }
+
     // ==================== HELPER METHODS ====================
 
     private long GetCurrentUserId()

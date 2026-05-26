@@ -464,6 +464,58 @@ public class UserService : IUserService
             userAgent: userAgent);
     }
 
+    public async Task<UserDto> UpdateProfileAsync(
+        long userId,
+        UpdateProfileDto dto,
+        string ipAddress,
+        string userAgent)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+            throw new KeyNotFoundException($"Користувача з ID {userId} не знайдено");
+
+        if (!user.IsActive)
+            throw new InvalidOperationException("Обліковий запис деактивований");
+
+        if (await _userRepository.IsEmailExistsAsync(dto.Email, userId))
+            throw new InvalidOperationException("Email вже використовується іншим користувачем");
+
+        if (!string.IsNullOrWhiteSpace(dto.Login) &&
+            await _userRepository.IsLoginExistsAsync(dto.Login, userId))
+            throw new InvalidOperationException("Логін вже використовується іншим користувачем");
+
+        var oldValues = new { user.Name, user.Email, user.Login };
+
+        user.Name = dto.Name.Trim();
+        user.Email = dto.Email.Trim().ToLower();
+
+        if (!string.IsNullOrWhiteSpace(dto.Login))
+            user.Login = dto.Login.Trim();
+
+        user.UpdatedAt = DateTime.UtcNow;
+        _userRepository.Update(user);
+        await _unitOfWork.SaveChangesAsync();
+
+        var newValues = new { user.Name, user.Email, user.Login };
+
+        await _auditService.LogUserUpdatedAsync(
+            userId: user.Id,
+            userName: user.Name,
+            oldValues: oldValues,
+            newValues: newValues,
+            updatedByUserId: userId,
+            updatedByUserName: user.Name,
+            ipAddress: ipAddress,
+            userAgent: userAgent);
+
+        var updatedUser = await _userRepository
+            .GetQueryable()
+            .Include(u => u.Agency)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+
+        return _mapper.Map<UserDto>(updatedUser);
+    }
+
     public async Task<bool> IsEmailExistsAsync(string email, long? excludeUserId = null)
     {
         if (excludeUserId.HasValue)
