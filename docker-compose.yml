@@ -40,3 +40,5 @@ services:
 
 volumes:
   sqlserver_data:
+    external: true
+    name: diploma_sqlserver_data
