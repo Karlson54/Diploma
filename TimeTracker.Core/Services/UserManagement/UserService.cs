@@ -50,6 +50,7 @@ public class UserService : IUserService
         var users = await _userRepository
             .GetQueryable()
             .Include(u => u.Agency)
+            .Include(u => u.Department)
             .Include(u => u.UserRoles)
             .ThenInclude(ur => ur.Role)
             .AsNoTracking()
@@ -64,6 +65,7 @@ public class UserService : IUserService
         var users = await _userRepository
             .GetQueryable()
             .Include(u => u.Agency)
+            .Include(u => u.Department)
             .Include(u => u.UserRoles)
             .ThenInclude(ur => ur.Role)
             .Where(u => u.IsActive)
@@ -88,6 +90,7 @@ public class UserService : IUserService
         var query = _userRepository
             .GetQueryable()
             .Include(u => u.Agency)
+            .Include(u => u.Department)
             .Include(u => u.UserRoles)
             .AsNoTracking();
 
@@ -163,6 +166,17 @@ public class UserService : IUserService
                 dto.AgencyId);
             throw new InvalidOperationException("Неможливо створити користувача для неактивного Agency");
         }
+
+        var department = await _unitOfWork.Departments.GetByIdAsync(dto.DepartmentId);
+        if (department == null)
+            throw new KeyNotFoundException($"Відділ з ID {dto.DepartmentId} не знайдено");
+
+        if (!department.IsActive)
+            throw new InvalidOperationException($"Відділ '{department.Name}' деактивований");
+
+        if (department.AgencyId != dto.AgencyId)
+            throw new InvalidOperationException(
+                $"Відділ '{department.Name}' не належить до вказаної агенції");
 
         List<long> roleIdsToAssign;
 
@@ -272,6 +286,28 @@ public class UserService : IUserService
         var agency = await _unitOfWork.Agencies.GetByIdAsync(dto.AgencyId);
         if (agency == null)
             throw new KeyNotFoundException($"Агенцію з ID {dto.AgencyId} не знайдено");
+
+        var targetAgencyId = dto.AgencyId;
+
+        if (dto.DepartmentId.HasValue)
+        {
+            var department = await _unitOfWork.Departments.GetByIdAsync(dto.DepartmentId.Value);
+            if (department == null)
+                throw new KeyNotFoundException($"Відділ з ID {dto.DepartmentId} не знайдено");
+
+            if (!department.IsActive)
+                throw new InvalidOperationException($"Відділ '{department.Name}' деактивований");
+
+            if (department.AgencyId != targetAgencyId)
+                throw new InvalidOperationException(
+                    $"Відділ '{department.Name}' не належить до обраної агенції");
+
+            user.DepartmentId = dto.DepartmentId.Value;
+        }
+        else
+        {
+            throw new InvalidOperationException("Відділ обов'язковий");
+        }
 
         // Зберігаємо старі значення для аудиту
         var oldValues = new { user.Name, user.Email, user.Login, user.AgencyId };

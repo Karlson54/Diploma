@@ -49,4 +49,14 @@ public class UserListItemDto
     /// Назви ролей користувача
     /// </summary>
     public List<string> Roles { get; set; } = new();
+
+    /// <summary>
+    /// ID відділу
+    /// </summary>
+    public long DepartmentId { get; set; }
+
+    /// <summary>
+    /// Назва відділу
+    /// </summary>
+    public string DepartmentName { get; set; } = string.Empty;
 }

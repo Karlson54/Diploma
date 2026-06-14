@@ -27,7 +27,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .IsRequired()
             .HasMaxLength(255);
 
-        builder.Property(e => e.Login) 
+        builder.Property(e => e.Login)
             .HasColumnName("login")
             .IsRequired()
             .HasMaxLength(100);
@@ -89,5 +89,19 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasForeignKey(t => t.UserId)
             .HasConstraintName("fk_time_entries_user_id")
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Property(e => e.DepartmentId)
+            .HasColumnName("department_id")
+            .HasColumnType("bigint")
+            .IsRequired();
+
+        builder.HasIndex(e => e.DepartmentId)
+            .HasDatabaseName("ix_users_department_id");
+
+        builder.HasOne(e => e.Department)
+            .WithMany(d => d.Users)
+            .HasForeignKey(e => e.DepartmentId)
+            .HasConstraintName("fk_users_department_id")
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

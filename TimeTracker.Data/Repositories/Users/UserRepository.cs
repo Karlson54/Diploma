@@ -47,6 +47,7 @@ public class UserRepository : Repository<User>, IUserRepository
         return await _dbSet
             .Include(u => u.UserRoles)
             .ThenInclude(ur => ur.Role)
+            .Include(u => u.Department)
             .FirstOrDefaultAsync(u => u.Id == id);
     }
 
@@ -79,8 +80,8 @@ public class UserRepository : Repository<User>, IUserRepository
 
         return await _dbSet
             .AsNoTracking()
-            .Where(u => u.UserRoles.Any(ur => 
-                ur.Role.Name.ToLower() == roleName.ToLower() && 
+            .Where(u => u.UserRoles.Any(ur =>
+                ur.Role.Name.ToLower() == roleName.ToLower() &&
                 ur.Role.IsActive))
             .OrderBy(u => u.Name)
             .ToListAsync();
@@ -145,7 +146,7 @@ public class UserRepository : Repository<User>, IUserRepository
     #region Пагинация с фильтрами
 
     public async Task<(IEnumerable<User> Users, int TotalCount)> GetUsersPagedAsync(
-        int pageNumber, 
+        int pageNumber,
         int pageSize,
         string? searchTerm = null,
         long? agencyId = null,
@@ -157,7 +158,7 @@ public class UserRepository : Repository<User>, IUserRepository
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
             var term = searchTerm.ToLower();
-            query = query.Where(u => 
+            query = query.Where(u =>
                 u.Name.ToLower().Contains(term) ||
                 u.Email.ToLower().Contains(term) ||
                 u.Login.ToLower().Contains(term));

@@ -39,4 +39,7 @@ public class UpdateUserDto
 
     // Опціонально — якщо null, не змінюємо ролі
     public List<long>? RoleIds { get; set; }
+    
+    [Range(1, long.MaxValue, ErrorMessage = "DepartmentId має бути додатним числом")]
+    public long? DepartmentId { get; set; }
 }

@@ -7,7 +7,7 @@ public class TimeEntryListItemDto
     public long UserId { get; set; }
 
     public long? AgencyId { get; set; }
-    
+
     public string? AgencyName { get; set; }
 
     public DateTime EntryDate { get; set; }
@@ -38,4 +38,7 @@ public class TimeEntryListItemDto
     public string FormattedHours => Core.Common.TimeHelper.FormatHours(HoursMilliseconds);
 
     public string? Comments { get; set; }
+
+    public long? DepartmentId { get; set; }
+    public string? DepartmentName { get; set; }
 }

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using TimeTracker.Data.Entities;
 using TimeTracker.Data.Repositories.Audit;
 using TimeTracker.Data.Repositories.Common;
+using TimeTracker.Data.Repositories.Departments;
 
 namespace TimeTracker.Data.UnitOfWork;
 
@@ -19,19 +20,20 @@ public interface IUnitOfWork : IDisposable
     IRepository<UserRole> UserRoles { get; }
     IRepository<TimeEntry> TimeEntries { get; }
     IAuditLogRepository AuditLogs { get; }
-    
+    IDepartmentRepository Departments { get; }
+
     // Управление транзакциями
     Task<IDbContextTransaction> BeginTransactionAsync();
     Task CommitTransactionAsync();
     Task RollbackTransactionAsync();
-    
+
     // Сохранение изменений
     Task<int> SaveChangesAsync();
     int SaveChanges();
-    
+
     // Проверка состояния
     bool HasActiveTransaction { get; }
-    
+
     // Bulk операции через Unit of Work
     Task<int> ExecuteSqlRawAsync(string sql, params object[] parameters);
     Task BulkInsertAsync<T>(IEnumerable<T> entities) where T : BaseEntity;

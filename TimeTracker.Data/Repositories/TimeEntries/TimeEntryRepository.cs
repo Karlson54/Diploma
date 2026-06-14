@@ -36,6 +36,7 @@ public class TimeEntryRepository : Repository<TimeEntry>, ITimeEntryRepository
             .Include(te => te.Market)
             .Include(te => te.ContractingAgency)
             .Include(te => te.Client)
+            .Include(te => te.Department)
             .Include(te => te.Media)
             .Include(te => te.JobType)
             .Where(te => te.UserId == userId);
@@ -190,6 +191,7 @@ public class TimeEntryRepository : Repository<TimeEntry>, ITimeEntryRepository
             .Include(te => te.Market)
             .Include(te => te.ContractingAgency)
             .Include(te => te.Client)
+            .Include(te => te.Department)
             .Include(te => te.Media)
             .Include(te => te.JobType)
             .OrderByDescending(te => te.EntryDate)
@@ -224,6 +226,7 @@ public class TimeEntryRepository : Repository<TimeEntry>, ITimeEntryRepository
             .Include(te => te.JobType)
             .Include(te => te.Market)
             .Include(te => te.ContractingAgency)
+            .Include(te => te.Department)
             .Where(te => te.EntryDate >= fromDate.Date && te.EntryDate <= toDate.Date);
 
         if (userId.HasValue)

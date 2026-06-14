@@ -17,7 +17,9 @@ using TimeTracker.Data.Repositories.TimeEntries;
 using TimeTracker.Data.Repositories.Users;
 using TimeTracker.Data.UnitOfWork;
 using TimeTracker.Core.Services.Audit;
+using TimeTracker.Core.Services.Departments;
 using TimeTracker.Data.Repositories.Audit;
+using TimeTracker.Data.Repositories.Departments;
 
 namespace TimeTracker.API.Extensions;
 
@@ -42,6 +44,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<ITimeEntryRepository, TimeEntryRepository>();
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+        services.AddScoped<IDepartmentRepository, DepartmentRepository>();
 
         // Dictionary Repositories
         services.AddScoped<IDictionaryRepository<Agency>, DictionaryRepository<Agency>>();
@@ -66,6 +69,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IClientService, ClientService>();
         services.AddScoped<IMediaService, MediaService>();
         services.AddScoped<IJobTypeService, JobTypeService>();
+        
+        // Department service
+        services.AddScoped<IDepartmentService, DepartmentService>();
 
         // TimeEntry Services
         services.AddScoped<ITimeEntryService, TimeEntryService>();

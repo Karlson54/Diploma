@@ -4,6 +4,7 @@ using TimeTracker.Data.Context;
 using TimeTracker.Data.Entities;
 using TimeTracker.Data.Repositories.Audit;
 using TimeTracker.Data.Repositories.Common;
+using TimeTracker.Data.Repositories.Departments;
 
 namespace TimeTracker.Data.UnitOfWork;
 
@@ -64,6 +65,11 @@ public class UnitOfWork : IUnitOfWork
 
     public IAuditLogRepository AuditLogs =>
         _auditLogs ??= new AuditLogRepository(_context);
+
+    private IDepartmentRepository? _departments;
+
+    public IDepartmentRepository Departments =>
+        _departments ??= new DepartmentRepository(_context);
 
     #endregion
 

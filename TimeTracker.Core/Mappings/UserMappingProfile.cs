@@ -12,14 +12,22 @@ public class UserMappingProfile : Profile
         // User -> UserDto
         CreateMap<User, UserDto>()
             .ForMember(dest => dest.AgencyName,
-                opt => opt.MapFrom(src => src.Agency != null ? src.Agency.Name : string.Empty));
+                opt => opt.MapFrom(src => src.Agency != null ? src.Agency.Name : string.Empty))
+            .ForMember(dest => dest.DepartmentId,
+                opt => opt.MapFrom(src => src.DepartmentId))
+            .ForMember(dest => dest.DepartmentName,
+                opt => opt.MapFrom(src => src.Department != null ? src.Department.Name : string.Empty));
 
         // User -> UserDetailDto
         CreateMap<User, UserDetailDto>()
             .ForMember(dest => dest.AgencyName,
                 opt => opt.MapFrom(src => src.Agency != null ? src.Agency.Name : string.Empty))
             .ForMember(dest => dest.Roles,
-                opt => opt.MapFrom(src => src.UserRoles.Select(ur => ur.Role)));
+                opt => opt.MapFrom(src => src.UserRoles.Select(ur => ur.Role)))
+            .ForMember(dest => dest.DepartmentId,
+                opt => opt.MapFrom(src => src.DepartmentId))
+            .ForMember(dest => dest.DepartmentName,
+                opt => opt.MapFrom(src => src.Department != null ? src.Department.Name : string.Empty));
 
         // User -> UserListItemDto
         CreateMap<User, UserListItemDto>()
@@ -33,7 +41,11 @@ public class UserMappingProfile : Profile
                 opt => opt.MapFrom(src => src.UserRoles
                     .Where(ur => ur.Role != null)
                     .Select(ur => ur.Role.Name)
-                    .ToList()));
+                    .ToList()))
+            .ForMember(dest => dest.DepartmentId,
+                opt => opt.MapFrom(src => src.DepartmentId))
+            .ForMember(dest => dest.DepartmentName,
+                opt => opt.MapFrom(src => src.Department != null ? src.Department.Name : string.Empty));
 
         // CreateUserDto -> User
         CreateMap<CreateUserDto, User>()
@@ -43,6 +55,7 @@ public class UserMappingProfile : Profile
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.Agency, opt => opt.Ignore())
+            .ForMember(dest => dest.Department, opt => opt.Ignore())
             .ForMember(dest => dest.UserRoles, opt => opt.Ignore())
             .ForMember(dest => dest.TimeEntries, opt => opt.Ignore());
 
@@ -55,6 +68,7 @@ public class UserMappingProfile : Profile
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.Agency, opt => opt.Ignore())
+            .ForMember(dest => dest.DepartmentId, opt => opt.Ignore())
             .ForMember(dest => dest.UserRoles, opt => opt.Ignore())
             .ForMember(dest => dest.TimeEntries, opt => opt.Ignore());
 

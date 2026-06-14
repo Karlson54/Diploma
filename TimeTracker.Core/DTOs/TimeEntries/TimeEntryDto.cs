@@ -119,4 +119,7 @@ public class TimeEntryDto
     /// Дата останнього оновлення (UTC)
     /// </summary>
     public DateTime? UpdatedAt { get; set; }
+    
+    public long DepartmentId { get; set; }
+    public string DepartmentName { get; set; } = string.Empty;
 }

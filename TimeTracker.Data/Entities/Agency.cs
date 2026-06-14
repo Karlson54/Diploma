@@ -4,5 +4,6 @@ namespace TimeTracker.Data.Entities
     {
         public virtual ICollection<User> Users { get; set; } = new List<User>();
         public virtual ICollection<TimeEntry> TimeEntries { get; set; } = new List<TimeEntry>();
+        public virtual ICollection<Department> Departments { get; set; } = new List<Department>();
     }
 }

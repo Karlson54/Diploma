@@ -49,6 +49,7 @@ public class TimeEntryService : ITimeEntryService
             .Include(te => te.Market)
             .Include(te => te.ContractingAgency)
             .Include(te => te.Client)
+            .Include(te => te.Department)
             .Include(te => te.Media)
             .Include(te => te.JobType)
             .FirstOrDefaultAsync(te => te.Id == id);
@@ -131,16 +132,19 @@ public class TimeEntryService : ITimeEntryService
                 string.Join("; ", referencesValidationResult.Errors));
         }
 
-        // 4. Створення запису
+        // 4. Отримуємо DepartmentId з User
+        var user = await _userRepository.GetByIdAsync(dto.UserId);
+        if (user == null)
+            throw new KeyNotFoundException($"Користувача з ID {dto.UserId} не знайдено");
+
+        // 5. Створення запису
         var timeEntry = _mapper.Map<TimeEntry>(dto);
-        timeEntry.AgencyId = agencyId; // явно з токена
+        timeEntry.AgencyId = agencyId;
+        timeEntry.DepartmentId = user.DepartmentId;
 
-        await _timeEntryRepository.AddAsync(timeEntry);
-        await _unitOfWork.SaveChangesAsync();
-
-        // 5. Аудит
+        // 6. Аудит
         var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
-        var targetUser = await _userRepository.GetByIdAsync(dto.UserId);
+        var targetUser = user;
 
         if (requestingUser != null && targetUser != null)
         {

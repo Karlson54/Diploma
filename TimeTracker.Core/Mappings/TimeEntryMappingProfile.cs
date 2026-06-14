@@ -24,7 +24,9 @@ public class TimeEntryMappingProfile : Profile
             .ForMember(dest => dest.MediaName,
                 opt => opt.MapFrom(src => src.Media.Name))
             .ForMember(dest => dest.JobTypeName,
-                opt => opt.MapFrom(src => src.JobType.Name));
+                opt => opt.MapFrom(src => src.JobType.Name))
+            .ForMember(dest => dest.DepartmentName,
+                opt => opt.MapFrom(src => src.Department != null ? src.Department.Name : string.Empty));
 
         CreateMap<TimeEntry, TimeEntryListItemDto>()
             .ForMember(dest => dest.UserName,
@@ -54,8 +56,12 @@ public class TimeEntryMappingProfile : Profile
             .ForMember(dest => dest.AgencyId,
                 opt => opt.MapFrom(src => src.AgencyId))
             .ForMember(dest => dest.AgencyName,
-                opt => opt.MapFrom(src => src.Agency != null ? src.Agency.Name : null));
-
+                opt => opt.MapFrom(src => src.Agency != null ? src.Agency.Name : null))
+            .ForMember(dest => dest.DepartmentId,
+                opt => opt.MapFrom(src => src.DepartmentId))
+            .ForMember(dest => dest.DepartmentName,
+                opt => opt.MapFrom(src => src.Department != null ? src.Department.Name : null));
+        
         CreateMap<TimeEntry, TimeEntryDetailDto>()
             .IncludeBase<TimeEntry, TimeEntryDto>();
 
@@ -79,7 +85,8 @@ public class TimeEntryMappingProfile : Profile
             .ForMember(dest => dest.ContractingAgency, opt => opt.Ignore())
             .ForMember(dest => dest.Client, opt => opt.Ignore())
             .ForMember(dest => dest.Media, opt => opt.Ignore())
-            .ForMember(dest => dest.JobType, opt => opt.Ignore());
+            .ForMember(dest => dest.JobType, opt => opt.Ignore())
+            .ForMember(dest => dest.DepartmentId, opt => opt.Ignore());
 
         CreateMap<UpdateTimeEntryDto, TimeEntry>()
             .ForMember(dest => dest.MarketId,
@@ -102,6 +109,7 @@ public class TimeEntryMappingProfile : Profile
             .ForMember(dest => dest.ContractingAgency, opt => opt.Ignore())
             .ForMember(dest => dest.Client, opt => opt.Ignore())
             .ForMember(dest => dest.Media, opt => opt.Ignore())
-            .ForMember(dest => dest.JobType, opt => opt.Ignore());
+            .ForMember(dest => dest.JobType, opt => opt.Ignore())
+            .ForMember(dest => dest.DepartmentId, opt => opt.Ignore());
     }
 }

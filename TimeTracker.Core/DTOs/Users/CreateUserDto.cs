@@ -49,4 +49,8 @@ public class CreateUserDto
 
     [MaxLength(ValidationPatterns.MaxUserRolesCount, ErrorMessage = "Максимальна кількість ролей: {1}")]
     public List<long> RoleId { get; set; } = new();
+    
+    [Required(ErrorMessage = "DepartmentId обов'язковий")]
+    [Range(1, long.MaxValue, ErrorMessage = "DepartmentId має бути додатним числом")]
+    public long DepartmentId { get; set; }
 }

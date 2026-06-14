@@ -53,6 +53,12 @@ namespace TimeTracker.Data.Configurations
                 .HasForeignKey(t => t.AgencyId)
                 .HasConstraintName("fk_time_entries_agency_id")
                 .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasMany(e => e.Departments)
+                .WithOne(d => d.Agency)
+                .HasForeignKey(d => d.AgencyId)
+                .HasConstraintName("fk_departments_agency_id")
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

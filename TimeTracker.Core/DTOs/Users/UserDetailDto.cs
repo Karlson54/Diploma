@@ -56,4 +56,14 @@ public class UserDetailDto
     /// Список ролей користувача
     /// </summary>
     public List<RoleDto> Roles { get; set; } = new();
+
+    /// <summary>
+    /// ID відділу
+    /// </summary>
+    public long DepartmentId { get; set; }
+
+    /// <summary>
+    /// Назва відділу
+    /// </summary>
+    public string DepartmentName { get; set; } = string.Empty;
 }

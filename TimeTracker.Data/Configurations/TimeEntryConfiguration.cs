@@ -147,5 +147,19 @@ public class TimeEntryConfiguration : IEntityTypeConfiguration<TimeEntry>
             .HasForeignKey(e => e.JobTypeId)
             .HasConstraintName("fk_time_entries_job_type_id")
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Property(e => e.DepartmentId)
+            .HasColumnName("department_id")
+            .HasColumnType("bigint")
+            .IsRequired();
+
+        builder.HasIndex(e => e.DepartmentId)
+            .HasDatabaseName("ix_time_entries_department_id");
+
+        builder.HasOne(e => e.Department)
+            .WithMany(d => d.TimeEntries)
+            .HasForeignKey(e => e.DepartmentId)
+            .HasConstraintName("fk_time_entries_department_id")
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
