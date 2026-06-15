@@ -24,7 +24,7 @@ public class ExportColumnsDto
 
         var dto = new ExportColumnsDto
         {
-            Agency = false, FullName = false, Date = false, Month = false,
+            Agency = false, Department = false, FullName = false, Date = false, Month = false,
             Year = false, Market = false, ContractingAgency = false, Client = false,
             ProjectBrand = false, Media = false, JobType = false, Hours = false, Comments = false
         };

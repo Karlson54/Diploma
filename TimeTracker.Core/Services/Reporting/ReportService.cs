@@ -112,7 +112,7 @@ public class ReportService : IReportService
                 UserId = te.UserId,
                 UserName = te.User.Name,
                 DepartmentName = te.Department != null ? te.Department.Name : string.Empty,
-                AgencyName = te.User.Agency != null ? te.User.Agency.Name : string.Empty,
+                AgencyName = te.Agency != null ? te.Agency.Name : string.Empty,
                 EntryDate = te.EntryDate,
                 MarketName = te.Market != null ? te.Market.Name : string.Empty,
                 ContractingAgencyName = te.ContractingAgency != null ? te.ContractingAgency.Name : string.Empty,

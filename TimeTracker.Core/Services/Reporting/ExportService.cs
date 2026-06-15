@@ -937,7 +937,7 @@ public class ExportService : IExportService
             foreach (var entry in entriesList)
             {
                 if (columns.Agency) worksheet.Cell(row, colMap["agency"]).Value = entry.AgencyName;
-                if (columns.Department) worksheet.Cell(row, colMap["department"]).Value = entry.DepartmentName;
+                if (columns.Department) worksheet.Cell(row, colMap["department"]).Value = entry.DepartmentName ?? "-";
                 if (columns.FullName) worksheet.Cell(row, colMap["fullname"]).Value = entry.UserName;
                 if (columns.Date) worksheet.Cell(row, colMap["date"]).Value = entry.EntryDate.ToString("dd.MM.yyyy");
                 if (columns.Month)
@@ -1053,7 +1053,7 @@ public class ExportService : IExportService
             foreach (var entry in entriesList)
             {
                 if (columns.Agency) worksheet.Cell(row, colMap["agency"]).Value = entry.AgencyName;
-                if (columns.Department) worksheet.Cell(row, colMap["department"]).Value = entry.DepartmentName;
+                if (columns.Department) worksheet.Cell(row, colMap["department"]).Value = entry.DepartmentName ?? "-";
                 if (columns.FullName) worksheet.Cell(row, colMap["fullname"]).Value = entry.UserName;
                 if (columns.Date) worksheet.Cell(row, colMap["date"]).Value = entry.EntryDate.ToString("dd.MM.yyyy");
                 if (columns.Month)
