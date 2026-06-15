@@ -142,7 +142,10 @@ public class TimeEntryService : ITimeEntryService
         timeEntry.AgencyId = agencyId;
         timeEntry.DepartmentId = user.DepartmentId;
 
-        // 6. Аудит
+        await _timeEntryRepository.AddAsync(timeEntry);
+        await _unitOfWork.SaveChangesAsync();
+
+        // 6. Аудит (оставь как есть)
         var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
         var targetUser = user;
 
