@@ -3,6 +3,7 @@ namespace TimeTracker.Core.DTOs.Reports;
 public class ExportColumnsDto
 {
     public bool Agency { get; set; } = true;
+    public bool Department { get; set; } = true;
     public bool FullName { get; set; } = true;
     public bool Date { get; set; } = true;
     public bool Month { get; set; } = true;
@@ -34,6 +35,7 @@ public class ExportColumnsDto
             switch (col.ToLower())
             {
                 case "agency": dto.Agency = true; break;
+                case "department": dto.Department = true; break;
                 case "fullname": dto.FullName = true; break;
                 case "date": dto.Date = true; break;
                 case "month": dto.Month = true; break;

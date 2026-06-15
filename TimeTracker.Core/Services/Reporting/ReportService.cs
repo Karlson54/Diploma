@@ -56,6 +56,7 @@ public class ReportService : IReportService
             .Include(te => te.Client)
             .Include(te => te.Media)
             .Include(te => te.JobType)
+            .Include(te => te.Department)
             .Where(te => te.EntryDate >= fromDate.Date && te.EntryDate <= toDate.Date)
             .OrderBy(te => te.EntryDate)
             .ThenBy(te => te.User.Name)
@@ -65,6 +66,7 @@ public class ReportService : IReportService
                 Id = te.Id,
                 UserId = te.UserId,
                 UserName = te.User.Name,
+                DepartmentName = te.Department != null ? te.Department.Name : string.Empty,
                 AgencyName = te.User.Agency != null ? te.User.Agency.Name : string.Empty,
                 EntryDate = te.EntryDate,
                 MarketName = te.Market != null ? te.Market.Name : string.Empty,
@@ -98,6 +100,7 @@ public class ReportService : IReportService
             .Include(te => te.Client)
             .Include(te => te.Media)
             .Include(te => te.JobType)
+            .Include(te => te.Department)
             .Where(te => te.UserId == userId
                          && te.EntryDate >= fromDate.Date
                          && te.EntryDate <= toDate.Date)
@@ -108,6 +111,7 @@ public class ReportService : IReportService
                 Id = te.Id,
                 UserId = te.UserId,
                 UserName = te.User.Name,
+                DepartmentName = te.Department != null ? te.Department.Name : string.Empty,
                 AgencyName = te.User.Agency != null ? te.User.Agency.Name : string.Empty,
                 EntryDate = te.EntryDate,
                 MarketName = te.Market != null ? te.Market.Name : string.Empty,

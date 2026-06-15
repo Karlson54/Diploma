@@ -119,7 +119,14 @@ public class TimeEntryDto
     /// Дата останнього оновлення (UTC)
     /// </summary>
     public DateTime? UpdatedAt { get; set; }
-    
+
+    /// <summary>
+    /// ID відділу
+    /// </summary>
     public long DepartmentId { get; set; }
+
+    /// <summary>
+    /// Назва відділу
+    /// </summary>
     public string DepartmentName { get; set; } = string.Empty;
 }
