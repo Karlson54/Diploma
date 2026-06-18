@@ -32,6 +32,7 @@ public interface ITimeEntryRepository : IRepository<TimeEntry>
         long? userId = null,
         long? agencyId = null,
         long? clientId = null,
+        long? departmentId = null,
         DateTime? fromDate = null,
         DateTime? toDate = null);
 

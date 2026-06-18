@@ -40,6 +40,7 @@ public interface ITimeEntryService
         long? userId = null,
         long? agencyId = null,
         long? clientId = null,
+        long? departmentId = null,
         DateTime? fromDate = null,
         DateTime? toDate = null,
         long requestingUserId = 0);

@@ -82,6 +82,7 @@ public class TimeEntriesController : ControllerBase
                 userId: currentUserId,
                 agencyId: null,
                 clientId: null,
+                departmentId: null,
                 fromDate,
                 toDate,
                 requestingUserId: currentUserId);
@@ -146,6 +147,7 @@ public class TimeEntriesController : ControllerBase
         [FromQuery] long? userId = null,
         [FromQuery] long? agencyId = null,
         [FromQuery] long? clientId = null,
+        [FromQuery] long? departmentId = null,
         [FromQuery] DateTime? fromDate = null,
         [FromQuery] DateTime? toDate = null)
     {
@@ -158,6 +160,7 @@ public class TimeEntriesController : ControllerBase
                 userId,
                 agencyId,
                 clientId,
+                departmentId,
                 fromDate,
                 toDate,
                 currentUserId);

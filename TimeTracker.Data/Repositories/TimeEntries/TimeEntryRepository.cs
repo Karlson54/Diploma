@@ -163,6 +163,7 @@ public class TimeEntryRepository : Repository<TimeEntry>, ITimeEntryRepository
         long? userId = null,
         long? agencyId = null,
         long? clientId = null,
+        long? departmentId = null,
         DateTime? fromDate = null,
         DateTime? toDate = null)
     {
@@ -176,6 +177,9 @@ public class TimeEntryRepository : Repository<TimeEntry>, ITimeEntryRepository
 
         if (clientId.HasValue)
             query = query.Where(te => te.ClientId == clientId.Value);
+
+        if (departmentId.HasValue)
+            query = query.Where(te => te.DepartmentId == departmentId.Value);
 
         if (fromDate.HasValue)
             query = query.Where(te => te.EntryDate >= fromDate.Value.Date);
