@@ -159,7 +159,10 @@ public class ReportsController : ControllerBase
     public async Task<IActionResult> ExportAllEntriesFlat(
         [FromQuery] DateTime fromDate,
         [FromQuery] DateTime toDate,
-        [FromQuery] string? columns = null)
+        [FromQuery] string? columns = null,
+        [FromQuery] long? agencyId = null,
+        [FromQuery] long? departmentId = null,
+        [FromQuery] string? userIds = null)
     {
         try
         {
@@ -169,8 +172,18 @@ public class ReportsController : ControllerBase
 
             var columnsDto = ExportColumnsDto.FromString(columns);
 
+            IEnumerable<long>? userIdsList = null;
+            if (!string.IsNullOrWhiteSpace(userIds))
+            {
+                userIdsList = userIds
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Select(id => long.TryParse(id, out var parsed) ? parsed : 0)
+                    .Where(id => id > 0);
+            }
+
             var fileBytes = await _exportService.ExportAllEntriesFlatToExcelAsync(
-                fromDate, toDate, currentUserId, ipAddress, userAgent, columnsDto);
+                fromDate, toDate, currentUserId, ipAddress, userAgent, columnsDto,
+                agencyId, departmentId, userIdsList);
 
             var fileName = $"AllReports_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.xlsx";
 

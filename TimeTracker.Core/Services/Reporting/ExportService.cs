@@ -2,6 +2,7 @@ using ClosedXML.Excel;
 using Microsoft.Extensions.Logging;
 using TimeTracker.Core.DTOs.Reports;
 using TimeTracker.Core.DTOs.Reports.Common;
+using TimeTracker.Core.DTOs.TimeEntries;
 using TimeTracker.Core.Services.Audit;
 using static TimeTracker.Core.Common.ExportConstants;
 
@@ -1007,12 +1008,39 @@ public class ExportService : IExportService
         long requestingUserId,
         string ipAddress,
         string userAgent,
-        ExportColumnsDto columns)
+        ExportColumnsDto columns,
+        long? agencyId = null,
+        long? departmentId = null,
+        IEnumerable<long>? userIds = null)
     {
         try
         {
-            var entries = await _reportService.GetAllTimeEntriesForExportAsync(
-                fromDate, toDate, requestingUserId);
+            IEnumerable<TimeEntryDto> entries;
+
+            var userIdsList = userIds?.ToList();
+
+            if (userIdsList != null && userIdsList.Any())
+            {
+                // Запросы по каждому userId параллельно
+                var tasks = userIdsList.Select(uid =>
+                    _reportService.GetUserTimeEntriesForExportAsync(
+                        uid, fromDate, toDate, requestingUserId));
+
+                var results = await Task.WhenAll(tasks);
+                entries = results.SelectMany(x => x).ToList();
+            }
+            else
+            {
+                entries = await _reportService.GetAllTimeEntriesForExportAsync(
+                    fromDate, toDate, requestingUserId);
+
+                // Фильтруем на уровне сервиса если переданы agencyId/departmentId
+                if (agencyId.HasValue)
+                    entries = entries.Where(e => e.AgencyId == agencyId.Value);
+
+                if (departmentId.HasValue)
+                    entries = entries.Where(e => e.DepartmentId == departmentId.Value);
+            }
 
             var entriesList = entries.ToList();
 
@@ -1073,8 +1101,10 @@ public class ExportService : IExportService
                 if (columns.Comments) worksheet.Cell(row, colMap["comments"]).Value = entry.Comments ?? string.Empty;
 
                 if (row % 2 == 0)
+                {
                     worksheet.Range(row, 1, row, col - 1).Style.Fill.BackgroundColor =
                         XLColor.FromHtml(ExcelStyles.AlternateRowColor);
+                }
 
                 row++;
             }
@@ -1089,7 +1119,11 @@ public class ExportService : IExportService
                 exportFormat: "Excel",
                 requestingUserId: requestingUserId,
                 requestingUserName: "Admin",
-                reportParams: new { FromDate = fromDate, ToDate = toDate },
+                reportParams: new
+                {
+                    FromDate = fromDate, ToDate = toDate, AgencyId = agencyId, DepartmentId = departmentId,
+                    UserIds = userIdsList
+                },
                 ipAddress: ipAddress,
                 userAgent: userAgent,
                 success: true);

@@ -421,7 +421,6 @@ public class TimeEntryService : ITimeEntryService
     {
         if (pageNumber < 1) pageNumber = 1;
         if (pageSize < 1) pageSize = 10;
-        if (pageSize > 200) pageSize = 200;
 
         // Якщо запитують записи іншого користувача - перевіряємо права
         if (userId.HasValue && userId.Value != requestingUserId && requestingUserId > 0)

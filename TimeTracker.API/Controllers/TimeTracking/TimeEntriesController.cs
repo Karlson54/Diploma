@@ -531,6 +531,53 @@ public class TimeEntriesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Отримати всі записи часу без пагінації (тільки Manager/Admin, для звітів)
+    /// </summary>
+    [HttpGet("all")]
+    [Authorize(Policy = "CanEditAnyTimeEntry")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAll(
+        [FromQuery] long? userId = null,
+        [FromQuery] long? agencyId = null,
+        [FromQuery] long? clientId = null,
+        [FromQuery] long? departmentId = null,
+        [FromQuery] DateTime? fromDate = null,
+        [FromQuery] DateTime? toDate = null)
+    {
+        try
+        {
+            var currentUserId = GetCurrentUserId();
+
+            // Используем репозиторий напрямую — без лимита pageSize
+            var (entries, totalCount) = await _timeEntryService.GetPagedAsync(
+                pageNumber: 1,
+                pageSize: int.MaxValue, // все записи
+                userId,
+                agencyId,
+                clientId,
+                departmentId,
+                fromDate,
+                toDate,
+                currentUserId);
+
+            return Ok(new
+            {
+                entries,
+                totalCount,
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Помилка при отриманні всіх записів часу");
+            return BadRequest(new { Message = ex.Message });
+        }
+    }
+
     private long GetCurrentUserId()
     {
         var userIdClaim = User.FindFirst("userId")?.Value;
