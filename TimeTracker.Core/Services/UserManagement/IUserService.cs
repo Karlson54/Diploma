@@ -15,7 +15,6 @@ public interface IUserService
         long? agencyId = null,
         bool? isActive = null);
 
-    // КРИТИЧНІ ОПЕРАЦІЇ
     Task<UserDto> CreateAsync(
         CreateUserDto dto,
         long requestingUserId,
@@ -57,7 +56,8 @@ public interface IUserService
         long userId,
         UpdateProfileDto dto,
         string ipAddress,
-        string userAgent);
+        string userAgent,
+        bool isAdmin = false);
 
     Task<bool> IsEmailExistsAsync(string email, long? excludeUserId = null);
     Task<bool> IsLoginExistsAsync(string login, long? excludeUserId = null);

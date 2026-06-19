@@ -473,11 +473,15 @@ public class UsersController : ControllerBase
             var ipAddress = GetIpAddress();
             var userAgent = GetUserAgent();
 
+            // Проверяем роль из JWT клейма
+            var isAdmin = User.IsInRole("Admin");
+
             var user = await _userService.UpdateProfileAsync(
                 currentUserId,
                 dto,
                 ipAddress,
-                userAgent);
+                userAgent,
+                isAdmin);
 
             return Ok(user);
         }

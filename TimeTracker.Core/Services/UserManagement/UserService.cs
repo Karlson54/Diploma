@@ -504,7 +504,8 @@ public class UserService : IUserService
         long userId,
         UpdateProfileDto dto,
         string ipAddress,
-        string userAgent)
+        string userAgent,
+        bool isAdmin = false)
     {
         var user = await _userRepository.GetByIdAsync(userId);
         if (user == null)
@@ -513,17 +514,29 @@ public class UserService : IUserService
         if (!user.IsActive)
             throw new InvalidOperationException("Обліковий запис деактивований");
 
-        if (await _userRepository.IsEmailExistsAsync(dto.Email, userId))
-            throw new InvalidOperationException("Email вже використовується іншим користувачем");
+        var oldValues = new { user.Name, user.Email, user.Login };
 
+        // Только Admin может менять имя и email
+        if (isAdmin)
+        {
+            if (await _userRepository.IsEmailExistsAsync(dto.Email, userId))
+                throw new InvalidOperationException("Email вже використовується іншим користувачем");
+
+            user.Name = dto.Name.Trim();
+            user.Email = dto.Email.Trim().ToLower();
+        }
+        else
+        {
+            // Обычный пользователь — игнорируем name и email из dto, не меняем
+            _logger.LogInformation(
+                "Користувач {UserId} намагається змінити ім'я/email без прав адміністратора — ігноруємо",
+                userId);
+        }
+
+        // Login может менять любой
         if (!string.IsNullOrWhiteSpace(dto.Login) &&
             await _userRepository.IsLoginExistsAsync(dto.Login, userId))
             throw new InvalidOperationException("Логін вже використовується іншим користувачем");
-
-        var oldValues = new { user.Name, user.Email, user.Login };
-
-        user.Name = dto.Name.Trim();
-        user.Email = dto.Email.Trim().ToLower();
 
         if (!string.IsNullOrWhiteSpace(dto.Login))
             user.Login = dto.Login.Trim();
