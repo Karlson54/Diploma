@@ -19,10 +19,20 @@ public class RoleSeed : ISeeder
     {
         var roles = new[]
         {
-            new Role { Name = "Admin",      Description = "Повний доступ до системи",           IsActive = true, CreatedAt = DateTime.UtcNow },
-            new Role { Name = "Manager",    Description = "Управління користувачами та звіти",  IsActive = true, CreatedAt = DateTime.UtcNow },
-            new Role { Name = "Employee",   Description = "Облік робочого часу",                IsActive = true, CreatedAt = DateTime.UtcNow },
-            new Role { Name = "Accountant", Description = "Фінансові звіти та експорт даних",   IsActive = true, CreatedAt = DateTime.UtcNow }
+            new Role
+            {
+                Name = "SuperAdmin", Description = "Супер адміністратор з повним доступом до системи", IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            },
+            new Role
+            {
+                Name = "Admin", Description = "Адміністратор з доступом до дозволених агенцій та відділів",
+                IsActive = true, CreatedAt = DateTime.UtcNow
+            },
+            new Role
+            {
+                Name = "Employee", Description = "Облік робочого часу", IsActive = true, CreatedAt = DateTime.UtcNow
+            }
         };
 
         var created = false;

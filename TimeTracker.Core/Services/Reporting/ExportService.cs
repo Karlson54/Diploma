@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using TimeTracker.Core.DTOs.Reports;
 using TimeTracker.Core.DTOs.Reports.Common;
 using TimeTracker.Core.DTOs.TimeEntries;
+using TimeTracker.Core.Services.AdminPermissions;
 using TimeTracker.Core.Services.Audit;
 using static TimeTracker.Core.Common.ExportConstants;
 
@@ -13,15 +14,18 @@ public class ExportService : IExportService
     private readonly IReportService _reportService;
     private readonly IAuditService _auditService;
     private readonly ILogger<ExportService> _logger;
+    private readonly IAdminPermissionService _adminPermissionService;
 
     public ExportService(
         IReportService reportService,
         IAuditService auditService,
-        ILogger<ExportService> logger)
+        ILogger<ExportService> logger,
+        IAdminPermissionService adminPermissionService)
     {
         _reportService = reportService;
         _auditService = auditService;
         _logger = logger;
+        _adminPermissionService = adminPermissionService;
     }
 
     public async Task<byte[]> ExportUserLoadReportToExcelAsync(

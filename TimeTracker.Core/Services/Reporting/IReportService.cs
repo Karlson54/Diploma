@@ -55,6 +55,9 @@ public interface IReportService
         long? agencyId = null,
         long? clientId = null);
 
+    Task<bool> IsAdminWithRestrictedAccessAsync(long requestingUserId);
+    Task<IEnumerable<(long AgencyId, long DepartmentId)>> GetAllowedScopesForUserAsync(long requestingUserId);
+
     Task<IEnumerable<InactiveUserDto>> GetInactiveUsersThisWeekAsync(long requestingUserId);
 
     Task<bool> CanUserAccessReportAsync(long requestingUserId, long? targetUserId = null);

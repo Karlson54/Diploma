@@ -8,19 +8,10 @@ public static class AuthorizationExtensions
     {
         var authBuilder = services.AddAuthorizationBuilder();
 
-        // Базовые политики
         AddBasicPolicies(authBuilder);
-
-        // Политики для управления пользователями
         AddUserManagementPolicies(authBuilder);
-
-        // Политики для справочников
         AddDictionaryPolicies(authBuilder);
-
-        // Политики для записей времени
         AddTimeEntryPolicies(authBuilder);
-
-        // Политики для отчётов
         AddReportingPolicies(authBuilder);
 
         return services;
@@ -29,10 +20,10 @@ public static class AuthorizationExtensions
     private static void AddBasicPolicies(AuthorizationBuilder builder)
     {
         builder
-            .AddPolicy("AdminOnly", policy =>
-                policy.RequireRole("Admin"))
-            .AddPolicy("ManagerOrAdmin", policy =>
-                policy.RequireRole("Manager", "Admin"))
+            .AddPolicy("SuperAdminOnly", policy =>
+                policy.RequireRole("SuperAdmin"))
+            .AddPolicy("AdminOrSuperAdmin", policy =>
+                policy.RequireRole("Admin", "SuperAdmin"))
             .AddPolicy("AuthenticatedUser", policy =>
                 policy.RequireAuthenticatedUser());
     }
@@ -41,10 +32,10 @@ public static class AuthorizationExtensions
     {
         builder
             .AddPolicy("CanManageUsers", policy =>
-                policy.RequireRole("Admin")
+                policy.RequireRole("SuperAdmin")
                     .RequireClaim("IsActive", "True"))
             .AddPolicy("CanViewUsers", policy =>
-                policy.RequireRole("Admin", "Manager"));
+                policy.RequireRole("SuperAdmin", "Admin"));
     }
 
     private static void AddDictionaryPolicies(AuthorizationBuilder builder)
@@ -52,13 +43,13 @@ public static class AuthorizationExtensions
         builder
             .AddPolicy("CanEditDictionaries", policy =>
                 policy.RequireAssertion(context =>
-                    context.User.IsInRole("Admin") ||
-                    context.User.IsInRole("Manager")))
+                    context.User.IsInRole("SuperAdmin") ||
+                    context.User.IsInRole("Admin")))
             .AddPolicy("CanViewDictionaries", policy =>
                 policy.RequireAuthenticatedUser())
             .AddPolicy("CanManageDictionaries", policy =>
                 policy.RequireAssertion(context =>
-                    context.User.IsInRole("Admin")));
+                    context.User.IsInRole("SuperAdmin")));
     }
 
     private static void AddTimeEntryPolicies(AuthorizationBuilder builder)
@@ -74,22 +65,23 @@ public static class AuthorizationExtensions
                 policy.RequireAuthenticatedUser()
                     .RequireClaim("IsActive", "True"))
             .AddPolicy("CanEditAnyTimeEntry", policy =>
-                policy.RequireRole("Manager", "Admin"));
+                policy.RequireRole("Admin", "SuperAdmin"));
     }
 
     private static void AddReportingPolicies(AuthorizationBuilder builder)
     {
         builder
             .AddPolicy("CanViewReports", policy =>
-                policy.RequireRole("Manager", "Admin", "Accountant"))
+                policy.RequireRole("Admin", "SuperAdmin"))
             .AddPolicy("CanExportData", policy =>
-                policy.RequireRole("Admin", "Accountant"))
-            .AddPolicy("CanViewFinancials", policy =>
-                policy.RequireRole("Accountant", "Admin"))
+                policy.RequireRole("Admin", "SuperAdmin"))
             .AddPolicy("CanViewOwnReports", policy =>
                 policy.RequireAuthenticatedUser()
                     .RequireClaim("IsActive", "True"))
             .AddPolicy("CanViewAllReports", policy =>
-                policy.RequireRole("Admin", "Manager"));
+                policy.RequireRole("Admin", "SuperAdmin"))
+            // Назначение прав доступа — только SuperAdmin
+            .AddPolicy("CanManageAdminPermissions", policy =>
+                policy.RequireRole("SuperAdmin"));
     }
 }

@@ -14,4 +14,7 @@ public class User : BaseEntity
     public virtual Agency Agency { get; set; } = null!;
     public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
     public virtual ICollection<TimeEntry> TimeEntries { get; set; } = new List<TimeEntry>();
+
+    public virtual ICollection<AdminAgencyPermission> AdminAgencyPermissions { get; set; }
+        = new List<AdminAgencyPermission>();
 }

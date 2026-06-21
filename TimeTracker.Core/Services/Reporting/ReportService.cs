@@ -8,6 +8,8 @@ using TimeTracker.Data.Repositories.TimeEntries;
 using TimeTracker.Data.Repositories.Users;
 using TimeTracker.Data.UnitOfWork;
 using TimeTracker.Core.DTOs.TimeEntries;
+using TimeTracker.Core.Services.AdminPermissions;
+using TimeTracker.Data.Entities;
 
 namespace TimeTracker.Core.Services.Reporting;
 
@@ -19,6 +21,7 @@ public class ReportService : IReportService
     private readonly IMemoryCache _cache;
     private readonly ILogger<ReportService> _logger;
     private readonly IMapper _mapper;
+    private readonly IAdminPermissionService _adminPermissionService;
 
     // Настройки кеширования
     private const int CacheDurationMinutes = 15;
@@ -30,7 +33,8 @@ public class ReportService : IReportService
         IUnitOfWork unitOfWork,
         IMemoryCache cache,
         ILogger<ReportService> logger,
-        IMapper mapper)
+        IMapper mapper,
+        IAdminPermissionService adminPermissionService)
     {
         _timeEntryRepository = timeEntryRepository;
         _userRepository = userRepository;
@@ -38,6 +42,7 @@ public class ReportService : IReportService
         _cache = cache;
         _logger = logger;
         _mapper = mapper;
+        _adminPermissionService = adminPermissionService;
     }
 
     public async Task<IEnumerable<TimeEntryDto>> GetAllTimeEntriesForExportAsync(
@@ -48,7 +53,7 @@ public class ReportService : IReportService
         if (!await CanUserAccessReportAsync(requestingUserId))
             throw new UnauthorizedAccessException("Вы не имеете доступа к этому отчету");
 
-        var entries = await _timeEntryRepository
+        var query = _timeEntryRepository
             .GetQueryable()
             .Include(te => te.User).ThenInclude(u => u.Agency)
             .Include(te => te.Market)
@@ -57,7 +62,12 @@ public class ReportService : IReportService
             .Include(te => te.Media)
             .Include(te => te.JobType)
             .Include(te => te.Department)
-            .Where(te => te.EntryDate >= fromDate.Date && te.EntryDate <= toDate.Date)
+            .Where(te => te.EntryDate >= fromDate.Date && te.EntryDate <= toDate.Date);
+
+        // Применяем фильтр для Admin
+        query = await ApplyAdminScopeFilterAsync(query, requestingUserId);
+
+        return await query
             .OrderBy(te => te.EntryDate)
             .ThenBy(te => te.User.Name)
             .AsNoTracking()
@@ -79,8 +89,6 @@ public class ReportService : IReportService
                 Comments = te.Comments
             })
             .ToListAsync();
-
-        return entries;
     }
 
     public async Task<IEnumerable<TimeEntryDto>> GetUserTimeEntriesForExportAsync(
@@ -563,6 +571,9 @@ public class ReportService : IReportService
             query = query.Where(te => te.AgencyId == agencyId.Value);
         }
 
+        // Применяем фильтр для Admin
+        query = await ApplyAdminScopeFilterAsync(query, requestingUserId);
+
         var entries = await query.AsNoTracking().ToListAsync();
         var totalHours = entries.Sum(e => e.HoursMilliseconds);
 
@@ -769,6 +780,9 @@ public class ReportService : IReportService
             query = query.Where(te => te.ClientId == clientId.Value);
         }
 
+        // Применяем фильтр для Admin
+        query = await ApplyAdminScopeFilterAsync(query, requestingUserId);
+
         var entries = await query.AsNoTracking().ToListAsync();
 
         var totalHours = entries.Sum(e => e.HoursMilliseconds);
@@ -955,29 +969,74 @@ public class ReportService : IReportService
     public async Task<bool> CanUserAccessReportAsync(long requestingUserId, long? targetUserId = null)
     {
         var user = await _userRepository.GetByIdWithRolesAsync(requestingUserId);
-        if (user == null || !user.IsActive)
-        {
-            return false;
-        }
+        if (user == null || !user.IsActive) return false;
 
         var roles = user.UserRoles
             .Where(ur => ur.Role.IsActive)
             .Select(ur => ur.Role.Name)
             .ToList();
 
-        // Admin и Manager могут видеть все отчеты
-        if (roles.Contains("Admin") || roles.Contains("Manager"))
-        {
-            return true;
-        }
+        // SuperAdmin видит всё
+        if (roles.Contains(Common.SystemRoles.SuperAdmin)) return true;
 
-        // Обычный сотрудник может видеть только свои отчеты
+        // Admin видит отчёты (но с фильтрацией — она применяется в методах)
+        if (roles.Contains(Common.SystemRoles.Admin)) return true;
+
+        // Employee видит только свои отчёты
         if (targetUserId.HasValue)
-        {
             return targetUserId.Value == requestingUserId;
+
+        return false;
+    }
+
+    public async Task<bool> IsAdminWithRestrictedAccessAsync(long requestingUserId)
+    {
+        var user = await _userRepository.GetByIdWithRolesAsync(requestingUserId);
+        if (user == null || !user.IsActive) return false;
+
+        var roles = user.UserRoles
+            .Where(ur => ur.Role.IsActive)
+            .Select(ur => ur.Role.Name)
+            .ToList();
+
+        // SuperAdmin — без ограничений
+        if (roles.Contains(Common.SystemRoles.SuperAdmin)) return false;
+
+        // Admin — с ограничениями
+        return roles.Contains(Common.SystemRoles.Admin);
+    }
+
+    public async Task<IEnumerable<(long AgencyId, long DepartmentId)>> GetAllowedScopesForUserAsync(
+        long requestingUserId)
+    {
+        return await _adminPermissionService.GetAllowedScopesAsync(requestingUserId);
+    }
+
+    // Применяет фильтр разрешений к IQueryable<TimeEntry>
+    private async Task<IQueryable<TimeEntry>> ApplyAdminScopeFilterAsync(
+        IQueryable<TimeEntry> query,
+        long requestingUserId)
+    {
+        var isRestricted = await IsAdminWithRestrictedAccessAsync(requestingUserId);
+        if (!isRestricted) return query;
+
+        var scopes = (await GetAllowedScopesForUserAsync(requestingUserId)).ToList();
+
+        if (!scopes.Any())
+        {
+            // Admin без разрешений — не видит ничего
+            return query.Where(te => false);
         }
 
-        // Если targetUserId не указан - запрещаем доступ обычным сотрудникам
-        return false;
+        // Строим фильтр по парам (agencyId, departmentId)
+        var agencyIds = scopes.Select(s => s.AgencyId).ToHashSet();
+        var departmentIds = scopes.Select(s => s.DepartmentId).ToHashSet();
+
+        // Фильтруем: запись должна попадать хотя бы в одну разрешённую пару
+        query = query.Where(te =>
+            agencyIds.Contains(te.AgencyId) &&
+            departmentIds.Contains(te.DepartmentId));
+
+        return query;
     }
 }

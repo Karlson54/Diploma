@@ -24,6 +24,7 @@ public class TimeTrackerDbContext : DbContext, ITimeTrackerDbContext
     public DbSet<TimeEntry> TimeEntries { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
     public DbSet<Department> Departments { get; set; }
+    public DbSet<AdminAgencyPermission> AdminAgencyPermissions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

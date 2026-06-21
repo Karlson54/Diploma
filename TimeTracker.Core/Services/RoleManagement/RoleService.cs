@@ -20,7 +20,7 @@ public class RoleService : IRoleService
     private readonly ILogger<RoleService> _logger;
     private readonly IAuditService _auditService;
 
-    private static readonly string[] SystemRoles = { "Admin", "Manager", "Employee", "Accountant" };
+    private static readonly string[] SystemRoles = Common.SystemRoles.All;
 
     public RoleService(
         IRoleRepository roleRepository,
@@ -200,7 +200,7 @@ public class RoleService : IRoleService
         if (await _roleRepository.IsRoleNameExistsAsync(dto.Name))
         {
             var errorMsg = $"Роль з назвою '{dto.Name}' вже існує";
-            
+
             _logger.LogWarning(
                 "Спроба створення ролі з існуючою назвою: {Name} користувачем {UserId} ({UserName})",
                 dto.Name, requestingUserId, requestingUser.Name);
@@ -221,7 +221,7 @@ public class RoleService : IRoleService
         if (IsSystemRole(dto.Name))
         {
             var errorMsg = $"Неможливо створити роль з системною назвою '{dto.Name}'";
-            
+
             _logger.LogWarning(
                 "SECURITY:Спроба створення системної ролі: {Name} користувачем {UserId} ({UserName})",
                 dto.Name, requestingUserId, requestingUser.Name);
@@ -290,7 +290,7 @@ public class RoleService : IRoleService
         if (role == null)
         {
             var errorMsg = $"Роль з ID {id} не знайдено";
-            
+
             _logger.LogWarning(
                 "Спроба оновлення неіснуючої ролі {RoleId} користувачем {UserId} ({UserName})",
                 id, requestingUserId, requestingUser.Name);
@@ -321,7 +321,7 @@ public class RoleService : IRoleService
         if (IsSystemRole(role.Name) && role.Name != dto.Name)
         {
             var errorMsg = $"Неможливо змінити назву системної ролі '{role.Name}'";
-            
+
             _logger.LogWarning(
                 " SECURITY:Спроба зміни назви системної ролі {OldName} на {NewName} користувачем {UserId} ({UserName})",
                 role.Name, dto.Name, requestingUserId, requestingUser.Name);
@@ -343,7 +343,7 @@ public class RoleService : IRoleService
         if (!IsSystemRole(role.Name) && IsSystemRole(dto.Name))
         {
             var errorMsg = $"Неможливо змінити назву на системну '{dto.Name}'";
-            
+
             _logger.LogWarning(
                 " SECURITY:Спроба зміни назви ролі {OldName} на системну {NewName} користувачем {UserId} ({UserName})",
                 role.Name, dto.Name, requestingUserId, requestingUser.Name);
@@ -365,7 +365,7 @@ public class RoleService : IRoleService
         if (await _roleRepository.IsRoleNameExistsAsync(dto.Name, id))
         {
             var errorMsg = $"Роль з назвою '{dto.Name}' вже існує";
-            
+
             _logger.LogWarning(
                 "Спроба оновлення ролі {Id} з існуючою назвою: {Name} користувачем {UserId} ({UserName})",
                 id, dto.Name, requestingUserId, requestingUser.Name);
@@ -431,7 +431,7 @@ public class RoleService : IRoleService
         if (role == null)
         {
             var errorMsg = $"Роль з ID {id} не знайдено";
-            
+
             _logger.LogWarning(
                 "Спроба видалення неіснуючої ролі {RoleId} користувачем {UserId} ({UserName})",
                 id, requestingUserId, requestingUser.Name);
@@ -461,7 +461,7 @@ public class RoleService : IRoleService
         if (IsSystemRole(role.Name))
         {
             var errorMsg = $"Неможливо видалити системну роль '{role.Name}'";
-            
+
             _logger.LogWarning(
                 " SECURITY:Спроба видалення системної ролі {Name} користувачем {UserId} ({UserName})",
                 role.Name, requestingUserId, requestingUser.Name);
@@ -534,7 +534,7 @@ public class RoleService : IRoleService
         if (role == null)
         {
             var errorMsg = $"Роль з ID {id} не знайдено";
-            
+
             _logger.LogWarning(
                 "Спроба активації неіснуючої ролі {RoleId} користувачем {UserId} ({UserName})",
                 id, requestingUserId, requestingUser.Name);
@@ -557,7 +557,7 @@ public class RoleService : IRoleService
             _logger.LogWarning(
                 "Спроба активації вже активної ролі {Name} (ID: {RoleId}) користувачем {UserId} ({UserName})",
                 role.Name, id, requestingUserId, requestingUser.Name);
-            
+
             throw new InvalidOperationException("Роль вже активна");
         }
 
@@ -608,7 +608,7 @@ public class RoleService : IRoleService
         if (role == null)
         {
             var errorMsg = $"Роль з ID {id} не знайдено";
-            
+
             _logger.LogWarning(
                 "Спроба деактивації неіснуючої ролі {RoleId} користувачем {UserId} ({UserName})",
                 id, requestingUserId, requestingUser.Name);
@@ -631,14 +631,14 @@ public class RoleService : IRoleService
             _logger.LogWarning(
                 "Спроба деактивації вже неактивної ролі {Name} (ID: {RoleId}) користувачем {UserId} ({UserName})",
                 role.Name, id, requestingUserId, requestingUser.Name);
-            
+
             throw new InvalidOperationException("Роль вже деактивована");
         }
 
         if (IsSystemRole(role.Name))
         {
             var errorMsg = $"Неможливо деактивувати системну роль '{role.Name}'";
-            
+
             _logger.LogWarning(
                 " SECURITY:Спроба деактивації системної ролі {Name} користувачем {UserId} ({UserName})",
                 role.Name, requestingUserId, requestingUser.Name);
@@ -663,9 +663,9 @@ public class RoleService : IRoleService
         if (activeUsers.Any())
         {
             var errorMsg = $"Неможливо деактивувати роль '{role.Name}'. " +
-                          $"Вона призначена {activeUsers.Count} активним користувачам. " +
-                          $"Спочатку деактивуйте користувачів або змініть їх ролі.";
-            
+                           $"Вона призначена {activeUsers.Count} активним користувачам. " +
+                           $"Спочатку деактивуйте користувачів або змініть їх ролі.";
+
             _logger.LogWarning(
                 "Спроба деактивації ролі {Name} яка призначена {ActiveUsersCount} активним користувачам користувачем {UserId} ({UserName})",
                 role.Name, activeUsers.Count, requestingUserId, requestingUser.Name);
@@ -732,7 +732,7 @@ public class RoleService : IRoleService
         if (user == null)
         {
             var errorMsg = $"Користувача з ID {userId} не знайдено";
-            
+
             _logger.LogWarning(
                 "Спроба призначення ролі неіснуючому користувачу {UserId} користувачем {RequestingUserId} ({UserName})",
                 userId, requestingUserId, requestingUser.Name);
@@ -755,7 +755,7 @@ public class RoleService : IRoleService
             _logger.LogWarning(
                 "Спроба призначення ролі неактивному користувачу {UserId} ({UserName}) користувачем {RequestingUserId}",
                 userId, user.Name, requestingUserId);
-            
+
             throw new InvalidOperationException("Неможливо призначити роль неактивному користувачу");
         }
 
@@ -763,7 +763,7 @@ public class RoleService : IRoleService
         if (role == null)
         {
             var errorMsg = $"Роль з ID {roleId} не знайдено";
-            
+
             _logger.LogWarning(
                 "Спроба призначення неіснуючої ролі {RoleId} користувачу {UserId} користувачем {RequestingUserId} ({UserName})",
                 roleId, userId, requestingUserId, requestingUser.Name);
@@ -786,7 +786,7 @@ public class RoleService : IRoleService
             _logger.LogWarning(
                 "Спроба призначення неактивної ролі {RoleName} (ID: {RoleId}) користувачу {UserId} користувачем {RequestingUserId} ({UserName})",
                 role.Name, roleId, userId, requestingUserId, requestingUser.Name);
-            
+
             throw new InvalidOperationException("Неможливо призначити неактивну роль");
         }
 
@@ -795,7 +795,7 @@ public class RoleService : IRoleService
             _logger.LogWarning(
                 "Спроба повторного призначення ролі {RoleName} користувачу {UserId} ({UserName}) користувачем {RequestingUserId}",
                 role.Name, userId, user.Name, requestingUserId);
-            
+
             throw new InvalidOperationException($"Роль '{role.Name}' вже призначена цьому користувачу");
         }
 
@@ -831,7 +831,7 @@ public class RoleService : IRoleService
         if (user == null)
         {
             var errorMsg = $"Користувача з ID {userId} не знайдено";
-            
+
             _logger.LogWarning(
                 "Спроба видалення ролі у неіснуючого користувача {UserId} користувачем {RequestingUserId} ({UserName})",
                 userId, requestingUserId, requestingUser.Name);
@@ -853,7 +853,7 @@ public class RoleService : IRoleService
         if (role == null)
         {
             var errorMsg = $"Роль з ID {roleId} не знайдено";
-            
+
             _logger.LogWarning(
                 "Спроба видалення неіснуючої ролі {RoleId} у користувача {UserId} користувачем {RequestingUserId} ({UserName})",
                 roleId, userId, requestingUserId, requestingUser.Name);
@@ -876,7 +876,7 @@ public class RoleService : IRoleService
             _logger.LogWarning(
                 "Спроба видалення не призначеної ролі {RoleName} у користувача {UserId} ({UserName}) користувачем {RequestingUserId}",
                 role.Name, userId, user.Name, requestingUserId);
-            
+
             throw new InvalidOperationException($"Роль '{role.Name}' не призначена цьому користувачу");
         }
 
@@ -884,7 +884,7 @@ public class RoleService : IRoleService
         if (userRoles.Count() == 1)
         {
             var errorMsg = "Неможливо видалити останню роль користувача. Користувач повинен мати хоча б одну роль";
-            
+
             _logger.LogWarning(
                 "Спроба видалення останньої ролі {RoleName} у користувача {UserId} ({UserName}) користувачем {RequestingUserId} ({UserName})",
                 role.Name, userId, user.Name, requestingUserId, requestingUser.Name);
@@ -897,7 +897,11 @@ public class RoleService : IRoleService
                 ipAddress: ipAddress,
                 userAgent: userAgent,
                 errorMessage: errorMsg,
-                additionalData: new { UserId = userId, UserName = user.Name, RoleId = roleId, RoleName = role.Name, RemainingRolesCount = 1 });
+                additionalData: new
+                {
+                    UserId = userId, UserName = user.Name, RoleId = roleId, RoleName = role.Name,
+                    RemainingRolesCount = 1
+                });
 
             throw new InvalidOperationException(errorMsg);
         }
@@ -910,7 +914,7 @@ public class RoleService : IRoleService
             if (activeAdminsCount <= 1)
             {
                 var errorMsg = "Неможливо видалити роль Admin у останнього активного адміністратора";
-                
+
                 _logger.LogWarning(
                     " SECURITY:Спроба видалення ролі Admin у останнього активного адміністратора {UserId} ({UserName}) користувачем {RequestingUserId} ({RequestingUserName})",
                     userId, user.Name, requestingUserId, requestingUser.Name);
@@ -923,7 +927,11 @@ public class RoleService : IRoleService
                     ipAddress: ipAddress,
                     userAgent: userAgent,
                     errorMessage: errorMsg,
-                    additionalData: new { UserId = userId, UserName = user.Name, RoleId = roleId, RoleName = role.Name, ActiveAdminsCount = activeAdminsCount, Reason = "LastAdmin" });
+                    additionalData: new
+                    {
+                        UserId = userId, UserName = user.Name, RoleId = roleId, RoleName = role.Name,
+                        ActiveAdminsCount = activeAdminsCount, Reason = "LastAdmin"
+                    });
 
                 throw new InvalidOperationException(errorMsg);
             }
@@ -952,7 +960,7 @@ public class RoleService : IRoleService
     {
         var roleIdsList = roleIds.ToList();
         var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
-        
+
         if (requestingUser == null)
         {
             _logger.LogWarning(" Невалідний токен при заміні ролей. UserId: {UserId}", requestingUserId);
@@ -963,7 +971,7 @@ public class RoleService : IRoleService
         if (user == null)
         {
             var errorMsg = $"Користувача з ID {userId} не знайдено";
-            
+
             _logger.LogWarning(
                 "Спроба заміни ролей неіснуючого користувача {UserId} користувачем {RequestingUserId} ({UserName})",
                 userId, requestingUserId, requestingUser.Name);
@@ -986,7 +994,7 @@ public class RoleService : IRoleService
             _logger.LogWarning(
                 "Спроба заміни ролей неактивного користувача {UserId} ({UserName}) користувачем {RequestingUserId}",
                 userId, user.Name, requestingUserId);
-            
+
             throw new InvalidOperationException("Неможливо змінити ролі неактивного користувача");
         }
 
@@ -995,7 +1003,7 @@ public class RoleService : IRoleService
             _logger.LogWarning(
                 "Спроба заміни ролей порожнім списком для користувача {UserId} ({UserName}) користувачем {RequestingUserId} ({RequestingUserName})",
                 userId, user.Name, requestingUserId, requestingUser.Name);
-            
+
             throw new ArgumentException("Необхідно передати хоча б одну роль");
         }
 
@@ -1004,7 +1012,7 @@ public class RoleService : IRoleService
             _logger.LogWarning(
                 "Спроба заміни ролей зі дублікатами для користувача {UserId} ({UserName}) користувачем {RequestingUserId} ({RequestingUserName})",
                 userId, user.Name, requestingUserId, requestingUser.Name);
-            
+
             throw new ArgumentException("Список ролей містить дублікати");
         }
 
@@ -1012,11 +1020,11 @@ public class RoleService : IRoleService
         foreach (var roleId in roleIdsList)
         {
             var role = await _roleRepository.GetByIdAsync(roleId);
-            
+
             if (role == null)
             {
                 var errorMsg = $"Роль з ID {roleId} не знайдено";
-                
+
                 _logger.LogWarning(
                     "Спроба заміни ролей з неіснуючою роллю {RoleId} для користувача {UserId} ({UserName}) користувачем {RequestingUserId} ({RequestingUserName})",
                     roleId, userId, user.Name, requestingUserId, requestingUser.Name);
@@ -1029,7 +1037,8 @@ public class RoleService : IRoleService
                     ipAddress: ipAddress,
                     userAgent: userAgent,
                     errorMessage: errorMsg,
-                    additionalData: new { UserId = userId, UserName = user.Name, NewRoleIds = roleIdsList, MissingRoleId = roleId });
+                    additionalData: new
+                        { UserId = userId, UserName = user.Name, NewRoleIds = roleIdsList, MissingRoleId = roleId });
 
                 throw new KeyNotFoundException(errorMsg);
             }
@@ -1037,7 +1046,7 @@ public class RoleService : IRoleService
             if (!role.IsActive)
             {
                 var errorMsg = $"Роль '{role.Name}' (ID: {roleId}) неактивна";
-                
+
                 _logger.LogWarning(
                     "Спроба заміни ролей з неактивною роллю {RoleName} (ID: {RoleId}) для користувача {UserId} ({UserName}) користувачем {RequestingUserId} ({RequestingUserName})",
                     role.Name, roleId, userId, user.Name, requestingUserId, requestingUser.Name);
@@ -1050,7 +1059,11 @@ public class RoleService : IRoleService
                     ipAddress: ipAddress,
                     userAgent: userAgent,
                     errorMessage: errorMsg,
-                    additionalData: new { UserId = userId, UserName = user.Name, NewRoleIds = roleIdsList, InactiveRoleId = roleId, InactiveRoleName = role.Name });
+                    additionalData: new
+                    {
+                        UserId = userId, UserName = user.Name, NewRoleIds = roleIdsList, InactiveRoleId = roleId,
+                        InactiveRoleName = role.Name
+                    });
 
                 throw new InvalidOperationException(errorMsg);
             }
@@ -1070,7 +1083,7 @@ public class RoleService : IRoleService
             if (activeAdminsCount <= 1)
             {
                 var errorMsg = "Неможливо видалити роль Admin у останнього активного адміністратора";
-                
+
                 _logger.LogWarning(
                     "SECURITY:Спроба видалення ролі Admin у останнього активного адміністратора {UserId} ({UserName}) через заміну ролей користувачем {RequestingUserId} ({RequestingUserName})",
                     userId, user.Name, requestingUserId, requestingUser.Name);
@@ -1083,10 +1096,10 @@ public class RoleService : IRoleService
                     ipAddress: ipAddress,
                     userAgent: userAgent,
                     errorMessage: errorMsg,
-                    additionalData: new 
-                    { 
-                        UserId = userId, 
-                        UserName = user.Name, 
+                    additionalData: new
+                    {
+                        UserId = userId,
+                        UserName = user.Name,
                         OldRoles = string.Join(", ", currentRoles.Select(r => r.Name)),
                         NewRoles = string.Join(", ", roles.Select(r => r.Name)),
                         ActiveAdminsCount = activeAdminsCount,
@@ -1110,7 +1123,7 @@ public class RoleService : IRoleService
             RoleIds = currentRoles.Select(r => r.Id).ToList(),
             RoleNames = oldRoleNames
         };
-        
+
         var newValues = new
         {
             UserId = userId,
@@ -1140,7 +1153,7 @@ public class RoleService : IRoleService
     {
         var permissionsList = permissions.ToList();
         var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
-        
+
         if (requestingUser == null)
         {
             _logger.LogWarning(" Невалідний токен при оновленні permissions. UserId: {UserId}", requestingUserId);
@@ -1151,7 +1164,7 @@ public class RoleService : IRoleService
         if (role == null)
         {
             var errorMsg = $"Роль з ID {roleId} не знайдено";
-            
+
             _logger.LogWarning(
                 "Спроба оновлення permissions неіснуючої ролі {RoleId} користувачем {UserId} ({UserName})",
                 roleId, requestingUserId, requestingUser.Name);
@@ -1216,7 +1229,7 @@ public class RoleService : IRoleService
 
     private bool IsSystemRole(string roleName)
     {
-        return SystemRoles.Contains(roleName, StringComparer.OrdinalIgnoreCase);
+        return Common.SystemRoles.IsSystemRole(roleName);
     }
 
     private async Task LogFailedOperationAsync(
@@ -1250,7 +1263,8 @@ public class RoleService : IRoleService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Помилка при логуванні неуспішної операції {Action} для {EntityName}", action, entityName);
+            _logger.LogError(ex, "Помилка при логуванні неуспішної операції {Action} для {EntityName}", action,
+                entityName);
         }
     }
 }

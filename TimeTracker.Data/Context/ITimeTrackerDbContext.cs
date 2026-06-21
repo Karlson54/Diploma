@@ -17,6 +17,7 @@ public interface ITimeTrackerDbContext
     DbSet<TimeEntry> TimeEntries { get; }
     DbSet<AuditLog> AuditLogs { get; }
     DbSet<Department> Departments { get; }
+    DbSet<AdminAgencyPermission> AdminAgencyPermissions { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     int SaveChanges();
