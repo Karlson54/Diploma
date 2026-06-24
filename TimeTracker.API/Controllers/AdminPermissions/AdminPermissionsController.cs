@@ -10,7 +10,7 @@ namespace TimeTracker.API.Controllers.AdminPermissions;
 /// </summary>
 [ApiController]
 [Route("api/admin-permissions")]
-[Authorize(Policy = "CanManageAdminPermissions")]
+[Authorize]
 [Produces("application/json")]
 [Tags("AdminPermissions")]
 public class AdminPermissionsController : ControllerBase
@@ -28,6 +28,7 @@ public class AdminPermissionsController : ControllerBase
 
     /// <summary>Отримати дозволи конкретного Admin-а</summary>
     [HttpGet("user/{userId}")]
+    [Authorize(Policy = "CanManageAdminPermissions")]
     [ProducesResponseType(typeof(AdminPermissionsForUserDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByUser(long userId)
@@ -45,6 +46,7 @@ public class AdminPermissionsController : ControllerBase
 
     /// <summary>Встановити дозволи Admin-у (повна перезапис)</summary>
     [HttpPut("user/{userId}")]
+    [Authorize(Policy = "CanManageAdminPermissions")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -71,6 +73,7 @@ public class AdminPermissionsController : ControllerBase
 
     /// <summary>Очистити всі дозволи Admin-а</summary>
     [HttpDelete("user/{userId}")]
+    [Authorize(Policy = "CanManageAdminPermissions")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ClearPermissions(long userId)
