@@ -414,19 +414,19 @@ public class UserService : IUserService
         }
 
         // Захист останнього активного адміністратора
-        var isAdmin = user.UserRoles.Any(ur => ur.Role.IsActive && ur.Role.Name == "Admin");
-        if (isAdmin)
+        var isSuperAdmin = user.UserRoles.Any(ur => ur.Role.IsActive && ur.Role.Name == "SuperAdmin");
+        if (isSuperAdmin)
         {
-            var admins = await _userRepository.GetUsersWithRoleAsync("Admin");
-            var activeAdminsCount = admins.Count(u => u.IsActive);
+            var superAdmins = await _userRepository.GetUsersWithRoleAsync("SuperAdmin");
+            var activeSuperAdminCount = superAdmins.Count(u => u.IsActive);
 
-            if (activeAdminsCount <= 1)
+            if (activeSuperAdminCount <= 1)
             {
                 _logger.LogWarning(
-                    "SECURITY: Спроба деактивації останнього активного адміністратора {UserId} ({UserName}) користувачем {RequestingUserId}",
+                    "SECURITY: Спроба деактивації останнього активного супер адміністратора {UserId} ({UserName}) користувачем {RequestingUserId}",
                     id, user.Name, requestingUserId);
                 throw new InvalidOperationException(
-                    "Неможливо деактивувати останнього активного адміністратора системи.");
+                    "Неможливо деактивувати останнього активного супер адміністратора системи.");
             }
         }
 

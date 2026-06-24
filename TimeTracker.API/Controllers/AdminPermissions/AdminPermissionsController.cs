@@ -87,6 +87,24 @@ public class AdminPermissionsController : ControllerBase
         }
     }
 
+    /// <summary>Отримати власні дозволи (для поточного Admin-а)</summary>
+    [HttpGet("my")]
+    [Authorize(Policy = "AdminOrSuperAdmin")]
+    [ProducesResponseType(typeof(AdminPermissionsForUserDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMyPermissions()
+    {
+        try
+        {
+            var currentUserId = GetCurrentUserId();
+            var result = await _service.GetByUserIdAsync(currentUserId);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { Message = ex.Message });
+        }
+    }
+
     private long GetCurrentUserId()
     {
         var claim = User.FindFirst("userId")?.Value;

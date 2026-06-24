@@ -906,7 +906,7 @@ public class RoleService : IRoleService
             throw new InvalidOperationException(errorMsg);
         }
 
-        if (role.Name == "Admin" && user.IsActive)
+        if (role.Name == "SuperAdmin" && user.IsActive)
         {
             var activeAdmins = await _userRepository.GetUsersWithRoleAsync("Admin");
             var activeAdminsCount = activeAdmins.Count(u => u.IsActive);
@@ -1072,15 +1072,15 @@ public class RoleService : IRoleService
         }
 
         var currentRoles = await _roleRepository.GetUserRolesAsync(userId);
-        var hasAdminNow = currentRoles.Any(r => r.Name == "Admin");
-        var willHaveAdmin = roles.Any(r => r.Name == "Admin");
+        var hasSuperAdminNow = currentRoles.Any(r => r.Name == "SuperAdmin");
+        var willHaveSuperAdmin = roles.Any(r => r.Name == "SuperAdmin");
 
-        if (hasAdminNow && !willHaveAdmin && user.IsActive)
+        if (hasSuperAdminNow && !willHaveSuperAdmin && user.IsActive)
         {
-            var activeAdmins = await _userRepository.GetUsersWithRoleAsync("Admin");
-            var activeAdminsCount = activeAdmins.Count(u => u.IsActive);
+            var activeSuperAdmin = await _userRepository.GetUsersWithRoleAsync("SuperAdmin");
+            var activeSuperAdminCount = activeSuperAdmin.Count(u => u.IsActive);
 
-            if (activeAdminsCount <= 1)
+            if (activeSuperAdminCount <= 1)
             {
                 var errorMsg = "Неможливо видалити роль Admin у останнього активного адміністратора";
 
@@ -1102,7 +1102,7 @@ public class RoleService : IRoleService
                         UserName = user.Name,
                         OldRoles = string.Join(", ", currentRoles.Select(r => r.Name)),
                         NewRoles = string.Join(", ", roles.Select(r => r.Name)),
-                        ActiveAdminsCount = activeAdminsCount,
+                        ActiveAdminsCount = activeSuperAdminCount,
                         Reason = "LastAdmin"
                     });
 

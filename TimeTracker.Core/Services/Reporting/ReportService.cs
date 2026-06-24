@@ -98,7 +98,26 @@ public class ReportService : IReportService
         long requestingUserId)
     {
         if (!await CanUserAccessReportAsync(requestingUserId, userId))
-            throw new UnauthorizedAccessException("Вы не имеете доступа к этому отчету");
+            throw new UnauthorizedAccessException("Ви не маєте доступу до цього звіту");
+
+        // Если это Admin (не SuperAdmin) — проверяем что запрашиваемый
+        // пользователь принадлежит к разрешённому отделу
+        var isRestricted = await IsAdminWithRestrictedAccessAsync(requestingUserId);
+        if (isRestricted)
+        {
+            var targetUser = await _userRepository.GetByIdAsync(userId);
+            if (targetUser == null)
+                throw new KeyNotFoundException($"Користувача з ID {userId} не знайдено");
+
+            var scopes = (await GetAllowedScopesForUserAsync(requestingUserId)).ToList();
+            var hasAccess = scopes.Any(s =>
+                s.AgencyId == targetUser.AgencyId &&
+                s.DepartmentId == targetUser.DepartmentId);
+
+            if (!hasAccess)
+                throw new UnauthorizedAccessException(
+                    "У вас немає доступу до звітів цього співробітника");
+        }
 
         var entries = await _timeEntryRepository
             .GetQueryable()
