@@ -165,7 +165,9 @@ public class TimeEntryRepository : Repository<TimeEntry>, ITimeEntryRepository
         long? clientId = null,
         long? departmentId = null,
         DateTime? fromDate = null,
-        DateTime? toDate = null)
+        DateTime? toDate = null,
+        IEnumerable<long>? allowedAgencyIds = null,
+        IEnumerable<long>? allowedDepartmentIds = null)
     {
         var query = _dbSet.AsNoTracking().AsQueryable();
 
@@ -186,6 +188,16 @@ public class TimeEntryRepository : Repository<TimeEntry>, ITimeEntryRepository
 
         if (toDate.HasValue)
             query = query.Where(te => te.EntryDate <= toDate.Value.Date);
+
+        // Scope-фильтрация для Admin с ограниченным доступом
+        var agencyIdsList = allowedAgencyIds?.ToList();
+        var departmentIdsList = allowedDepartmentIds?.ToList();
+
+        if (agencyIdsList != null && agencyIdsList.Any())
+            query = query.Where(te => agencyIdsList.Contains(te.AgencyId));
+
+        if (departmentIdsList != null && departmentIdsList.Any())
+            query = query.Where(te => departmentIdsList.Contains(te.DepartmentId));
 
         var totalCount = await query.CountAsync();
 

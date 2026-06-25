@@ -34,7 +34,9 @@ public interface ITimeEntryRepository : IRepository<TimeEntry>
         long? clientId = null,
         long? departmentId = null,
         DateTime? fromDate = null,
-        DateTime? toDate = null);
+        DateTime? toDate = null,
+        IEnumerable<long>? allowedAgencyIds = null,
+        IEnumerable<long>? allowedDepartmentIds = null);
 
     Task<IEnumerable<long>> GetUserIdsWithEntriesAsync(DateTime fromDate, DateTime toDate);
     Task<Dictionary<long, DateTime>> GetLastEntryDatesAsync(IEnumerable<long> userIds);

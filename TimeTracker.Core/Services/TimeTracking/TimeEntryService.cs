@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using TimeTracker.Core.Common;
 using TimeTracker.Core.DTOs.TimeEntries;
+using TimeTracker.Core.Services.AdminPermissions;
 using TimeTracker.Core.Services.Audit;
 using TimeTracker.Data.Entities;
 using TimeTracker.Data.Repositories.TimeEntries;
@@ -20,6 +21,7 @@ public class TimeEntryService : ITimeEntryService
     private readonly IMapper _mapper;
     private readonly ILogger<TimeEntryService> _logger;
     private readonly IAuditService _auditService;
+    private readonly IAdminPermissionService _adminPermissionService;
 
     public TimeEntryService(
         ITimeEntryRepository timeEntryRepository,
@@ -28,8 +30,8 @@ public class TimeEntryService : ITimeEntryService
         IUnitOfWork unitOfWork,
         IMapper mapper,
         ILogger<TimeEntryService> logger,
-        IAuditService auditService)
-
+        IAuditService auditService,
+        IAdminPermissionService adminPermissionService)
     {
         _timeEntryRepository = timeEntryRepository;
         _userRepository = userRepository;
@@ -38,6 +40,7 @@ public class TimeEntryService : ITimeEntryService
         _mapper = mapper;
         _logger = logger;
         _auditService = auditService;
+        _adminPermissionService = adminPermissionService;
     }
 
     public async Task<TimeEntryDetailDto?> GetByIdAsync(long id, long requestingUserId)
@@ -422,18 +425,26 @@ public class TimeEntryService : ITimeEntryService
         if (pageNumber < 1) pageNumber = 1;
         if (pageSize < 1) pageSize = 10;
 
-        // Якщо запитують записи іншого користувача - перевіряємо права
+        // Если запрашивают записи другого пользователя — проверяем права
         if (userId.HasValue && userId.Value != requestingUserId && requestingUserId > 0)
         {
             var hasPermission = await HasManagerOrAdminRoleAsync(requestingUserId);
             if (!hasPermission)
-            {
                 throw new UnauthorizedAccessException(
                     "Ви не маєте прав переглядати записи інших користувачів");
-            }
         }
 
-        // Один запрос — з Include вже всередині репозиторію
+        // Определяем scope для Admin с ограниченным доступом
+        IEnumerable<long>? allowedAgencyIds = null;
+        IEnumerable<long>? allowedDepartmentIds = null;
+
+        if (requestingUserId > 0)
+        {
+            var scopeFilter = await GetAdminScopeFilterAsync(requestingUserId);
+            allowedAgencyIds = scopeFilter.AllowedAgencyIds;
+            allowedDepartmentIds = scopeFilter.AllowedDepartmentIds;
+        }
+
         var (entries, totalCount) = await _timeEntryRepository.GetTimeEntriesPagedAsync(
             pageNumber,
             pageSize,
@@ -442,10 +453,11 @@ public class TimeEntryService : ITimeEntryService
             clientId,
             departmentId,
             fromDate,
-            toDate);
+            toDate,
+            allowedAgencyIds,
+            allowedDepartmentIds);
 
         var dtos = _mapper.Map<IEnumerable<TimeEntryListItemDto>>(entries);
-
         return (dtos, totalCount);
     }
 
@@ -1254,5 +1266,44 @@ public class TimeEntryService : ITimeEntryService
             .ToList();
 
         return roles.Contains("Admin") || roles.Contains("Manager");
+    }
+
+    private record AdminScopeFilter(
+        IEnumerable<long>? AllowedAgencyIds,
+        IEnumerable<long>? AllowedDepartmentIds);
+
+    private async Task<AdminScopeFilter> GetAdminScopeFilterAsync(long userId)
+    {
+        var user = await _userRepository.GetByIdWithRolesAsync(userId);
+        if (user == null || !user.IsActive)
+            return new AdminScopeFilter(null, null);
+
+        var roles = user.UserRoles
+            .Where(ur => ur.Role.IsActive)
+            .Select(ur => ur.Role.Name)
+            .ToList();
+
+        // SuperAdmin — без ограничений
+        if (roles.Contains(Core.Common.SystemRoles.SuperAdmin))
+            return new AdminScopeFilter(null, null);
+
+        // Admin — проверяем разрешения
+        if (roles.Contains(Core.Common.SystemRoles.Admin))
+        {
+            var scopes = (await _adminPermissionService.GetAllowedScopesAsync(userId)).ToList();
+
+            // Если нет разрешений — ничего не показываем
+            if (!scopes.Any())
+                return new AdminScopeFilter(
+                    Enumerable.Empty<long>(),
+                    Enumerable.Empty<long>());
+
+            var agencyIds = scopes.Select(s => s.AgencyId).Distinct().ToList();
+            var deptIds = scopes.Select(s => s.DepartmentId).Distinct().ToList();
+            return new AdminScopeFilter(agencyIds, deptIds);
+        }
+
+        // Employee — без ограничений на scope (ограничение по userId уже выше)
+        return new AdminScopeFilter(null, null);
     }
 }

@@ -22,41 +22,6 @@ public class TimeEntryServiceTests : ServiceTestBase
     private const long TestUserId = 1;
     private const long HourInMs = 3_600_000;
 
-    public TimeEntryServiceTests()
-    {
-        _timeEntryRepoMock = new Mock<ITimeEntryRepository>();
-        _userRepoMock = new Mock<IUserRepository>();
-        _validationServiceMock = new Mock<ITimeValidationService>();
-
-        // По умолчанию все валидации проходят успешно
-        _validationServiceMock
-            .Setup(x => x.ValidateUserPermissionsAsync(It.IsAny<long>(), It.IsAny<long?>()))
-            .ReturnsAsync(ValidationResult.Success());
-
-        _validationServiceMock
-            .Setup(x => x.ValidateCreateAsync(It.IsAny<long>(), It.IsAny<DateTime>(), It.IsAny<long>()))
-            .ReturnsAsync(ValidationResult.Success());
-
-        _validationServiceMock
-            .Setup(x => x.ValidateUpdateAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<DateTime>(), It.IsAny<long>()))
-            .ReturnsAsync(ValidationResult.Success());
-
-        // _validationServiceMock
-        //     .Setup(x => x.ValidateReferencesAsync(
-        //         It.IsAny<long>(), It.IsAny<long>(), It.IsAny<long>(),
-        //         It.IsAny<long>(), It.IsAny<long>(), It.IsAny<long>(), It.IsAny<long>()))
-        //     .ReturnsAsync(ValidationResult.Success());
-
-        _service = new TimeEntryService(
-            _timeEntryRepoMock.Object,
-            _userRepoMock.Object,
-            _validationServiceMock.Object,
-            UnitOfWorkMock.Object,
-            Mapper,
-            CreateLogger<TimeEntryService>().Object,
-            AuditServiceMock.Object);
-    }
-
     // ==================== HELPERS ====================
 
     private static User CreateUser(long id = 1) => new()
