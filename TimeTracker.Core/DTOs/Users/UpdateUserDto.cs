@@ -31,10 +31,9 @@ public class UpdateUserDto
     public string? Login { get; set; }
 
     // Опціонально — якщо null, не змінюємо пароль
-    [StringLength(
-        ValidationPatterns.PasswordMaxLength,
-        MinimumLength = ValidationPatterns.PasswordMinLength,
-        ErrorMessage = "Password має бути від {2} до {1} символів")]
+    [RegularExpression(
+        ValidationPatterns.Password,
+        ErrorMessage = ValidationPatterns.PasswordErrorMessage)]
     public string? NewPassword { get; set; }
 
     // Опціонально — якщо null, не змінюємо ролі

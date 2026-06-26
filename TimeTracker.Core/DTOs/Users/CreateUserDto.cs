@@ -23,10 +23,6 @@ public class CreateUserDto
     public string Email { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Password обов'язковий")]
-    [StringLength(
-        ValidationPatterns.PasswordMaxLength,
-        MinimumLength = ValidationPatterns.PasswordMinLength,
-        ErrorMessage = "Password має бути від {2} до {1} символів")]
     [RegularExpression(
         ValidationPatterns.Password,
         ErrorMessage = ValidationPatterns.PasswordErrorMessage)]

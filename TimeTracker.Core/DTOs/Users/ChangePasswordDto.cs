@@ -6,19 +6,11 @@ namespace TimeTracker.Core.DTOs.Users;
 public class ChangePasswordDto
 {
     [Required(ErrorMessage = "Поточний пароль обов'язковий")]
-    [StringLength(
-        ValidationPatterns.PasswordMaxLength, 
-        MinimumLength = ValidationPatterns.PasswordMinLength, 
-        ErrorMessage = "Поточний пароль має бути від {2} до {1} символів")]
     public string CurrentPassword { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Новий пароль обов'язковий")]
-    [StringLength(
-        ValidationPatterns.PasswordMaxLength, 
-        MinimumLength = ValidationPatterns.PasswordMinLength, 
-        ErrorMessage = "Новий пароль має бути від {2} до {1} символів")]
     [RegularExpression(
-        ValidationPatterns.Password, 
+        ValidationPatterns.Password,
         ErrorMessage = ValidationPatterns.PasswordErrorMessage)]
     public string NewPassword { get; set; } = string.Empty;
 
