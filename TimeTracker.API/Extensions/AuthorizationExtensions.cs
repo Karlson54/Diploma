@@ -31,25 +31,28 @@ public static class AuthorizationExtensions
     private static void AddUserManagementPolicies(AuthorizationBuilder builder)
     {
         builder
+            // Тільки SuperAdmin може переглядати та управляти користувачами
             .AddPolicy("CanManageUsers", policy =>
                 policy.RequireRole("SuperAdmin")
                     .RequireClaim("IsActive", "True"))
             .AddPolicy("CanViewUsers", policy =>
-                policy.RequireRole("SuperAdmin", "Admin"));
+                policy.RequireRole("SuperAdmin"));
     }
 
     private static void AddDictionaryPolicies(AuthorizationBuilder builder)
     {
         builder
-            .AddPolicy("CanEditDictionaries", policy =>
-                policy.RequireAssertion(context =>
-                    context.User.IsInRole("SuperAdmin") ||
-                    context.User.IsInRole("Admin")))
+            // Перегляд повного списку справочників (адмін-панель) — тільки SuperAdmin
+            .AddPolicy("CanViewDictionariesAdmin", policy =>
+                policy.RequireRole("SuperAdmin"))
+            // Читання активних записів для форм — всі авторизовані
             .AddPolicy("CanViewDictionaries", policy =>
                 policy.RequireAuthenticatedUser())
+            // Редагування довідників — тільки SuperAdmin
+            .AddPolicy("CanEditDictionaries", policy =>
+                policy.RequireRole("SuperAdmin"))
             .AddPolicy("CanManageDictionaries", policy =>
-                policy.RequireAssertion(context =>
-                    context.User.IsInRole("SuperAdmin")));
+                policy.RequireRole("SuperAdmin"));
     }
 
     private static void AddTimeEntryPolicies(AuthorizationBuilder builder)
@@ -80,7 +83,6 @@ public static class AuthorizationExtensions
                     .RequireClaim("IsActive", "True"))
             .AddPolicy("CanViewAllReports", policy =>
                 policy.RequireRole("Admin", "SuperAdmin"))
-            // Назначение прав доступа — только SuperAdmin
             .AddPolicy("CanManageAdminPermissions", policy =>
                 policy.RequireRole("SuperAdmin"));
     }

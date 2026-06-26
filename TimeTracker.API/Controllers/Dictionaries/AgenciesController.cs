@@ -22,7 +22,7 @@ public class AgenciesController : BaseDictionaryController<AgencyDto, CreateAgen
     }
 
     [HttpGet("{id}/users-count")]
-    [Authorize(Policy = "CanViewDictionaries")]
+    [Authorize(Policy = "CanViewDictionariesAdmin")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetUsersCount(long id)
     {
@@ -31,7 +31,7 @@ public class AgenciesController : BaseDictionaryController<AgencyDto, CreateAgen
     }
 
     [HttpGet("{id}/has-active-users")]
-    [Authorize(Policy = "CanViewDictionaries")]
+    [Authorize(Policy = "CanViewDictionariesAdmin")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> HasActiveUsers(long id)
     {

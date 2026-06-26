@@ -30,7 +30,7 @@ public class DepartmentsController : ControllerBase
     /// Отримати відділ за ID
     /// </summary>
     [HttpGet("{id}")]
-    [Authorize(Policy = "CanViewDictionaries")]
+    [Authorize(Policy = "CanViewDictionariesAdmin")]
     [ProducesResponseType(typeof(DepartmentDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(long id)
@@ -46,7 +46,7 @@ public class DepartmentsController : ControllerBase
     /// Отримати всі відділи агенції
     /// </summary>
     [HttpGet("by-agency/{agencyId}")]
-    [Authorize(Policy = "CanViewDictionaries")]
+    [Authorize(Policy = "CanViewDictionariesAdmin")]
     [ProducesResponseType(typeof(IEnumerable<DepartmentDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByAgency(long agencyId)
     {

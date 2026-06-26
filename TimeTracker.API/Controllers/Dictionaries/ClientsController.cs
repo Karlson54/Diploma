@@ -22,7 +22,7 @@ public class ClientsController : BaseDictionaryController<ClientDto, CreateClien
     }
 
     [HttpGet("by-email/{email}")]
-    [Authorize(Policy = "CanViewDictionaries")]
+    [Authorize(Policy = "CanViewDictionariesAdmin")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByEmail(string email)
@@ -35,7 +35,7 @@ public class ClientsController : BaseDictionaryController<ClientDto, CreateClien
     }
 
     [HttpGet("search")]
-    [Authorize(Policy = "CanViewDictionaries")]
+    [Authorize(Policy = "CanViewDictionariesAdmin")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> Search([FromQuery] string searchTerm)
     {
@@ -44,7 +44,7 @@ public class ClientsController : BaseDictionaryController<ClientDto, CreateClien
     }
 
     [HttpGet("{id}/time-entries-count")]
-    [Authorize(Policy = "CanViewDictionaries")]
+    [Authorize(Policy = "CanViewDictionariesAdmin")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetTimeEntriesCount(long id)
     {
@@ -53,7 +53,7 @@ public class ClientsController : BaseDictionaryController<ClientDto, CreateClien
     }
 
     [HttpGet("check-email")]
-    [Authorize(Policy = "CanEditDictionaries")]
+    [Authorize(Policy = "CanManageDictionaries")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> CheckEmail(
         [FromQuery] string email,

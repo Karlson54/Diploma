@@ -45,7 +45,7 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
     /// Отримати всі записи довідника (включно з неактивними)
     /// </summary>
     [HttpGet]
-    [Authorize(Policy = "CanViewDictionaries")]
+    [Authorize(Policy = "CanViewDictionariesAdmin")] // було: CanViewDictionaries
     [ProducesResponseType(StatusCodes.Status200OK)]
     public virtual async Task<IActionResult> GetAll()
     {
@@ -341,7 +341,7 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
     }
 
     [HttpGet("check-name")]
-    [Authorize(Policy = "CanEditDictionaries")]
+    [Authorize(Policy = "CanManageDictionaries")]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     public virtual async Task<IActionResult> CheckName(
         [FromQuery] string name,
@@ -352,7 +352,7 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
     }
 
     [HttpGet("{id}/can-deactivate")]
-    [Authorize(Policy = "CanEditDictionaries")]
+    [Authorize(Policy = "CanManageDictionaries")]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     public virtual async Task<IActionResult> CanDeactivate(long id)
     {
@@ -361,7 +361,7 @@ public abstract class BaseDictionaryController<TDto, TCreateDto, TUpdateDto> : C
     }
 
     [HttpGet("statistics")]
-    [Authorize(Policy = "CanViewDictionaries")]
+    [Authorize(Policy = "CanViewDictionariesAdmin")]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     public virtual async Task<IActionResult> GetStatistics()
     {
