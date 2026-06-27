@@ -77,7 +77,7 @@ public class ReportService : IReportService
                 UserId = te.UserId,
                 UserName = te.User.Name,
                 DepartmentName = te.Department != null ? te.Department.Name : string.Empty,
-                AgencyName = te.User.Agency != null ? te.User.Agency.Name : string.Empty,
+                AgencyName = te.Agency != null ? te.Agency.Name : string.Empty,
                 EntryDate = te.EntryDate,
                 MarketName = te.Market != null ? te.Market.Name : string.Empty,
                 ContractingAgencyName = te.ContractingAgency != null ? te.ContractingAgency.Name : string.Empty,
@@ -100,9 +100,9 @@ public class ReportService : IReportService
         if (!await CanUserAccessReportAsync(requestingUserId, userId))
             throw new UnauthorizedAccessException("Ви не маєте доступу до цього звіту");
 
-        // Если это Admin (не SuperAdmin) — проверяем что запрашиваемый
-        // пользователь принадлежит к разрешённому отделу
-        var isRestricted = await IsAdminWithRestrictedAccessAsync(requestingUserId);
+        // Если пользователь запрашивает СВОИ записи - scope-проверка не нужна
+        var isRestricted = userId != requestingUserId && await IsAdminWithRestrictedAccessAsync(requestingUserId);
+
         if (isRestricted)
         {
             var targetUser = await _userRepository.GetByIdAsync(userId);

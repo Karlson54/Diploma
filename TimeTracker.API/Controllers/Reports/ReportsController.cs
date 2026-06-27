@@ -55,7 +55,7 @@ public class ReportsController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Forbid(ex.Message);
+            return StatusCode(403, new { Message = ex.Message });
         }
         catch (KeyNotFoundException ex)
         {
@@ -98,7 +98,7 @@ public class ReportsController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Forbid(ex.Message);
+            return StatusCode(403, new { Message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -140,7 +140,7 @@ public class ReportsController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Forbid(ex.Message);
+            return StatusCode(403, new { Message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -194,7 +194,7 @@ public class ReportsController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Forbid(ex.Message);
+            return StatusCode(403, new { Message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -227,7 +227,7 @@ public class ReportsController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Forbid(ex.Message);
+            return StatusCode(403, new { Message = ex.Message });
         }
         catch (KeyNotFoundException ex)
         {
@@ -270,7 +270,7 @@ public class ReportsController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Forbid(ex.Message);
+            return StatusCode(403, new { Message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -303,7 +303,7 @@ public class ReportsController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Forbid(ex.Message);
+            return StatusCode(403, new { Message = ex.Message });
         }
         catch (KeyNotFoundException ex)
         {
@@ -346,7 +346,7 @@ public class ReportsController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Forbid(ex.Message);
+            return StatusCode(403, new { Message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -387,7 +387,7 @@ public class ReportsController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Forbid(ex.Message);
+            return StatusCode(403, new { Message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -436,7 +436,7 @@ public class ReportsController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Forbid(ex.Message);
+            return StatusCode(403, new { Message = ex.Message });
         }
         catch (KeyNotFoundException ex)
         {
@@ -469,7 +469,7 @@ public class ReportsController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Forbid(ex.Message);
+            return StatusCode(403, new { Message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -506,7 +506,7 @@ public class ReportsController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Forbid(ex.Message);
+            return StatusCode(403, new { Message = ex.Message });
         }
         catch (Exception ex)
         {

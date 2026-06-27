@@ -474,7 +474,7 @@ public class UsersController : ControllerBase
             var userAgent = GetUserAgent();
 
             // Проверяем роль из JWT клейма
-            var isAdmin = User.IsInRole("Admin");
+            var isAdmin = User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
 
             var user = await _userService.UpdateProfileAsync(
                 currentUserId,

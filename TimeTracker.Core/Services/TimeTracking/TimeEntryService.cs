@@ -428,7 +428,7 @@ public class TimeEntryService : ITimeEntryService
         // Если запрашивают записи другого пользователя — проверяем права
         if (userId.HasValue && userId.Value != requestingUserId && requestingUserId > 0)
         {
-            var hasPermission = await HasManagerOrAdminRoleAsync(requestingUserId);
+            var hasPermission = await HasSuperAdminOrAdminRoleAsync(requestingUserId);
             if (!hasPermission)
                 throw new UnauthorizedAccessException(
                     "Ви не маєте прав переглядати записи інших користувачів");
@@ -1232,7 +1232,7 @@ public class TimeEntryService : ITimeEntryService
             return true;
 
         // Manager або Admin можуть редагувати чужі записи
-        return await HasManagerOrAdminRoleAsync(requestingUserId);
+        return await HasSuperAdminOrAdminRoleAsync(requestingUserId);
     }
 
     public async Task<long> GetRemainingHoursForDayAsync(long userId, DateTime date, long? excludeEntryId = null)
@@ -1251,10 +1251,10 @@ public class TimeEntryService : ITimeEntryService
             return true;
 
         // Manager або Admin можуть переглядати чужі записи
-        return await HasManagerOrAdminRoleAsync(requestingUserId);
+        return await HasSuperAdminOrAdminRoleAsync(requestingUserId);
     }
 
-    private async Task<bool> HasManagerOrAdminRoleAsync(long userId)
+    private async Task<bool> HasSuperAdminOrAdminRoleAsync(long userId)
     {
         var userWithRoles = await _userRepository.GetByIdWithRolesAsync(userId);
         if (userWithRoles == null)
@@ -1265,7 +1265,7 @@ public class TimeEntryService : ITimeEntryService
             .Select(ur => ur.Role.Name)
             .ToList();
 
-        return roles.Contains("Admin") || roles.Contains("Manager");
+        return roles.Contains("Admin") || roles.Contains("SuperAdmin");
     }
 
     private record AdminScopeFilter(
