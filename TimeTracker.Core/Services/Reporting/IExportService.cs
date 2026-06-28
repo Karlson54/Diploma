@@ -11,8 +11,8 @@ public interface IExportService
         string ipAddress,
         string userAgent,
         ExportColumnsDto columns,
-        long? agencyId = null,
-        long? departmentId = null,
+        IEnumerable<long>? agencyIds = null,
+        IEnumerable<long>? departmentIds = null,
         IEnumerable<long>? userIds = null);
 
     Task<byte[]> ExportUserEntriesFlatToExcelAsync(

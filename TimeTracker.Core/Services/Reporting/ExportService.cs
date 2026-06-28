@@ -1013,38 +1013,28 @@ public class ExportService : IExportService
         string ipAddress,
         string userAgent,
         ExportColumnsDto columns,
-        long? agencyId = null,
-        long? departmentId = null,
+        IEnumerable<long>? agencyIds = null,
+        IEnumerable<long>? departmentIds = null,
         IEnumerable<long>? userIds = null)
     {
         try
         {
-            IEnumerable<TimeEntryDto> entries;
+            var entries = await _reportService.GetAllTimeEntriesForExportAsync(
+                fromDate, toDate, requestingUserId);
 
+            var agencyIdsList = agencyIds?.ToList();
+            var departmentIdsList = departmentIds?.ToList();
             var userIdsList = userIds?.ToList();
 
+            // Применяем фильтры последовательно
             if (userIdsList != null && userIdsList.Any())
-            {
-                // Запросы по каждому userId параллельно
-                var tasks = userIdsList.Select(uid =>
-                    _reportService.GetUserTimeEntriesForExportAsync(
-                        uid, fromDate, toDate, requestingUserId));
+                entries = entries.Where(e => userIdsList.Contains(e.UserId));
 
-                var results = await Task.WhenAll(tasks);
-                entries = results.SelectMany(x => x).ToList();
-            }
-            else
-            {
-                entries = await _reportService.GetAllTimeEntriesForExportAsync(
-                    fromDate, toDate, requestingUserId);
+            if (agencyIdsList != null && agencyIdsList.Any())
+                entries = entries.Where(e => agencyIdsList.Contains(e.AgencyId));
 
-                // Фильтруем на уровне сервиса если переданы agencyId/departmentId
-                if (agencyId.HasValue)
-                    entries = entries.Where(e => e.AgencyId == agencyId.Value);
-
-                if (departmentId.HasValue)
-                    entries = entries.Where(e => e.DepartmentId == departmentId.Value);
-            }
+            if (departmentIdsList != null && departmentIdsList.Any())
+                entries = entries.Where(e => departmentIdsList.Contains(e.DepartmentId));
 
             var entriesList = entries.ToList();
 
@@ -1125,7 +1115,7 @@ public class ExportService : IExportService
                 requestingUserName: "Admin",
                 reportParams: new
                 {
-                    FromDate = fromDate, ToDate = toDate, AgencyId = agencyId, DepartmentId = departmentId,
+                    FromDate = fromDate, ToDate = toDate, AgencyIds = agencyIds, DepartmentIds = departmentIds,
                     UserIds = userIdsList
                 },
                 ipAddress: ipAddress,

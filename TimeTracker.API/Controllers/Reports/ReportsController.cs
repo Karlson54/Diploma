@@ -154,14 +154,12 @@ public class ReportsController : ControllerBase
     /// </summary>
     [HttpGet("export/flat")]
     [Authorize(Policy = "CanViewAllReports")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> ExportAllEntriesFlat(
         [FromQuery] DateTime fromDate,
         [FromQuery] DateTime toDate,
         [FromQuery] string? columns = null,
-        [FromQuery] long? agencyId = null,
-        [FromQuery] long? departmentId = null,
+        [FromQuery] string? agencyIds = null, // было: long? agencyId
+        [FromQuery] string? departmentIds = null, // было: long? departmentId
         [FromQuery] string? userIds = null)
     {
         try
@@ -172,18 +170,14 @@ public class ReportsController : ControllerBase
 
             var columnsDto = ExportColumnsDto.FromString(columns);
 
-            IEnumerable<long>? userIdsList = null;
-            if (!string.IsNullOrWhiteSpace(userIds))
-            {
-                userIdsList = userIds
-                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                    .Select(id => long.TryParse(id, out var parsed) ? parsed : 0)
-                    .Where(id => id > 0);
-            }
+            // Парсим списки ID
+            var agencyIdsList = ParseLongList(agencyIds);
+            var departmentIdsList = ParseLongList(departmentIds);
+            var userIdsList = ParseLongList(userIds);
 
             var fileBytes = await _exportService.ExportAllEntriesFlatToExcelAsync(
                 fromDate, toDate, currentUserId, ipAddress, userAgent, columnsDto,
-                agencyId, departmentId, userIdsList);
+                agencyIdsList, departmentIdsList, userIdsList);
 
             var fileName = $"AllReports_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.xlsx";
 
@@ -563,5 +557,18 @@ public class ReportsController : ControllerBase
         return userAgent.Length > 500
             ? userAgent.Substring(0, 500)
             : userAgent;
+    }
+
+    private static IEnumerable<long>? ParseLongList(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+
+        var result = value
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(id => long.TryParse(id, out var parsed) ? parsed : 0)
+            .Where(id => id > 0)
+            .ToList();
+
+        return result.Any() ? result : null;
     }
 }

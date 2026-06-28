@@ -55,7 +55,7 @@ public class ReportService : IReportService
 
         var query = _timeEntryRepository
             .GetQueryable()
-            .Include(te => te.User).ThenInclude(u => u.Agency)
+            .Include(te => te.Agency)
             .Include(te => te.Market)
             .Include(te => te.ContractingAgency)
             .Include(te => te.Client)
