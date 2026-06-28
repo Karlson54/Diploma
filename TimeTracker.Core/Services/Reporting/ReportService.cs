@@ -625,7 +625,33 @@ public class ReportService : IReportService
         var monday = today.AddDays(dayOfWeek == 0 ? -6 : -(dayOfWeek - 1));
         var sunday = monday.AddDays(6);
 
-        var activeUsers = await _userRepository.GetActiveUsersAsync();
+        // Получаем всех активных пользователей с учётом scope
+        IQueryable<User> usersQuery = _userRepository
+            .GetQueryable()
+            .Where(u => u.IsActive);
+
+        // Применяем scope для Admin
+        var isRestricted = await IsAdminWithRestrictedAccessAsync(requestingUserId);
+        if (isRestricted)
+        {
+            var scopes = (await GetAllowedScopesForUserAsync(requestingUserId)).ToList();
+            if (!scopes.Any())
+            {
+                // Admin без permissions — пустой список
+                return Enumerable.Empty<InactiveUserDto>();
+            }
+
+            var allowedAgencyIds = scopes.Select(s => s.AgencyId).ToHashSet();
+            var allowedDepartmentIds = scopes.Select(s => s.DepartmentId).ToHashSet();
+
+            usersQuery = usersQuery.Where(u =>
+                allowedAgencyIds.Contains(u.AgencyId) &&
+                allowedDepartmentIds.Contains(u.DepartmentId));
+        }
+
+        var activeUsers = await usersQuery.AsNoTracking().ToListAsync();
+        var userIds = activeUsers.Select(u => u.Id).ToList();
+
         var usersWithEntries = await _timeEntryRepository.GetUserIdsWithEntriesAsync(monday, sunday);
         var withEntriesSet = usersWithEntries.ToHashSet();
 
@@ -647,7 +673,7 @@ public class ReportService : IReportService
     }
 
     public async Task<ProjectReportDto> GetProjectReportAsync(
-        string projectBrandName, // было: long projectBrandId
+        string projectBrandName,
         DateTime fromDate,
         DateTime toDate,
         long requestingUserId)
