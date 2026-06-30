@@ -438,7 +438,11 @@ public class TimeEntryService : ITimeEntryService
         IEnumerable<long>? allowedAgencyIds = null;
         IEnumerable<long>? allowedDepartmentIds = null;
 
-        if (requestingUserId > 0)
+        // Если пользователь смотрит СВОИ записи — scope-фильтр не применяем
+        // Admin должен видеть все свои записи независимо от назначенных permissions
+        bool isViewingOwnEntries = userId.HasValue && userId.Value == requestingUserId;
+
+        if (requestingUserId > 0 && !isViewingOwnEntries)
         {
             var scopeFilter = await GetAdminScopeFilterAsync(requestingUserId);
             allowedAgencyIds = scopeFilter.AllowedAgencyIds;
