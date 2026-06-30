@@ -440,7 +440,7 @@ public class ReportService : IReportService
         }
 
         // Проверка кеша
-        var cacheKey = $"{CacheKeyPrefix}client:{clientId}:{fromDate:yyyyMMdd}:{toDate:yyyyMMdd}";
+        var cacheKey = $"{CacheKeyPrefix}client:{clientId}:{fromDate:yyyyMMdd}:{toDate:yyyyMMdd}:{requestingUserId}";
         if (_cache.TryGetValue(cacheKey, out ClientReportDto? cachedReport) && cachedReport != null)
         {
             return cachedReport;
@@ -454,7 +454,7 @@ public class ReportService : IReportService
         }
 
         // Получаем записи времени по клиенту
-        var entries = await _timeEntryRepository
+        var query = _timeEntryRepository
             .GetQueryable()
             .Include(te => te.User)
             .ThenInclude(u => u.Agency)
@@ -462,9 +462,12 @@ public class ReportService : IReportService
             .Include(te => te.Media)
             .Where(te => te.ClientId == clientId &&
                          te.EntryDate >= fromDate.Date &&
-                         te.EntryDate <= toDate.Date)
-            .AsNoTracking()
-            .ToListAsync();
+                         te.EntryDate <= toDate.Date);
+
+        // Применяем scope-фильтр для Admin с ограниченным доступом
+        query = await ApplyAdminScopeFilterAsync(query, requestingUserId);
+
+        var entries = await query.AsNoTracking().ToListAsync();
 
         var totalHours = entries.Sum(e => e.HoursMilliseconds);
 
