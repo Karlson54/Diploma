@@ -30,15 +30,6 @@ public class ContractingAgencyService : DictionaryService<ContractingAgency, Con
         return !hasTimeEntries;
     }
 
-    public override async Task<bool> CanBeDeactivatedAsync(long id)
-    {
-        var hasActiveTimeEntries = await _unitOfWork.TimeEntries
-            .GetQueryable()
-            .AnyAsync(te => te.ContractingAgencyId == id);
-
-        return !hasActiveTimeEntries;
-    }
-
     //DeleteAsync для детальних помилок
     public override async Task DeleteAsync(
         long id,
@@ -112,23 +103,6 @@ public class ContractingAgencyService : DictionaryService<ContractingAgency, Con
                 "Спроба деактивації вже деактивованого ContractingAgency '{Name}' (ID: {Id})",
                 contractingAgency.Name, id);
             throw new InvalidOperationException("ContractingAgency вже деактивоване");
-        }
-
-        // Перевірка активних TimeEntries
-        var activeTimeEntriesCount = await _unitOfWork.TimeEntries
-            .GetQueryable()
-            .CountAsync(te => te.ContractingAgencyId == id);
-
-        if (activeTimeEntriesCount > 0)
-        {
-            _logger.LogWarning(
-                "Неможливо деактивувати ContractingAgency '{Name}' (ID: {Id}) - є {Count} записів часу",
-                contractingAgency.Name, id, activeTimeEntriesCount);
-            
-            throw new InvalidOperationException(
-                $"Неможливо деактивувати ContractingAgency '{contractingAgency.Name}', " +
-                $"оскільки до нього прив'язано {activeTimeEntriesCount} записів часу. " +
-                "Спочатку видаліть або змініть всі пов'язані записи.");
         }
 
         await _repository.DeactivateAsync(id);

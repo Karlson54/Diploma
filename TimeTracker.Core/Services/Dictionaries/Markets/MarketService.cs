@@ -31,16 +31,6 @@ public class MarketService : DictionaryService<Market, MarketDto, CreateMarketDt
         return !hasTimeEntries;
     }
 
-    public override async Task<bool> CanBeDeactivatedAsync(long id)
-    {
-        // Можна деактивувати тільки якщо немає активних TimeEntries
-        var hasActiveTimeEntries = await _unitOfWork.TimeEntries
-            .GetQueryable()
-            .AnyAsync(te => te.MarketId == id);
-
-        return !hasActiveTimeEntries;
-    }
-
     //DeleteAsync для детальних помилок
     public override async Task DeleteAsync(
         long id,
@@ -114,23 +104,6 @@ public class MarketService : DictionaryService<Market, MarketDto, CreateMarketDt
                 "Спроба деактивації вже деактивованого Market '{Name}' (ID: {Id})",
                 market.Name, id);
             throw new InvalidOperationException("Market вже деактивований");
-        }
-
-        // Перевірка активних TimeEntries
-        var activeTimeEntriesCount = await _unitOfWork.TimeEntries
-            .GetQueryable()
-            .CountAsync(te => te.MarketId == id);
-
-        if (activeTimeEntriesCount > 0)
-        {
-            _logger.LogWarning(
-                "Неможливо деактивувати Market '{Name}' (ID: {Id}) - є {Count} записів часу",
-                market.Name, id, activeTimeEntriesCount);
-            
-            throw new InvalidOperationException(
-                $"Неможливо деактивувати Market '{market.Name}', " +
-                $"оскільки до нього прив'язано {activeTimeEntriesCount} записів часу. " +
-                "Спочатку видаліть або змініть всі пов'язані записи.");
         }
 
         await _repository.DeactivateAsync(id);

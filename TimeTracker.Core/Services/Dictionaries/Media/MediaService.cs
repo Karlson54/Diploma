@@ -29,15 +29,6 @@ public class MediaService : DictionaryService<Data.Entities.Media, MediaDto, Cre
         return !hasTimeEntries;
     }
 
-    public override async Task<bool> CanBeDeactivatedAsync(long id)
-    {
-        var hasActiveTimeEntries = await _unitOfWork.TimeEntries
-            .GetQueryable()
-            .AnyAsync(te => te.MediaId == id);
-
-        return !hasActiveTimeEntries;
-    }
-
     //DeleteAsync для детальних помилок
     public override async Task DeleteAsync(
         long id,
@@ -111,23 +102,6 @@ public class MediaService : DictionaryService<Data.Entities.Media, MediaDto, Cre
                 "Спроба деактивації вже деактивованого Media '{Name}' (ID: {Id})",
                 media.Name, id);
             throw new InvalidOperationException("Media вже деактивоване");
-        }
-
-        // Перевірка активних TimeEntries
-        var activeTimeEntriesCount = await _unitOfWork.TimeEntries
-            .GetQueryable()
-            .CountAsync(te => te.MediaId == id);
-
-        if (activeTimeEntriesCount > 0)
-        {
-            _logger.LogWarning(
-                "Неможливо деактивувати Media '{Name}' (ID: {Id}) - є {Count} записів часу",
-                media.Name, id, activeTimeEntriesCount);
-            
-            throw new InvalidOperationException(
-                $"Неможливо деактивувати Media '{media.Name}', " +
-                $"оскільки до нього прив'язано {activeTimeEntriesCount} записів часу. " +
-                "Спочатку видаліть або змініть всі пов'язані записи.");
         }
 
         await _repository.DeactivateAsync(id);

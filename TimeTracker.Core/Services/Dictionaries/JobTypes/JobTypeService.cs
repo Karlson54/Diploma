@@ -30,15 +30,6 @@ public class JobTypeService : DictionaryService<JobType, JobTypeDto, CreateJobTy
         return !hasTimeEntries;
     }
 
-    public override async Task<bool> CanBeDeactivatedAsync(long id)
-    {
-        var hasActiveTimeEntries = await _unitOfWork.TimeEntries
-            .GetQueryable()
-            .AnyAsync(te => te.JobTypeId == id);
-
-        return !hasActiveTimeEntries;
-    }
-
     //DeleteAsync для детальних помилок
     public override async Task DeleteAsync(
         long id,
@@ -112,23 +103,6 @@ public class JobTypeService : DictionaryService<JobType, JobTypeDto, CreateJobTy
                 "Спроба деактивації вже деактивованого JobType '{Name}' (ID: {Id})",
                 jobType.Name, id);
             throw new InvalidOperationException("JobType вже деактивований");
-        }
-
-        // Перевірка активних TimeEntries
-        var activeTimeEntriesCount = await _unitOfWork.TimeEntries
-            .GetQueryable()
-            .CountAsync(te => te.JobTypeId == id);
-
-        if (activeTimeEntriesCount > 0)
-        {
-            _logger.LogWarning(
-                "Неможливо деактивувати JobType '{Name}' (ID: {Id}) - є {Count} записів часу",
-                jobType.Name, id, activeTimeEntriesCount);
-            
-            throw new InvalidOperationException(
-                $"Неможливо деактивувати JobType '{jobType.Name}', " +
-                $"оскільки до нього прив'язано {activeTimeEntriesCount} записів часу. " +
-                "Спочатку видаліть або змініть всі пов'язані записи.");
         }
 
         await _repository.DeactivateAsync(id);
