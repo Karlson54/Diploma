@@ -8,7 +8,7 @@ public class TimeEntry : BaseEntity
     public long MarketId { get; set; }
     public long ContractingAgencyId { get; set; }
     public long ClientId { get; set; }
-    public string ProjectBrand { get; set; } = string.Empty;
+    public string? ProjectBrand { get; set; }
     public long MediaId { get; set; }
     public long JobTypeId { get; set; }
     public long HoursMilliseconds { get; set; }

@@ -20,7 +20,7 @@ public class TimeEntryMappingProfile : Profile
             .ForMember(dest => dest.ClientName,
                 opt => opt.MapFrom(src => src.Client.Name))
             .ForMember(dest => dest.ProjectBrandName,
-                opt => opt.MapFrom(src => src.ProjectBrand))
+                opt => opt.MapFrom(src => src.ProjectBrand ?? string.Empty))
             .ForMember(dest => dest.MediaName,
                 opt => opt.MapFrom(src => src.Media.Name))
             .ForMember(dest => dest.JobTypeName,
@@ -61,7 +61,7 @@ public class TimeEntryMappingProfile : Profile
                 opt => opt.MapFrom(src => src.DepartmentId))
             .ForMember(dest => dest.DepartmentName,
                 opt => opt.MapFrom(src => src.Department != null ? src.Department.Name : null));
-        
+
         CreateMap<TimeEntry, TimeEntryDetailDto>()
             .IncludeBase<TimeEntry, TimeEntryDto>();
 

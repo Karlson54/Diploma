@@ -24,9 +24,8 @@ public class CreateTimeEntryDto : IValidatableObject
 
     public long? ClientId { get; set; }
 
-    [Required(ErrorMessage = "ProjectBrand обов'язковий")]
-    [StringLength(200, MinimumLength = 1, ErrorMessage = "ProjectBrand має бути від 1 до 200 символів")]
-    public string ProjectBrand { get; set; } = string.Empty;
+    [StringLength(200, ErrorMessage = "ProjectBrand не може перевищувати 200 символів")]
+    public string? ProjectBrand { get; set; }
 
     public long? MediaId { get; set; }
 

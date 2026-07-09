@@ -47,10 +47,9 @@ public class TimeEntryConfiguration : IEntityTypeConfiguration<TimeEntry>
             .HasColumnType("bigint")
             .IsRequired();
 
-        // было: ProjectBrandId (bigint FK) — стало: project_brand (nvarchar)
+        // було: ProjectBrandId (bigint FK) — стало: project_brand (nvarchar), необов'язкове поле
         builder.Property(e => e.ProjectBrand)
             .HasColumnName("project_brand")
-            .IsRequired()
             .HasMaxLength(200);
 
         builder.Property(e => e.MediaId)
