@@ -92,6 +92,7 @@ public class UserService : IUserService
             .Include(u => u.Agency)
             .Include(u => u.Department)
             .Include(u => u.UserRoles)
+            .ThenInclude(ur => ur.Role)
             .AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
