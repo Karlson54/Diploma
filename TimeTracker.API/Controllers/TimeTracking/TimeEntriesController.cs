@@ -49,7 +49,8 @@ public class TimeEntriesController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return StatusCode(403, new { Message = ex.Message });;
+            return StatusCode(403, new { Message = ex.Message });
+            ;
         }
         catch (Exception ex)
         {
@@ -176,7 +177,8 @@ public class TimeEntriesController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return StatusCode(403, new { Message = ex.Message });;
+            return StatusCode(403, new { Message = ex.Message });
+            ;
         }
         catch (Exception ex)
         {
@@ -356,6 +358,49 @@ public class TimeEntriesController : ControllerBase
         }
     }
 
+    [HttpPost("copy-selected")]
+    [Authorize(Policy = "CanCreateTimeEntry")]
+    [ProducesResponseType(typeof(IEnumerable<TimeEntryDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CopySelected([FromBody] CopyEntriesByIdsDto dto)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        try
+        {
+            var currentUserId = GetCurrentUserId();
+            var ipAddress = GetIpAddress();
+            var userAgent = GetUserAgent();
+
+            var entries = await _timeEntryService.CopyEntriesByIdsAsync(
+                dto.EntryIds,
+                dto.TargetDate,
+                currentUserId,
+                ipAddress,
+                userAgent);
+
+            return Created(string.Empty, entries);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { Message = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { Message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Помилка при копіюванні обраних записів часу");
+            return BadRequest(new { Message = ex.Message });
+        }
+    }
+
     /// <summary>
     /// Оновити запис часу
     /// </summary>
@@ -395,7 +440,8 @@ public class TimeEntriesController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return StatusCode(403, new { Message = ex.Message });;
+            return StatusCode(403, new { Message = ex.Message });
+            ;
         }
         catch (InvalidOperationException ex)
         {
@@ -437,7 +483,8 @@ public class TimeEntriesController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return StatusCode(403, new { Message = ex.Message });;
+            return StatusCode(403, new { Message = ex.Message });
+            ;
         }
         catch (InvalidOperationException ex)
         {
@@ -481,7 +528,8 @@ public class TimeEntriesController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return StatusCode(403, new { Message = ex.Message });;
+            return StatusCode(403, new { Message = ex.Message });
+            ;
         }
         catch (Exception ex)
         {
@@ -522,7 +570,8 @@ public class TimeEntriesController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return StatusCode(403, new { Message = ex.Message });;
+            return StatusCode(403, new { Message = ex.Message });
+            ;
         }
         catch (Exception ex)
         {
@@ -569,7 +618,8 @@ public class TimeEntriesController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return StatusCode(403, new { Message = ex.Message });;
+            return StatusCode(403, new { Message = ex.Message });
+            ;
         }
         catch (Exception ex)
         {

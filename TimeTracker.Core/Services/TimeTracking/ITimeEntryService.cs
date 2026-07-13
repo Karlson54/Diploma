@@ -82,6 +82,13 @@ public interface ITimeEntryService
         string ipAddress,
         string userAgent);
 
+    Task<IEnumerable<TimeEntryDto>> CopyEntriesByIdsAsync(
+        IEnumerable<long> entryIds,
+        DateTime targetDate,
+        long requestingUserId,
+        string ipAddress,
+        string userAgent);
+
     // Статистика и аналитика
     Task<object> GetDailySummaryAsync(long userId, DateTime date);
     Task<object> GetWeeklySummaryAsync(long userId, DateTime weekStart);

@@ -148,7 +148,7 @@ public class TimeEntryService : ITimeEntryService
         await _timeEntryRepository.AddAsync(timeEntry);
         await _unitOfWork.SaveChangesAsync();
 
-        // 6. Аудит (оставь как есть)
+        // 6. Аудит (как было)
         var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
         var targetUser = user;
 
@@ -185,7 +185,21 @@ public class TimeEntryService : ITimeEntryService
                 requestingUserId, dto.UserId);
         }
 
-        return _mapper.Map<TimeEntryDto>(timeEntry);
+        // Перезавантажуємо запис зі зв'язаними даними для коректного мапінгу назв
+        var createdEntryWithDetails = await _timeEntryRepository
+            .GetQueryable()
+            .Include(te => te.User)
+            .Include(te => te.Agency)
+            .Include(te => te.Market)
+            .Include(te => te.ContractingAgency)
+            .Include(te => te.Client)
+            .Include(te => te.Media)
+            .Include(te => te.JobType)
+            .Include(te => te.Department)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(te => te.Id == timeEntry.Id);
+
+        return _mapper.Map<TimeEntryDto>(createdEntryWithDetails);
     }
 
     public async Task<TimeEntryDto> UpdateAsync(
@@ -284,6 +298,7 @@ public class TimeEntryService : ITimeEntryService
         await _unitOfWork.SaveChangesAsync();
 
         // 7. АУДИТ В БД - бізнес-логіка
+        // 7. АУДИТ В БД - бізнес-логіка
         var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
         var targetUser = await _userRepository.GetByIdAsync(timeEntry.UserId);
 
@@ -325,7 +340,21 @@ public class TimeEntryService : ITimeEntryService
                 requestingUserId, timeEntry.UserId);
         }
 
-        return _mapper.Map<TimeEntryDto>(timeEntry);
+        // Перезавантажуємо запис зі зв'язаними даними для коректного мапінгу назв
+        var updatedEntryWithDetails = await _timeEntryRepository
+            .GetQueryable()
+            .Include(te => te.User)
+            .Include(te => te.Agency)
+            .Include(te => te.Market)
+            .Include(te => te.ContractingAgency)
+            .Include(te => te.Client)
+            .Include(te => te.Media)
+            .Include(te => te.JobType)
+            .Include(te => te.Department)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(te => te.Id == timeEntry.Id);
+
+        return _mapper.Map<TimeEntryDto>(updatedEntryWithDetails);
     }
 
     public async Task DeleteAsync(
@@ -853,6 +882,140 @@ public class TimeEntryService : ITimeEntryService
         }
 
         return newEntries.Select(te => _mapper.Map<TimeEntryDto>(te));
+    }
+
+    public async Task<IEnumerable<TimeEntryDto>> CopyEntriesByIdsAsync(
+        IEnumerable<long> entryIds,
+        DateTime targetDate,
+        long requestingUserId,
+        string ipAddress,
+        string userAgent)
+    {
+        var idsList = entryIds.ToList();
+
+        if (!idsList.Any())
+        {
+            _logger.LogWarning("Спроба копіювання порожнього списку TimeEntries");
+            return new List<TimeEntryDto>();
+        }
+
+        // 1. Отримуємо записи, що копіюються
+        var sourceEntries = await _timeEntryRepository
+            .GetQueryable()
+            .Where(te => idsList.Contains(te.Id))
+            .ToListAsync();
+
+        if (sourceEntries.Count != idsList.Count)
+        {
+            throw new KeyNotFoundException("Деякі записи для копіювання не знайдено");
+        }
+
+        // 2. Усі обрані записи мають належати одному користувачу
+        var distinctUserIds = sourceEntries.Select(te => te.UserId).Distinct().ToList();
+        if (distinctUserIds.Count > 1)
+        {
+            throw new InvalidOperationException(
+                "Неможливо скопіювати записи, що належать різним користувачам, в одній операції");
+        }
+
+        var targetUserId = distinctUserIds.Single();
+
+        // 3. Валідація прав користувача
+        var userPermissionResult = await _validationService.ValidateUserPermissionsAsync(
+            requestingUserId,
+            targetUserId);
+
+        if (!userPermissionResult.IsValid)
+        {
+            _logger.LogWarning(
+                "Користувач {RequestingUserId} намагався скопіювати записи для UserId {TargetUserId}",
+                requestingUserId, targetUserId);
+            throw new UnauthorizedAccessException(
+                string.Join("; ", userPermissionResult.Errors));
+        }
+
+        // 4. Перевірка, що targetDate не в майбутньому
+        if (targetDate.Date > DateTime.UtcNow.Date)
+        {
+            throw new InvalidOperationException("Неможливо скопіювати записи на майбутню дату");
+        }
+
+        // 5. Перевірка ліміту 24 години на цільову дату
+        var existingHoursOnTarget = await _validationService.GetTotalHoursForDayAsync(targetUserId, targetDate);
+        var newHoursTotal = sourceEntries.Sum(te => te.HoursMilliseconds);
+        var combinedTotal = existingHoursOnTarget + newHoursTotal;
+
+        if (combinedTotal > ValidationConstants.MaxHoursPerDayMs)
+        {
+            var existingHours = TimeHelper.FormatHours(existingHoursOnTarget);
+            var newHours = TimeHelper.FormatHours(newHoursTotal);
+            var totalHours = TimeHelper.FormatHours(combinedTotal);
+
+            throw new InvalidOperationException(
+                $"Перевищено ліміт часу за день. " +
+                $"Вже зареєстровано: {existingHours}, додається: {newHours}, " +
+                $"загалом буде: {totalHours} (максимум 24:00)");
+        }
+
+        // 6. Створюємо нові записи на основі обраних
+        var newEntries = sourceEntries.Select(sourceEntry => new TimeEntry
+        {
+            UserId = targetUserId,
+            EntryDate = targetDate.Date,
+            AgencyId = sourceEntry.AgencyId,
+            DepartmentId = sourceEntry.DepartmentId,
+            MarketId = sourceEntry.MarketId,
+            ContractingAgencyId = sourceEntry.ContractingAgencyId,
+            ClientId = sourceEntry.ClientId,
+            ProjectBrand = sourceEntry.ProjectBrand,
+            MediaId = sourceEntry.MediaId,
+            JobTypeId = sourceEntry.JobTypeId,
+            HoursMilliseconds = sourceEntry.HoursMilliseconds,
+            Comments = sourceEntry.Comments
+        }).ToList();
+
+        await _timeEntryRepository.AddRangeAsync(newEntries);
+        await _unitOfWork.SaveChangesAsync();
+
+        // Перезавантажуємо новостворені записи з підключеними зв'язаними даними,
+        // інакше навігаційні властивості (Market, Client, Agency...) будуть null
+        // і AutoMapper поверне порожні назви до перезавантаження сторінки
+        var newEntryIds = newEntries.Select(e => e.Id).ToList();
+        var createdEntriesWithDetails = await _timeEntryRepository
+            .GetQueryable()
+            .Include(te => te.User)
+            .Include(te => te.Agency)
+            .Include(te => te.Market)
+            .Include(te => te.ContractingAgency)
+            .Include(te => te.Client)
+            .Include(te => te.Media)
+            .Include(te => te.JobType)
+            .Include(te => te.Department)
+            .Where(te => newEntryIds.Contains(te.Id))
+            .AsNoTracking()
+            .ToListAsync();
+
+
+        // 7. АУДИТ В БД
+        var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
+        var targetUser = await _userRepository.GetByIdAsync(targetUserId);
+
+        if (requestingUser != null && targetUser != null)
+        {
+            await _auditService.LogTimeEntriesCopiedAsync(
+                userId: targetUserId,
+                userName: targetUser.Name,
+                sourceDate: sourceEntries.First().EntryDate,
+                targetDate: targetDate.Date,
+                copiedCount: createdEntriesWithDetails.Count,
+                copyType: "Selected",
+                requestingUserId: requestingUserId,
+                requestingUserName: requestingUser.Name,
+                ipAddress: ipAddress,
+                userAgent: userAgent);
+        }
+
+        return createdEntriesWithDetails.Select(te => _mapper.Map<TimeEntryDto>(te));
     }
 
     public async Task<IEnumerable<TimeEntryDto>> CopyWeekEntriesAsync(
