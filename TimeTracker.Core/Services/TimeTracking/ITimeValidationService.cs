@@ -21,6 +21,23 @@ public interface ITimeValidationService
         long? mediaId,
         long? jobTypeId);
 
+    Task<ValidationResult> ValidateCreateAsync(
+        long userId,
+        DateTime entryDate,
+        long hoursMilliseconds,
+        long? jobTypeId,
+        string? comments);
+
+    Task<ValidationResult> ValidateUpdateAsync(
+        long entryId,
+        long userId,
+        DateTime entryDate,
+        long hoursMilliseconds,
+        long? jobTypeId,
+        string? comments);
+
+    Task<bool> IsVacationJobTypeAsync(long? jobTypeId);
+
     Task<ValidationResult> ValidateUserPermissionsAsync(
         long userId,
         long? targetUserId = null);

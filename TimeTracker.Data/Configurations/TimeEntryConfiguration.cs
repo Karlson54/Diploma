@@ -82,9 +82,6 @@ public class TimeEntryConfiguration : IEntityTypeConfiguration<TimeEntry>
         builder.HasCheckConstraint("ck_time_entries_hours",
             "hours_milliseconds > 0 AND hours_milliseconds <= 86400000");
 
-        builder.HasCheckConstraint("ck_time_entries_date",
-            "entry_date <= DATEADD(day, 1, GETDATE())");
-
         builder.HasIndex(e => e.UserId)
             .HasDatabaseName("ix_time_entries_user_id");
 

@@ -106,7 +106,9 @@ public class TimeEntryService : ITimeEntryService
         var createValidationResult = await _validationService.ValidateCreateAsync(
             dto.UserId,
             dto.EntryDate,
-            dto.HoursMilliseconds);
+            dto.HoursMilliseconds,
+            dto.JobTypeId,
+            dto.Comments);
 
         if (!createValidationResult.IsValid)
         {
@@ -261,7 +263,9 @@ public class TimeEntryService : ITimeEntryService
             id,
             timeEntry.UserId,
             dto.EntryDate,
-            dto.HoursMilliseconds);
+            dto.HoursMilliseconds,
+            dto.JobTypeId,
+            dto.Comments);
 
         if (!updateValidationResult.IsValid)
         {
@@ -819,11 +823,13 @@ public class TimeEntryService : ITimeEntryService
 
         foreach (var sourceEntry in sourceEntries)
         {
-            // Валідація кожного нового запису
+            // Валідація кожного нового запису (враховує Vacation)
             var createValidationResult = await _validationService.ValidateCreateAsync(
                 userId,
                 targetDate,
-                sourceEntry.HoursMilliseconds);
+                sourceEntry.HoursMilliseconds,
+                sourceEntry.JobTypeId,
+                sourceEntry.Comments);
 
             if (!createValidationResult.IsValid)
             {
@@ -934,8 +940,18 @@ public class TimeEntryService : ITimeEntryService
                 string.Join("; ", userPermissionResult.Errors));
         }
 
-        // 4. Перевірка, що targetDate не в майбутньому
-        if (targetDate.Date > DateTime.UtcNow.Date)
+        // 4. Перевірка, що targetDate не в майбутньому — пропускаємо, якщо ВСІ обрані записи Vacation
+        var allSelectedAreVacation = true;
+        foreach (var se in sourceEntries)
+        {
+            if (!await _validationService.IsVacationJobTypeAsync(se.JobTypeId))
+            {
+                allSelectedAreVacation = false;
+                break;
+            }
+        }
+
+        if (!allSelectedAreVacation && targetDate.Date > DateTime.UtcNow.Date)
         {
             throw new InvalidOperationException("Неможливо скопіювати записи на майбутню дату");
         }
@@ -1117,34 +1133,31 @@ public class TimeEntryService : ITimeEntryService
 
         foreach (var sourceEntry in sourceEntries)
         {
-            // Вираховуємо різницю днів між source та початком source тижня
             var dayOffset = (sourceEntry.EntryDate.Date - normalizedSourceStart).Days;
-
-            // Додаємо цю різницю до target початку тижня
             var newEntryDate = normalizedTargetStart.AddDays(dayOffset);
 
-            // Перевіряємо, що нова дата не в майбутньому
-            if (newEntryDate > DateTime.UtcNow.Date)
+            var isVacationEntry = await _validationService.IsVacationJobTypeAsync(sourceEntry.JobTypeId);
+
+            if (!isVacationEntry && newEntryDate > DateTime.UtcNow.Date)
             {
                 _logger.LogWarning(
                     "Пропускаємо копіювання запису на майбутню дату. SourceEntryId: {SourceId}, TargetDate: {TargetDate}",
                     sourceEntry.Id, newEntryDate);
-                continue; // Пропускаємо майбутні дати
+                continue;
             }
 
-            // Валідація кожного нового запису
             var createValidationResult = await _validationService.ValidateCreateAsync(
                 userId,
                 newEntryDate,
-                sourceEntry.HoursMilliseconds);
+                sourceEntry.HoursMilliseconds,
+                sourceEntry.JobTypeId,
+                sourceEntry.Comments);
 
             if (!createValidationResult.IsValid)
             {
                 _logger.LogWarning(
                     "Валідація копіювання запису не пройдена. SourceEntryId: {SourceId}, NewDate: {NewDate}, Errors: {Errors}",
                     sourceEntry.Id, newEntryDate, string.Join("; ", createValidationResult.Errors));
-
-                // Для тижневого копіювання продовжуємо, але логуємо помилку
                 continue;
             }
 

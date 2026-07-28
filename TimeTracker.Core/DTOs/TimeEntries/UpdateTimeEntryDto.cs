@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using TimeTracker.Core.Common;
-using TimeTracker.Core.Validators;
 
 namespace TimeTracker.Core.DTOs.TimeEntries;
 
@@ -8,7 +7,6 @@ public class UpdateTimeEntryDto : IValidatableObject
 {
     [Required(ErrorMessage = "Дата запису обов'язкова")]
     [DataType(DataType.Date)]
-    [NotFutureDate]
     public DateTime EntryDate { get; set; }
 
     public long? MarketId { get; set; }

@@ -258,4 +258,164 @@ public class TimeValidationService : ITimeValidationService
 
         return totalHours;
     }
+
+    public async Task<ValidationResult> ValidateCreateAsync(
+        long userId,
+        DateTime entryDate,
+        long hoursMilliseconds,
+        long? jobTypeId,
+        string? comments)
+
+    {
+        var result = new ValidationResult { IsValid = true };
+
+        // 1. Базова валідація часу
+        if (!TimeHelper.IsValidDailyHours(hoursMilliseconds))
+        {
+            result.AddError(ValidationConstants.MaxDailyHoursError);
+            return result;
+        }
+
+        // 2. Перевірка дати — пропускаємо для Vacation
+        var isVacation = await IsVacationJobTypeAsync(jobTypeId);
+
+        if (isVacation)
+        {
+            if (hoursMilliseconds != SpecialJobTypes.VacationHoursMilliseconds)
+            {
+                result.AddError("Для типу роботи Vacation час має становити 480 хвилин (8:00 год)");
+            }
+
+            if (!string.Equals(comments?.Trim(), SpecialJobTypes.VacationComment, StringComparison.OrdinalIgnoreCase))
+            {
+                result.AddError($"Для типу роботи Vacation коментар має бути '{SpecialJobTypes.VacationComment}'");
+            }
+        }
+
+        if (!isVacation)
+        {
+            var maxAllowedDate = DateTime.UtcNow.Date.AddDays(1);
+            if (entryDate.Date > maxAllowedDate)
+            {
+                result.AddError(ValidationConstants.NotFutureDateError);
+            }
+        }
+
+        // 3. Перевірка що користувач існує і активний
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+        {
+            result.AddError($"Користувача з ID {userId} не знайдено");
+            return result;
+        }
+
+        if (!user.IsActive)
+        {
+            result.AddError("Користувач деактивований");
+            return result;
+        }
+
+        // 4. Перевірка загальної кількості годин за день
+        var totalHoursForDay = await GetTotalHoursForDayAsync(userId, entryDate);
+        var totalWithNew = totalHoursForDay + hoursMilliseconds;
+
+        if (totalWithNew > ValidationConstants.MaxHoursPerDayMs)
+        {
+            var existingHours = TimeHelper.FormatHours(totalHoursForDay);
+            var newHours = TimeHelper.FormatHours(hoursMilliseconds);
+            var totalHours = TimeHelper.FormatHours(totalWithNew);
+
+            result.AddError(
+                $"Перевищено ліміт часу за день. " +
+                $"Вже зареєстровано: {existingHours}, додається: {newHours}, " +
+                $"загалом буде: {totalHours} (максимум 24:00)");
+        }
+
+        return result;
+    }
+
+    public async Task<ValidationResult> ValidateUpdateAsync(
+        long entryId,
+        long userId,
+        DateTime entryDate,
+        long hoursMilliseconds,
+        long? jobTypeId,
+        string? comments)
+    {
+        var result = new ValidationResult { IsValid = true };
+
+        // 1. Перевірка що запис існує
+        var existingEntry = await _timeEntryRepository.GetByIdAsync(entryId);
+        if (existingEntry == null)
+        {
+            result.AddError($"TimeEntry з ID {entryId} не знайдено");
+            return result;
+        }
+
+        // 2. Перевірка що запис належить користувачу
+        if (existingEntry.UserId != userId)
+        {
+            result.AddError("Ви не можете редагувати чужий запис часу");
+            return result;
+        }
+
+        // 3. Базова валідація часу
+        if (!TimeHelper.IsValidDailyHours(hoursMilliseconds))
+        {
+            result.AddError(ValidationConstants.MaxDailyHoursError);
+            return result;
+        }
+
+        // 4. Перевірка дати — пропускаємо для Vacation
+        var isVacation = await IsVacationJobTypeAsync(jobTypeId);
+
+        if (isVacation)
+        {
+            if (hoursMilliseconds != SpecialJobTypes.VacationHoursMilliseconds)
+            {
+                result.AddError("Для типу роботи Vacation час має становити 480 хвилин (8:00 год)");
+            }
+
+            if (!string.Equals(comments?.Trim(), SpecialJobTypes.VacationComment, StringComparison.OrdinalIgnoreCase))
+            {
+                result.AddError($"Для типу роботи Vacation коментар має бути '{SpecialJobTypes.VacationComment}'");
+            }
+        }
+
+        if (!isVacation)
+        {
+            var maxAllowedDate = DateTime.UtcNow.Date.AddDays(1);
+            if (entryDate.Date > maxAllowedDate)
+            {
+                result.AddError(ValidationConstants.NotFutureDateError);
+            }
+        }
+
+        // 5. Перевірка загальної кількості годин за день (виключаючи поточний запис)
+        var totalHoursForDay = await GetTotalHoursForDayAsync(userId, entryDate, entryId);
+        var totalWithUpdated = totalHoursForDay + hoursMilliseconds;
+
+        if (totalWithUpdated > ValidationConstants.MaxHoursPerDayMs)
+        {
+            var existingHours = TimeHelper.FormatHours(totalHoursForDay);
+            var newHours = TimeHelper.FormatHours(hoursMilliseconds);
+            var totalHours = TimeHelper.FormatHours(totalWithUpdated);
+
+            result.AddError(
+                $"Перевищено ліміт часу за день. " +
+                $"Інші записи за день: {existingHours}, оновлюється на: {newHours}, " +
+                $"загалом буде: {totalHours} (максимум 24:00)");
+        }
+
+        return result;
+    }
+
+    public async Task<bool> IsVacationJobTypeAsync(long? jobTypeId)
+    {
+        if (!jobTypeId.HasValue || jobTypeId.Value <= 0)
+            return false;
+
+        var jobType = await _unitOfWork.JobTypes.GetByIdAsync(jobTypeId.Value);
+        return jobType != null && SpecialJobTypes.IsVacation(jobType.Name);
+    }
 }

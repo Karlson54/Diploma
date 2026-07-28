@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using TimeTracker.Core.Validators;
 
 namespace TimeTracker.Core.DTOs.TimeEntries;
 
@@ -13,6 +12,5 @@ public class CopyDayDto
 
     [Required(ErrorMessage = "Цільова дата обов'язкова")]
     [DataType(DataType.Date)]
-    [NotFutureDate]
     public DateTime TargetDate { get; set; }
 }
