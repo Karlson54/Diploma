@@ -940,6 +940,16 @@ public class TimeEntryService : ITimeEntryService
                 string.Join("; ", userPermissionResult.Errors));
         }
 
+        // 3.1. Отримуємо АКТУАЛЬНІ Agency/Department користувача на момент копіювання
+        // (а не ті, що були на момент створення оригінального запису —
+        // співробітника могли перевести у інший відділ/агенцію)
+        var targetUserEntity = await _userRepository.GetByIdAsync(targetUserId);
+        if (targetUserEntity == null)
+            throw new KeyNotFoundException($"Користувача з ID {targetUserId} не знайдено");
+
+        var currentAgencyId = targetUserEntity.AgencyId;
+        var currentDepartmentId = targetUserEntity.DepartmentId;
+
         // 4. Перевірка, що targetDate не в майбутньому — пропускаємо, якщо ВСІ обрані записи Vacation
         var allSelectedAreVacation = true;
         foreach (var se in sourceEntries)
@@ -974,12 +984,13 @@ public class TimeEntryService : ITimeEntryService
         }
 
         // 6. Створюємо нові записи на основі обраних
+        //    Agency/Department — АКТУАЛЬНІ (з User), а не з sourceEntry
         var newEntries = sourceEntries.Select(sourceEntry => new TimeEntry
         {
             UserId = targetUserId,
             EntryDate = targetDate.Date,
-            AgencyId = sourceEntry.AgencyId,
-            DepartmentId = sourceEntry.DepartmentId,
+            AgencyId = currentAgencyId,
+            DepartmentId = currentDepartmentId,
             MarketId = sourceEntry.MarketId,
             ContractingAgencyId = sourceEntry.ContractingAgencyId,
             ClientId = sourceEntry.ClientId,
@@ -993,9 +1004,7 @@ public class TimeEntryService : ITimeEntryService
         await _timeEntryRepository.AddRangeAsync(newEntries);
         await _unitOfWork.SaveChangesAsync();
 
-        // Перезавантажуємо новостворені записи з підключеними зв'язаними даними,
-        // інакше навігаційні властивості (Market, Client, Agency...) будуть null
-        // і AutoMapper поверне порожні назви до перезавантаження сторінки
+        // Перезавантажуємо новостворені записи з підключеними зв'язаними даними
         var newEntryIds = newEntries.Select(e => e.Id).ToList();
         var createdEntriesWithDetails = await _timeEntryRepository
             .GetQueryable()
@@ -1011,10 +1020,9 @@ public class TimeEntryService : ITimeEntryService
             .AsNoTracking()
             .ToListAsync();
 
-
         // 7. АУДИТ В БД
         var requestingUser = await _userRepository.GetByIdAsync(requestingUserId);
-        var targetUser = await _userRepository.GetByIdAsync(targetUserId);
+        var targetUser = targetUserEntity;
 
         if (requestingUser != null && targetUser != null)
         {
