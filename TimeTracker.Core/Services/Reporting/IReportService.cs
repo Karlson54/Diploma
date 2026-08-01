@@ -54,6 +54,8 @@ public interface IReportService
         long requestingUserId,
         long? agencyId = null,
         long? clientId = null);
+    
+    Task<IEnumerable<MissedDaysUserDto>> GetUsersWithMissedDaysThisMonthAsync(long requestingUserId);
 
     Task<bool> IsAdminWithRestrictedAccessAsync(long requestingUserId);
     Task<IEnumerable<(long AgencyId, long DepartmentId)>> GetAllowedScopesForUserAsync(long requestingUserId);

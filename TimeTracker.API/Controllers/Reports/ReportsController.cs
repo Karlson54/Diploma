@@ -509,6 +509,27 @@ public class ReportsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Співробітники з пропущеними робочими днями (0 записів) у поточному місяці
+    /// </summary>
+    [HttpGet("missed-days-this-month")]
+    [Authorize(Policy = "CanViewAllReports")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMissedDaysThisMonth()
+    {
+        try
+        {
+            var currentUserId = GetCurrentUserId();
+            var users = await _reportService.GetUsersWithMissedDaysThisMonthAsync(currentUserId);
+            return Ok(users);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Помилка при отриманні співробітників з пропущеними днями");
+            return BadRequest(new { Message = ex.Message });
+        }
+    }
+
     // ==================== HELPER METHODS ====================
 
     private long GetCurrentUserId()

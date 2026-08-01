@@ -1089,4 +1089,83 @@ public class ReportService : IReportService
 
         return query;
     }
+
+    public async Task<IEnumerable<MissedDaysUserDto>> GetUsersWithMissedDaysThisMonthAsync(long requestingUserId)
+    {
+        var today = DateTime.UtcNow.Date;
+        var firstDayOfCurrentMonth = new DateTime(today.Year, today.Month, 1);
+        var firstDayOfPreviousMonth = firstDayOfCurrentMonth.AddMonths(-1);
+
+        // Активні користувачі з урахуванням scope (Admin бачить тільки дозволені агенції/відділи)
+        IQueryable<User> usersQuery = _userRepository
+            .GetQueryable()
+            .Where(u => u.IsActive);
+
+        var isRestricted = await IsAdminWithRestrictedAccessAsync(requestingUserId);
+        if (isRestricted)
+        {
+            var scopes = (await GetAllowedScopesForUserAsync(requestingUserId)).ToList();
+            if (!scopes.Any())
+                return Enumerable.Empty<MissedDaysUserDto>();
+
+            var allowedAgencyIds = scopes.Select(s => s.AgencyId).ToHashSet();
+            var allowedDepartmentIds = scopes.Select(s => s.DepartmentId).ToHashSet();
+
+            usersQuery = usersQuery.Where(u =>
+                allowedAgencyIds.Contains(u.AgencyId) &&
+                allowedDepartmentIds.Contains(u.DepartmentId));
+        }
+
+        var users = await usersQuery.AsNoTracking().ToListAsync();
+        if (!users.Any())
+            return Enumerable.Empty<MissedDaysUserDto>();
+
+        var userIds = users.Select(u => u.Id).ToList();
+
+        // Дати, на які у користувачів вже є хоча б один запис за попередній + поточний місяць
+        var entryDates = await _timeEntryRepository
+            .GetQueryable()
+            .Where(te => userIds.Contains(te.UserId) &&
+                         te.EntryDate >= firstDayOfPreviousMonth &&
+                         te.EntryDate <= today)
+            .Select(te => new { te.UserId, te.EntryDate })
+            .Distinct()
+            .ToListAsync();
+
+        var entryDatesByUser = entryDates
+            .GroupBy(x => x.UserId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.EntryDate.Date).ToHashSet());
+
+        // Робочі дні (Пн-Пт) з початку попереднього місяця по сьогодні включно
+        var workingDays = new List<DateTime>();
+        for (var day = firstDayOfPreviousMonth; day <= today; day = day.AddDays(1))
+        {
+            if (day.DayOfWeek != DayOfWeek.Saturday && day.DayOfWeek != DayOfWeek.Sunday)
+                workingDays.Add(day);
+        }
+
+        var result = new List<MissedDaysUserDto>();
+
+        foreach (var user in users)
+        {
+            var userEntryDates = entryDatesByUser.GetValueOrDefault(user.Id) ?? new HashSet<DateTime>();
+
+            var missedDates = workingDays
+                .Where(d => !userEntryDates.Contains(d))
+                .OrderBy(d => d)
+                .ToList();
+
+            if (missedDates.Any())
+            {
+                result.Add(new MissedDaysUserDto
+                {
+                    UserId = user.Id,
+                    UserName = user.Name,
+                    MissedDates = missedDates
+                });
+            }
+        }
+
+        return result.OrderBy(u => u.UserName);
+    }
 }
