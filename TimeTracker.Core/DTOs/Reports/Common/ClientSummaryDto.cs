@@ -8,7 +8,7 @@ public class ClientSummaryDto
     public string ClientName { get; set; } = string.Empty;
     
     public long TotalHoursMs { get; set; }
-    public string TotalHours => TimeHelper.FormatHours(TotalHoursMs);
+    public string TotalHours => TimeHelper.FormatHoursDecimal(TotalHoursMs);
     
     public int ProjectsCount { get; set; }
     public int UsersCount { get; set; }
