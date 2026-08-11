@@ -2,7 +2,6 @@ using ClosedXML.Excel;
 using Microsoft.Extensions.Logging;
 using TimeTracker.Core.DTOs.Reports;
 using TimeTracker.Core.DTOs.Reports.Common;
-using TimeTracker.Core.DTOs.TimeEntries;
 using TimeTracker.Core.Services.AdminPermissions;
 using TimeTracker.Core.Services.Audit;
 using static TimeTracker.Core.Common.ExportConstants;
@@ -221,18 +220,22 @@ public class ExportService : IExportService
             currentRow = AddPeriodInfo(worksheet, currentRow, report.FromDate, report.ToDate);
             currentRow++;
 
+            currentRow = AddGeneratedAtInfo(worksheet, currentRow);
+            currentRow++;
+
             currentRow = AddClientStatistics(worksheet, currentRow, report);
             currentRow++;
 
-            if (report.ProjectBreakdown.Any())
+            if (report.UserContributions.Any())
             {
-                currentRow = AddProjectBreakdown(worksheet, currentRow, report.ProjectBreakdown);
+                currentRow =
+                    AddUserContributionsBreakdownForClientReport(worksheet, currentRow, report.UserContributions);
                 currentRow++;
             }
 
             if (report.JobTypeBreakdown.Any())
             {
-                currentRow = AddJobTypeBreakdown(worksheet, currentRow, report.JobTypeBreakdown);
+                currentRow = AddJobTypeBreakdownForClientReport(worksheet, currentRow, report.JobTypeBreakdown);
             }
 
             worksheet.Columns().AdjustToContents();
@@ -450,6 +453,16 @@ public class ExportService : IExportService
         return row;
     }
 
+    private int AddGeneratedAtInfo(IXLWorksheet worksheet, int row)
+    {
+        worksheet.Cell(row, 1).Value = "Generated At:";
+        worksheet.Cell(row, 1).Style.Font.Bold = true;
+        worksheet.Cell(row, 2).Value = DateTime.Now;
+        worksheet.Cell(row, 2).Style.NumberFormat.Format = "dd.MM.yyyy HH:mm";
+        row++;
+        return row;
+    }
+
     private int AddUserStatistics(IXLWorksheet worksheet, int row, UserLoadReportDto report)
     {
         worksheet.Cell(row, 1).Value = "Statistics";
@@ -634,6 +647,88 @@ public class ExportService : IExportService
         return row;
     }
 
+    private int AddUserContributionsBreakdownForClientReport(
+        IXLWorksheet worksheet, int row, List<UserContributionDto> contributions)
+    {
+        worksheet.Cell(row, 1).Value = "Time Distribution by Employee";
+        worksheet.Cell(row, 1).Style.Font.Bold = true;
+        worksheet.Cell(row, 1).Style.Fill.BackgroundColor = XLColor.FromHtml(ExcelStyles.HeaderBackgroundColor);
+        worksheet.Cell(row, 1).Style.Font.FontColor = XLColor.FromHtml(ExcelStyles.HeaderFontColor);
+        worksheet.Range(row, 1, row, 5).Merge();
+        row++;
+
+        var headerRow = row;
+        var headerRange = worksheet.Range(row, 1, row, 5);
+        worksheet.Cell(row, 1).Value = "Employee";
+        worksheet.Cell(row, 2).Value = "Agency";
+        worksheet.Cell(row, 3).Value = "Hours";
+        worksheet.Cell(row, 4).Value = "Entries Count";
+        worksheet.Cell(row, 5).Value = "Percentage (%)";
+        headerRange.Style.Font.Bold = true;
+        headerRange.Style.Fill.BackgroundColor = XLColor.FromHtml(ExcelStyles.HeaderBackgroundColor);
+        headerRange.Style.Font.FontColor = XLColor.FromHtml(ExcelStyles.HeaderFontColor);
+        headerRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        row++;
+
+        foreach (var user in contributions)
+        {
+            worksheet.Cell(row, 1).Value = user.UserName;
+            worksheet.Cell(row, 2).Value = user.AgencyName;
+            SetHoursCell(worksheet.Cell(row, 3), user.TotalHoursMs);
+            worksheet.Cell(row, 4).Value = user.EntriesCount;
+            SetPercentCell(worksheet.Cell(row, 5), user.ContributionPercentage);
+
+            if ((row - headerRow) % 2 == 0)
+                worksheet.Range(row, 1, row, 5).Style.Fill.BackgroundColor =
+                    XLColor.FromHtml(ExcelStyles.AlternateRowColor);
+
+            worksheet.Range(row, 1, row, 5).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+            row++;
+        }
+
+        return row;
+    }
+
+    private int AddJobTypeBreakdownForClientReport(
+        IXLWorksheet worksheet, int row, List<JobTypeBreakdownDto> breakdown)
+    {
+        worksheet.Cell(row, 1).Value = "Job Type Breakdown";
+        worksheet.Cell(row, 1).Style.Font.Bold = true;
+        worksheet.Cell(row, 1).Style.Fill.BackgroundColor = XLColor.FromHtml(ExcelStyles.HeaderBackgroundColor);
+        worksheet.Cell(row, 1).Style.Font.FontColor = XLColor.FromHtml(ExcelStyles.HeaderFontColor);
+        worksheet.Range(row, 1, row, 4).Merge();
+        row++;
+
+        var headerRow = row;
+        var headerRange = worksheet.Range(row, 1, row, 4);
+        worksheet.Cell(row, 1).Value = "Job Type";
+        worksheet.Cell(row, 2).Value = "Total Hours";
+        worksheet.Cell(row, 3).Value = "Entries Count";
+        worksheet.Cell(row, 4).Value = "Percentage (%)";
+        headerRange.Style.Font.Bold = true;
+        headerRange.Style.Fill.BackgroundColor = XLColor.FromHtml(ExcelStyles.HeaderBackgroundColor);
+        headerRange.Style.Font.FontColor = XLColor.FromHtml(ExcelStyles.HeaderFontColor);
+        headerRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        row++;
+
+        foreach (var jobType in breakdown)
+        {
+            worksheet.Cell(row, 1).Value = jobType.JobTypeName;
+            SetHoursCell(worksheet.Cell(row, 2), jobType.TotalHoursMs);
+            worksheet.Cell(row, 3).Value = jobType.EntriesCount;
+            SetPercentCell(worksheet.Cell(row, 4), jobType.Percentage);
+
+            if ((row - headerRow) % 2 == 0)
+                worksheet.Range(row, 1, row, 4).Style.Fill.BackgroundColor =
+                    XLColor.FromHtml(ExcelStyles.AlternateRowColor);
+
+            worksheet.Range(row, 1, row, 4).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+            row++;
+        }
+
+        return row;
+    }
+
     private int AddTeamStatistics(IXLWorksheet worksheet, int row, TeamLoadReportDto report)
     {
         worksheet.Cell(row, 1).Value = "Team Statistics";
@@ -797,7 +892,7 @@ public class ExportService : IExportService
         row++;
 
         worksheet.Cell(row, 1).Value = "Total Hours:";
-        worksheet.Cell(row, 2).Value = report.TotalHours;
+        SetHoursCell(worksheet.Cell(row, 2), report.TotalHoursMs);
         row++;
 
         worksheet.Cell(row, 1).Value = "Entries Count:";
@@ -806,10 +901,6 @@ public class ExportService : IExportService
 
         worksheet.Cell(row, 1).Value = "Unique Users:";
         worksheet.Cell(row, 2).Value = report.UniqueUsers;
-        row++;
-
-        worksheet.Cell(row, 1).Value = "Unique Projects:";
-        worksheet.Cell(row, 2).Value = report.UniqueProjects;
         row++;
 
         return row;
@@ -1004,6 +1095,18 @@ public class ExportService : IExportService
 
             throw;
         }
+    }
+
+    private static void SetHoursCell(IXLCell cell, long milliseconds)
+    {
+        cell.Value = milliseconds / 3600000.0;
+        cell.Style.NumberFormat.Format = "0.0";
+    }
+
+    private static void SetPercentCell(IXLCell cell, double percentage)
+    {
+        cell.Value = percentage;
+        cell.Style.NumberFormat.Format = "0.00\"%\"";
     }
 
     public async Task<byte[]> ExportAllEntriesFlatToExcelAsync(
