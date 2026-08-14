@@ -1048,8 +1048,12 @@ public class ExportService : IExportService
                 if (columns.Media) worksheet.Cell(row, colMap["media"]).Value = entry.MediaName;
                 if (columns.JobType) worksheet.Cell(row, colMap["jobtype"]).Value = entry.JobTypeName;
                 if (columns.Hours)
-                    worksheet.Cell(row, colMap["hours"]).Value =
-                        Math.Round((double)entry.HoursMilliseconds / 3600000, 2);
+                {
+                    var hoursCell = worksheet.Cell(row, colMap["hours"]);
+                    hoursCell.Value = Math.Round((double)entry.HoursMilliseconds / 3600000, 2);
+                    hoursCell.Style.NumberFormat.Format = "0.00";
+                }
+
                 if (columns.Comments) worksheet.Cell(row, colMap["comments"]).Value = entry.Comments ?? string.Empty;
 
                 if (row % 2 == 0)
@@ -1193,8 +1197,12 @@ public class ExportService : IExportService
                 if (columns.Media) worksheet.Cell(row, colMap["media"]).Value = entry.MediaName;
                 if (columns.JobType) worksheet.Cell(row, colMap["jobtype"]).Value = entry.JobTypeName;
                 if (columns.Hours)
-                    worksheet.Cell(row, colMap["hours"]).Value =
-                        Math.Round((double)entry.HoursMilliseconds / 3600000, 2);
+                {
+                    var hoursCell = worksheet.Cell(row, colMap["hours"]);
+                    hoursCell.Value = Math.Round((double)entry.HoursMilliseconds / 3600000, 2);
+                    hoursCell.Style.NumberFormat.Format = "0.00";
+                }
+
                 if (columns.Comments) worksheet.Cell(row, colMap["comments"]).Value = entry.Comments ?? string.Empty;
 
                 if (row % 2 == 0)
