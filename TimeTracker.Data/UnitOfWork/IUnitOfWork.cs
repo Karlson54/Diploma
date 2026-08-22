@@ -19,6 +19,7 @@ public interface IUnitOfWork : IDisposable
     IRepository<User> Users { get; }
     IRepository<UserRole> UserRoles { get; }
     IRepository<TimeEntry> TimeEntries { get; }
+    IRepository<SystemJobState> SystemJobStates { get; }
     IAuditLogRepository AuditLogs { get; }
     IDepartmentRepository Departments { get; }
 

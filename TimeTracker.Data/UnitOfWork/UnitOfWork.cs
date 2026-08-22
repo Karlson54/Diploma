@@ -25,6 +25,7 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<UserRole>? _userRoles;
     private IRepository<TimeEntry>? _timeEntries;
     private IAuditLogRepository? _auditLogs;
+    private IRepository<SystemJobState>? _systemJobStates;
 
     public UnitOfWork(TimeTrackerDbContext context)
     {
@@ -62,6 +63,9 @@ public class UnitOfWork : IUnitOfWork
 
     public IRepository<TimeEntry> TimeEntries =>
         _timeEntries ??= new Repository<TimeEntry>(_context);
+
+    public IRepository<SystemJobState> SystemJobStates =>
+        _systemJobStates ??= new Repository<SystemJobState>(_context);
 
     public IAuditLogRepository AuditLogs =>
         _auditLogs ??= new AuditLogRepository(_context);

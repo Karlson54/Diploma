@@ -1,5 +1,6 @@
 using TimeTracker.API.Extensions;
 using TimeTracker.API.Middleware;
+using TimeTracker.API.Infrastructure.BackgroundServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +27,7 @@ builder.Services.AddTimeTrackerHealthChecks();
 
 // Application Services
 builder.Services.AddTimeTrackerServices();
+builder.Services.AddHostedService<AuditCleanupBackgroundService>();
 
 // Database
 builder.Services.AddTimeTrackerDatabase(builder.Configuration, builder.Environment);
