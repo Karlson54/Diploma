@@ -20,9 +20,9 @@ public class NotFutureDateAttribute : ValidationAttribute
 
         if (value is DateTime dateValue)
         {
-            // Дозволяємо сьогодні + 1 день (як в check constraint БД)
-            var maxAllowedDate = DateTime.UtcNow.Date.AddDays(1);
-            
+            // Дозволяємо тільки сьогодні (за київським часом)
+            var maxAllowedDate = TimeZoneHelper.TodayInKyiv();
+
             if (dateValue.Date > maxAllowedDate)
             {
                 return new ValidationResult(

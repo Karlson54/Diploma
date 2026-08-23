@@ -41,7 +41,7 @@ public class TimeValidationService : ITimeValidationService
         }
 
         // 2. Перевірка що дата не в майбутньому
-        var maxAllowedDate = DateTime.UtcNow.Date.AddDays(1);
+        var maxAllowedDate = TimeZoneHelper.TodayInKyiv();
         if (entryDate.Date > maxAllowedDate)
         {
             result.AddError(ValidationConstants.NotFutureDateError);
@@ -111,7 +111,7 @@ public class TimeValidationService : ITimeValidationService
         }
 
         // 4. Перевірка що дата не в майбутньому
-        var maxAllowedDate = DateTime.UtcNow.Date.AddDays(1);
+        var maxAllowedDate = TimeZoneHelper.TodayInKyiv();
         if (entryDate.Date > maxAllowedDate)
         {
             result.AddError(ValidationConstants.NotFutureDateError);
@@ -294,7 +294,7 @@ public class TimeValidationService : ITimeValidationService
 
         if (!isVacation)
         {
-            var maxAllowedDate = DateTime.UtcNow.Date.AddDays(1);
+            var maxAllowedDate = TimeZoneHelper.TodayInKyiv();
             if (entryDate.Date > maxAllowedDate)
             {
                 result.AddError(ValidationConstants.NotFutureDateError);
@@ -384,7 +384,7 @@ public class TimeValidationService : ITimeValidationService
 
         if (!isVacation)
         {
-            var maxAllowedDate = DateTime.UtcNow.Date.AddDays(1);
+            var maxAllowedDate = TimeZoneHelper.TodayInKyiv();
             if (entryDate.Date > maxAllowedDate)
             {
                 result.AddError(ValidationConstants.NotFutureDateError);

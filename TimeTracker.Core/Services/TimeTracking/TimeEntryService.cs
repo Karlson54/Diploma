@@ -781,7 +781,7 @@ public class TimeEntryService : ITimeEntryService
         }
 
         // 3. Перевірка, що targetDate не в майбутньому
-        if (targetDate.Date > DateTime.UtcNow.Date)
+        if (targetDate.Date > TimeZoneHelper.TodayInKyiv())
         {
             _logger.LogWarning(
                 "Спроба копіювання записів на майбутню дату. UserId: {UserId}, TargetDate: {TargetDate}",
@@ -961,7 +961,7 @@ public class TimeEntryService : ITimeEntryService
             }
         }
 
-        if (!allSelectedAreVacation && targetDate.Date > DateTime.UtcNow.Date)
+        if (!allSelectedAreVacation && targetDate.Date > TimeZoneHelper.TodayInKyiv())
         {
             throw new InvalidOperationException("Неможливо скопіювати записи на майбутню дату");
         }
@@ -1094,7 +1094,7 @@ public class TimeEntryService : ITimeEntryService
         }
 
         // 4. Перевірка, що targetWeek не в майбутньому
-        if (normalizedTargetStart > DateTime.UtcNow.Date)
+        if (normalizedTargetStart > TimeZoneHelper.TodayInKyiv())
         {
             _logger.LogWarning(
                 "Спроба копіювання записів на майбутній тиждень. UserId: {UserId}, TargetWeekStart: {TargetWeekStart}",
@@ -1146,7 +1146,7 @@ public class TimeEntryService : ITimeEntryService
 
             var isVacationEntry = await _validationService.IsVacationJobTypeAsync(sourceEntry.JobTypeId);
 
-            if (!isVacationEntry && newEntryDate > DateTime.UtcNow.Date)
+            if (!isVacationEntry && newEntryDate > TimeZoneHelper.TodayInKyiv())
             {
                 _logger.LogWarning(
                     "Пропускаємо копіювання запису на майбутню дату. SourceEntryId: {SourceId}, TargetDate: {TargetDate}",
