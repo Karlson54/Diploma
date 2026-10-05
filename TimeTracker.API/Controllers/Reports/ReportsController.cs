@@ -285,13 +285,14 @@ public class ReportsController : ControllerBase
     public async Task<IActionResult> GetClientReport(
         long clientId,
         [FromQuery] DateTime fromDate,
-        [FromQuery] DateTime toDate)
+        [FromQuery] DateTime toDate,
+        [FromQuery] bool excludeAdminDepartments = false)
     {
         try
         {
             var currentUserId = GetCurrentUserId();
             var report = await _reportService.GetClientReportAsync(
-                clientId, fromDate, toDate, currentUserId);
+                clientId, fromDate, toDate, currentUserId, excludeAdminDepartments);
 
             return Ok(report);
         }
@@ -320,7 +321,8 @@ public class ReportsController : ControllerBase
     public async Task<IActionResult> ExportClientReportExcel(
         long clientId,
         [FromQuery] DateTime fromDate,
-        [FromQuery] DateTime toDate)
+        [FromQuery] DateTime toDate,
+        [FromQuery] bool excludeAdminDepartments = false)
     {
         try
         {
@@ -329,7 +331,7 @@ public class ReportsController : ControllerBase
             var userAgent = GetUserAgent();
 
             var fileBytes = await _exportService.ExportClientReportToExcelAsync(
-                clientId, fromDate, toDate, currentUserId, ipAddress, userAgent);
+                clientId, fromDate, toDate, currentUserId, ipAddress, userAgent, excludeAdminDepartments);
 
             var fileName = $"ClientReport_{clientId}_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.xlsx";
 

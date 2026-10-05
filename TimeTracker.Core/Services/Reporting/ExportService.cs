@@ -190,12 +190,13 @@ public class ExportService : IExportService
         DateTime toDate,
         long requestingUserId,
         string ipAddress,
-        string userAgent)
+        string userAgent,
+        bool excludeAdminDepartments = false)
     {
         try
         {
             var report = await _reportService.GetClientReportAsync(
-                clientId, fromDate, toDate, requestingUserId);
+                clientId, fromDate, toDate, requestingUserId, excludeAdminDepartments);
 
             using var workbook = new XLWorkbook();
             var worksheet = workbook.Worksheets.Add("Client Report");

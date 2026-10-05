@@ -33,7 +33,8 @@ public interface IReportService
         long clientId,
         DateTime fromDate,
         DateTime toDate,
-        long requestingUserId);
+        long requestingUserId,
+        bool excludeAdminDepartments = false);
 
     Task<IEnumerable<ClientSummaryDto>> GetTopClientsReportAsync(
         DateTime fromDate,

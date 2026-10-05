@@ -2,6 +2,7 @@ using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using TimeTracker.Core.Common;
 using TimeTracker.Core.DTOs.Reports;
 using TimeTracker.Core.DTOs.Reports.Common;
 using TimeTracker.Data.Repositories.TimeEntries;
@@ -431,7 +432,8 @@ public class ReportService : IReportService
         long clientId,
         DateTime fromDate,
         DateTime toDate,
-        long requestingUserId)
+        long requestingUserId,
+        bool excludeAdminDepartments = false)
     {
         // Проверка прав доступа
         if (!await CanUserAccessReportAsync(requestingUserId))
@@ -440,7 +442,8 @@ public class ReportService : IReportService
         }
 
         // Проверка кеша
-        var cacheKey = $"{CacheKeyPrefix}client:{clientId}:{fromDate:yyyyMMdd}:{toDate:yyyyMMdd}:{requestingUserId}";
+        var cacheKey =
+            $"{CacheKeyPrefix}client:{clientId}:{fromDate:yyyyMMdd}:{toDate:yyyyMMdd}:{requestingUserId}:{excludeAdminDepartments}";
         if (_cache.TryGetValue(cacheKey, out ClientReportDto? cachedReport) && cachedReport != null)
         {
             return cachedReport;
@@ -463,6 +466,11 @@ public class ReportService : IReportService
             .Where(te => te.ClientId == clientId &&
                          te.EntryDate >= fromDate.Date &&
                          te.EntryDate <= toDate.Date);
+
+        if (excludeAdminDepartments)
+        {
+            query = query.Where(te => te.Department.Name != SystemDepartments.Admin);
+        }
 
         // Применяем scope-фильтр для Admin с ограниченным доступом
         query = await ApplyAdminScopeFilterAsync(query, requestingUserId);

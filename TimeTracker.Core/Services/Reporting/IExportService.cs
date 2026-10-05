@@ -46,7 +46,8 @@ public interface IExportService
         DateTime toDate,
         long requestingUserId,
         string ipAddress,
-        string userAgent);
+        string userAgent,
+        bool excludeAdminDepartments = false);
 
     Task<byte[]> ExportTimeSummaryReportToExcelAsync(
         DateTime fromDate,
